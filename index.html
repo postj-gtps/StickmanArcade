@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5th Grade Arcade Showcase</title>
+  <style>
+    /* Global Styling */
+    :root {
+      --bg-color: #0f1026;
+      --card-bg: #1c1d3a;
+      --accent-neon: #00f0ff;
+      --accent-yellow: #ffcc00;
+      --accent-red: #ff3366;
+      --text-color: #ffffff;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      color: var(--accent-neon);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 5px;
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+    }
+
+    header p {
+      color: #a0a5c0;
+      font-size: 1.1rem;
+    }
+
+    /* Accordion / Teacher Sections */
+    .teacher-section {
+      background: var(--card-bg);
+      border: 2px solid #2d2f5a;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .teacher-header {
+      width: 100%;
+      background: #25274d;
+      color: var(--accent-yellow);
+      padding: 18px 24px;
+      font-size: 1.4rem;
+      font-weight: bold;
+      text-align: left;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.2s;
+    }
+
+    .teacher-header:hover {
+      background: #2e3160;
+    }
+
+    .teacher-header::after {
+      content: '▼';
+      font-size: 1rem;
+      transition: transform 0.3s;
+    }
+
+    .teacher-section.open .teacher-header::after {
+      transform: rotate(180deg);
+    }
+
+    .cabinet-grid {
+      display: none;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 30px;
+      padding: 30px 20px;
+    }
+
+    .teacher-section.open .cabinet-grid {
+      display: grid;
+    }
+
+    /* Arcade Cabinet Container */
+    .arcade-cabinet {
+      background: #111;
+      border: 4px solid #333;
+      border-radius: 16px 16px 8px 8px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 0 15px rgba(0,0,0,0.8), inset 0 0 10px rgba(255,255,255,0.05);
+      position: relative;
+    }
+
+    /* Cabinet Marquee Header */
+    .marquee {
+      width: 100%;
+      background: linear-gradient(180deg, #333 0%, #111 100%);
+      border: 2px solid var(--accent-neon);
+      border-radius: 8px;
+      padding: 10px 5px;
+      text-align: center;
+      margin-bottom: 12px;
+      box-shadow: 0 0 8px var(--accent-neon);
+    }
+
+    .marquee h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Screen Area */
+    .screen-frame {
+      width: 100%;
+      height: 180px;
+      background: #000;
+      border: 3px solid #444;
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .screen-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Control Deck Area */
+    .control-deck {
+      width: 100%;
+      height: 45px;
+      background: linear-gradient(180deg, #222 0%, #111 100%);
+      border-top: 2px solid #555;
+      border-bottom: 2px solid #555;
+      transform: perspective(200px) rotateX(15deg);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 20px;
+      box-sizing: border-box;
+      margin-bottom: 15px;
+    }
+
+    .joystick {
+      width: 14px;
+      height: 14px;
+      background: #e74c3c;
+      border-radius: 50%;
+      box-shadow: 0 4px 0 #962d22;
+      position: relative;
+    }
+
+    .joystick::after {
+      content: '';
+      position: absolute;
+      top: 14px;
+      left: 5px;
+      width: 4px;
+      height: 10px;
+      background: #888;
+    }
+
+    .buttons-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .deck-button {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent-yellow);
+      box-shadow: 0 2px 0 #b38f00;
+    }
+
+    /* Coin Door / Action Buttons Area */
+    .coin-door {
+      width: 100%;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      padding-top: 5px;
+    }
+
+    .coin-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 5px;
+      background: #222;
+      border: 2px solid #444;
+      border-radius: 6px;
+      color: #fff;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+      box-shadow: inset 0 0 5px rgba(0,0,0,0.8);
+    }
+
+    .coin-btn.play-btn {
+      border-color: #2ecc71;
+      color: #2ecc71;
+    }
+
+    .coin-btn.play-btn:hover {
+      background: #2ecc71;
+      color: #111;
+      box-shadow: 0 0 10px #2ecc71;
+    }
+
+    .coin-btn.eval-btn {
+      border-color: var(--accent-yellow);
+      color: var(--accent-yellow);
+    }
+
+    .coin-btn.eval-btn:hover {
+      background: var(--accent-yellow);
+      color: #111;
+      box-shadow: 0 0 10px var(--accent-yellow);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🕹️ Student Arcade Showcase 🕹️</h1>
+    <p>Click a teacher's classroom to reveal their video game cabinets!</p>
+  </header>
+
+  <main id="arcade-container"></main>
+
+  <script>
+    // Data Structure: Update game titles, image paths, and Google Form links here!
+    const arcadeData = [
+      {
+        teacher: "Kasunich / Derasmo",
+        games: [
+          { title: "Fast Food Quest", image: "images/fast_food_quest.jpg", playUrl: "#", evalUrl: "#" },
+          { title: "Space Crash!", image: "images/space_crash.jpg", playUrl: "#", evalUrl: "#" },
+          { title: "Abyss Diver", image: "images/abyss_diver.jpg", playUrl: "#", evalUrl: "#" },
+          { title: "Beast Run", image: "images/beast_run.jpg", playUrl: "#", evalUrl: "#" }
+        ]
+      },
+      {
+        teacher: "Adams / Scully",
+        games: [
+          { title: "Aztec Treasure Hunt", image: "images/aztec_treasure.jpg", playUrl: "#", evalUrl: "#" },
+          { title: "Stickman CTF!", image: "images/stickman_ctf.jpg", playUrl: "#", evalUrl: "#" },
+          { title: "Treasure Diver", image: "images/treasure_diver.jpg", playUrl: "#", evalUrl: "#" },
+          { title: "Survive the Birthday!", image: "images/survive_birthday.jpg", playUrl: "#", evalUrl: "#" },
+          { title: "Castle Quest", image: "images/castle_quest.jpg", playUrl: "#", evalUrl: "#" }
+        ]
+      },
+      {
+        teacher: "Bisignaro",
+        games: [
+          { title: "Cabin Chaos!", image: "images/cabin_chaos.jpg", playUrl: "#", evalUrl: "#" },
+          { title: "Evil School Supplies", image: "images/evil_supplies.jpg", playUrl: "#", evalUrl: "#" },
+          { title: "Moon Mission", image: "images/moon_mission.jpg", playUrl: "#", evalUrl: "#" },
+          { title: "Rainforest Rescue", image: "images/rainforest_rescue.jpg", playUrl: "#", evalUrl: "#" }
+        ]
+      },
+      {
+        teacher: "Seddon",
+        games: [
+          { title: "Moon Rescue", image: "images/moon_rescue.jpg", playUrl: "#", evalUrl: "#" },
+          { title: "Arcade Invasion", image: "images/arcade_invasion.jpg", playUrl: "#", evalUrl: "#" },
+          { title: "Cinema Candy Clash", image: "images/cinema_candy.jpg", playUrl: "#", evalUrl: "#" },
+          { title: "CandyMaze Rescue", image: "images/candymaze_rescue.jpg", playUrl: "#", evalUrl: "#" }
+        ]
+      }
+    ];
+
+    // Render Function
+    function renderArcade() {
+      const container = document.getElementById("arcade-container");
+
+      arcadeData.forEach((section, index) => {
+        const sectionDiv = document.createElement("div");
+        sectionDiv.className = "teacher-section";
+        
+        // Open the first teacher section by default
+        if (index === 0) sectionDiv.classList.add("open");
+
+        // Teacher Header Toggle
+        const headerBtn = document.createElement("button");
+        headerBtn.className = "teacher-header";
+        headerBtn.textContent = `Classroom: ${section.teacher}`;
+        headerBtn.addEventListener("click", () => {
+          sectionDiv.classList.toggle("open");
+        });
+
+        // Cabinet Grid
+        const gridDiv = document.createElement("div");
+        gridDiv.className = "cabinet-grid";
+
+        section.games.forEach(game => {
+          const cabinet = document.createElement("div");
+          cabinet.className = "arcade-cabinet";
+
+          cabinet.innerHTML = `
+            <div class="marquee">
+              <h3>${game.title}</h3>
+            </div>
+            <div class="screen-frame">
+              <img src="${game.image}" alt="${game.title} Screenshot" onerror="this.src='https://via.placeholder.com/280x180?text=${encodeURIComponent(game.title)}'">
+            </div>
+            <div class="control-deck">
+              <div class="joystick"></div>
+              <div class="buttons-group">
+                <div class="deck-button"></div>
+                <div class="deck-button"></div>
+                <div class="deck-button"></div>
+              </div>
+            </div>
+            <div class="coin-door">
+              <a href="${game.playUrl}" target="_blank" class="coin-btn play-btn">▶ PLAY</a>
+              <a href="${game.evalUrl}" target="_blank" class="coin-btn eval-btn">📝 EVALUATE</a>
+            </div>
+          `;
+          gridDiv.appendChild(cabinet);
+        });
+
+        sectionDiv.appendChild(headerBtn);
+        sectionDiv.appendChild(gridDiv);
+        container.appendChild(sectionDiv);
+      });
+    }
+
+    renderArcade();
+  </script>
+</body>
+</html>
