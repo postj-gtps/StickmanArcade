@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stickman Engine - Widebody Aircraft Gauntlet</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      font-family: 'Comic Sans MS', 'Chalkboard SE', 'Courier New', sans-serif;
+    }
+
+    body {
+      background-color: #0c0a09;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      overflow: hidden;
+      padding: 10px;
+    }
+
+    /* Top Header Bar */
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 1150px;
+      margin-bottom: 6px;
+      padding: 8px 16px;
+      background: #1e1b4b;
+      border: 3px solid #38bdf8;
+      border-radius: 14px;
+      box-shadow: 0 4px 20px rgba(56, 189, 248, 0.4);
+    }
+
+    h1 {
+      font-size: 21px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: 900;
+      color: #fde047;
+      text-shadow: 2px 2px 0px #000000, 0 0 10px rgba(253, 224, 71, 0.6);
+    }
+
+    .btn-reset {
+      background: #ef4444;
+      color: #ffffff;
+      border: 2px solid #ffffff;
+      padding: 6px 18px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-radius: 20px;
+      box-shadow: 0 4px 0px #991b1b;
+      transition: all 0.1s ease-in-out;
+    }
+
+    .btn-reset:hover {
+      background: #f87171;
+      transform: translateY(-2px);
+    }
+
+    .btn-reset:active {
+      transform: translateY(2px);
+      box-shadow: none;
+    }
+
+    /* Game Info Bar */
+    #status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 1150px;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #38bdf8;
+      font-weight: bold;
+      letter-spacing: 1px;
+      background: #0f172a;
+      padding: 8px 16px;
+      border-radius: 12px;
+      border: 3px solid #f43f5e;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    }
+
+    #hearts-container {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      font-size: 18px;
+    }
+
+    #difficulty-badge {
+      padding: 3px 10px;
+      border-radius: 8px;
+      font-weight: 900;
+      text-transform: uppercase;
+      border: 2px solid #ffffff;
+    }
+
+    .diff-easy { background: #16a34a; color: #ffffff; }
+    .diff-normal { background: #0284c7; color: #ffffff; }
+    .diff-hardcore { background: #dc2626; color: #ffffff; }
+
+    #extinguisher-status {
+      color: #a5f3fc;
+      background: #0284c7;
+      padding: 4px 10px;
+      border-radius: 8px;
+      border: 2px solid #ffffff;
+      text-shadow: 1px 1px 0 #000;
+    }
+
+    /* Main Canvas Container */
+    #canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 1150px;
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+    }
+
+    canvas {
+      background-color: #000000;
+      border: 4px solid #38bdf8;
+      border-radius: 16px;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* UI Overlay Screens */
+    #difficulty-overlay, #trap-prompt, #freeze-prompt, #gameover-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 20px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-align: center;
+      z-index: 30;
+    }
+
+    #difficulty-overlay {
+      background: rgba(15, 23, 42, 0.98);
+      color: #ffffff;
+      border: 4px solid #38bdf8;
+      padding: 30px 40px;
+      box-shadow: 0 0 50px rgba(56, 189, 248, 0.8);
+      width: 90%;
+      max-width: 520px;
+    }
+
+    #difficulty-overlay h2 {
+      font-size: 26px;
+      color: #fde047;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 0 #000;
+    }
+
+    #difficulty-overlay p {
+      font-size: 14px;
+      color: #cbd5e1;
+      margin-bottom: 20px;
+    }
+
+    .diff-btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .diff-option-btn {
+      padding: 12px 20px;
+      font-size: 16px;
+      font-weight: 900;
+      color: #ffffff;
+      border: 3px solid #ffffff;
+      border-radius: 14px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.15s ease-in-out;
+      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.5);
+    }
+
+    .diff-option-btn:hover {
+      transform: scale(1.03);
+    }
+
+    .btn-easy-opt { background: #16a34a; box-shadow: 0 4px 0 #14532d; }
+    .btn-normal-opt { background: #0284c7; box-shadow: 0 4px 0 #075985; }
+    .btn-hardcore-opt { background: #dc2626; box-shadow: 0 4px 0 #7f1d1d; }
+
+    #trap-prompt, #freeze-prompt, #gameover-overlay {
+      padding: 20px 36px;
+      font-size: 22px;
+      display: none;
+      pointer-events: none;
+    }
+
+    #trap-prompt {
+      background: rgba(225, 29, 72, 0.95);
+      color: #ffffff;
+      border: 4px solid #fde047;
+      box-shadow: 0 0 35px rgba(225, 29, 72, 0.9);
+      animation: pulse 0.35s infinite alternate;
+      text-shadow: 2px 2px 0 #000;
+    }
+
+    #freeze-prompt {
+      background: rgba(14, 165, 233, 0.95);
+      color: #ffffff;
+      border: 4px solid #ffffff;
+      box-shadow: 0 0 35px rgba(14, 165, 233, 0.9);
+      text-shadow: 2px 2px 0 #000;
+    }
+
+    #gameover-overlay {
+      background: rgba(15, 23, 42, 0.96);
+      color: #f43f5e;
+      border: 4px solid #f43f5e;
+      box-shadow: 0 0 40px rgba(244, 63, 94, 0.8);
+      pointer-events: auto;
+      text-shadow: 2px 2px 0 #000;
+    }
+
+    #gameover-overlay button {
+      margin-top: 15px;
+      padding: 10px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      background: #22c55e;
+      color: white;
+      border: 2px solid #ffffff;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #15803d;
+    }
+
+    #gameover-overlay button:hover {
+      background: #4ade80;
+      transform: translateY(-2px);
+    }
+
+    @keyframes pulse {
+      from { transform: translate(-50%, -50%) scale(1); }
+      to { transform: translate(-50%, -50%) scale(1.06); }
+    }
+
+    .instructions {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #fde047;
+      font-weight: bold;
+      text-align: center;
+      text-shadow: 1px 1px 0 #000;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Section -->
+  <div id="header">
+    <h1>✈️ Stickman Aircraft Gauntlet ✈️</h1>
+    <button class="btn-reset" onclick="showDifficultyScreen()">Reset / Mode</button>
+  </div>
+
+  <!-- Game Status Bar -->
+  <div id="status-bar">
+    <div>LEVEL: <span id="level-display" style="color:#fde047;">1</span></div>
+    <div>MODE: <span id="difficulty-badge" class="diff-normal">NORMAL</span></div>
+    <div>HP: <span id="hearts-container">❤️❤️❤️❤️❤️❤️❤️❤️❤️❤️</span></div>
+    <div id="extinguisher-status">🧯 EXTINGUISHER: [E] or [F]</div>
+    <div id="zone-display">ZONE: CARGO BAY</div>
+  </div>
+
+  <!-- Canvas Container -->
+  <div id="canvas-wrapper">
+    <canvas id="simCanvas"></canvas>
+
+    <!-- Difficulty Select Modal -->
+    <div id="difficulty-overlay">
+      <h2>SELECT DIFFICULTY</h2>
+      <p>Choose your challenge level to begin flight!</p>
+      <div class="diff-btn-group">
+        <button class="diff-option-btn btn-easy-opt" onclick="selectDifficulty('easy')">
+          <span>🟢 EASY</span>
+          <span style="font-size:12px;">15 Hearts | 1/2 Enemies</span>
+        </button>
+        <button class="diff-option-btn btn-normal-opt" onclick="selectDifficulty('normal')">
+          <span>🔵 NORMAL</span>
+          <span style="font-size:12px;">10 Hearts | Standard Enemies</span>
+        </button>
+        <button class="diff-option-btn btn-hardcore-opt" onclick="selectDifficulty('hardcore')">
+          <span>🔴 HARDCORE</span>
+          <span style="font-size:12px;">5 Hearts | Double Enemies</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Trap & State Prompts -->
+    <div id="trap-prompt">🚪 TRAPPED IN LINEN CABINET! 🚪<br>SPAM [SPACEBAR] TO BREAK FREE! (<span id="escape-count">6</span>)</div>
+    <div id="freeze-prompt">🥤 FROZEN IN STICKY SODA! 🥤<br>STUCK FOR <span id="freeze-time">3.0</span>s</div>
+    <div id="gameover-overlay">
+      💥 GAUNTLET OVER! 💥<br>
+      <span style="font-size:16px; color:#ffffff;">You made it to Level <span id="final-level">1</span>!</span><br>
+      <button onclick="showDifficultyScreen()">Try Again!</button>
+    </div>
+  </div>
+
+  <div class="instructions">
+    [WASD] Move (Arrows Disabled) | [E] or [F] Extinguisher (Freeze Monsters & Destroy Projectiles!)
+  </div>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // UI ELEMENTS
+    const zoneDisplay = document.getElementById('zone-display');
+    const levelDisplay = document.getElementById('level-display');
+    const heartsContainer = document.getElementById('hearts-container');
+    const difficultyBadge = document.getElementById('difficulty-badge');
+    const difficultyOverlay = document.getElementById('difficulty-overlay');
+    const trapPrompt = document.getElementById('trap-prompt');
+    const escapeCountDisplay = document.getElementById('escape-count');
+    const freezePrompt = document.getElementById('freeze-prompt');
+    const freezeTimeDisplay = document.getElementById('freeze-time');
+    const gameoverOverlay = document.getElementById('gameover-overlay');
+    const finalLevelDisplay = document.getElementById('final-level');
+
+    // AUDIO SYNTHESIZER (Web Audio API)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSound(type) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      const now = audioCtx.currentTime;
+
+      if (type === 'hit') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(160, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.2);
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      } else if (type === 'soda') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.linearRampToValueAtTime(80, now + 0.3);
+        gain.gain.setValueAtTime(0.6, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      } else if (type === 'trap') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.setValueAtTime(240, now + 0.1);
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      } else if (type === 'escape') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.15);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } else if (type === 'freeze') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.25);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      } else if (type === 'spray') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.linearRampToValueAtTime(200, now + 0.1);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        osc.start(now);
+        osc.stop(now + 0.1);
+      } else if (type === 'destroy_proj') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(300, now + 0.15);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      }
+    }
+
+    // WORLD CONSTANTS
+    const WORLD = {
+      width: 4000,
+      height: 600,
+      topY: 75,
+      bottomY: 525
+    };
+
+    // KEYBOARD INPUT STATE (WASD EXCLUSIVE)
+    const keys = {};
+
+    // DIFFICULTY CONFIGURATIONS
+    const DIFFICULTY_SETTINGS = {
+      easy: { name: 'EASY', hearts: 15, maxHealth: 30, spawnMult: 0.5, cssClass: 'diff-easy' },
+      normal: { name: 'NORMAL', hearts: 10, maxHealth: 20, spawnMult: 1.0, cssClass: 'diff-normal' },
+      hardcore: { name: 'HARDCORE', hearts: 5, maxHealth: 10, spawnMult: 2.0, cssClass: 'diff-hardcore' }
+    };
+
+    let selectedDifficulty = 'normal';
+
+    // STICKMAN PLAYER STATE
+    const player = {
+      x: 320,
+      y: 300,
+      radius: 12,
+      speed: 2.25,
+      facing: 1,
+      walkFrame: 0,
+      hasWon: false,
+      maxHealth: 20,
+      health: 20,
+      invulnerableTimer: 0,
+      freezeTimer: 0,
+      isTrapped: false,
+      trapDamageTick: 0,
+      escapePressesNeeded: 6,
+      trappedCabinetX: 0,
+      trappedCabinetY: 0,
+      extinguisherActive: false,
+      sprayParticles: []
+    };
+
+    let currentLevel = 1;
+    let isGameOver = false;
+
+    // AIRPLANE LEVEL COLOR PALETTES
+    const AIRPLANE_PALETTES = [
+      {
+        sky: ['#38bdf8', '#0284c7', '#0f172a'],
+        hull: '#f8fafc',
+        wing: '#e2e8f0',
+        wingBorder: '#334155',
+        sections: ['#1e293b', '#0f172a', '#0b1329', '#1e1b4b', '#022c22']
+      },
+      {
+        sky: ['#f97316', '#c2410c', '#450a0a'],
+        hull: '#fef08a',
+        wing: '#fca5a5',
+        wingBorder: '#7f1d1d',
+        sections: ['#450a0a', '#3b0764', '#581c87', '#701a75', '#831843']
+      },
+      {
+        sky: ['#34d399', '#059669', '#064e3b'],
+        hull: '#a7f3d0',
+        wing: '#6ee7b7',
+        wingBorder: '#065f46',
+        sections: ['#064e3b', '#022c22', '#065f46', '#047857', '#14532d']
+      },
+      {
+        sky: ['#f0abfc', '#c084fc', '#3b0764'],
+        hull: '#e9d5ff',
+        wing: '#d8b4fe',
+        wingBorder: '#581c87',
+        sections: ['#3b0764', '#2e1065', '#4c1d95', '#581c87', '#701a75']
+      },
+      {
+        sky: ['#fde047', '#d97706', '#78350f'],
+        hull: '#fef08a',
+        wing: '#fde047',
+        wingBorder: '#92400e',
+        sections: ['#451a03', '#78350f', '#92400e', '#b45309', '#713f12']
+      }
+    ];
+
+    function getLevelPalette(lvl) {
+      if (lvl <= AIRPLANE_PALETTES.length) {
+        return AIRPLANE_PALETTES[lvl - 1];
+      } else {
+        const hue = ((lvl - 1) * 67) % 360;
+        return {
+          sky: [`hsl(${hue}, 85%, 65%)`, `hsl(${hue}, 80%, 40%)`, `hsl(${hue}, 90%, 12%)`],
+          hull: `hsl(${hue}, 90%, 90%)`,
+          wing: `hsl(${hue}, 70%, 80%)`,
+          wingBorder: `hsl(${hue}, 80%, 25%)`,
+          sections: [
+            `hsl(${(hue + 20) % 360}, 60%, 18%)`,
+            `hsl(${(hue + 40) % 360}, 70%, 14%)`,
+            `hsl(${(hue + 60) % 360}, 70%, 12%)`,
+            `hsl(${(hue + 80) % 360}, 65%, 16%)`,
+            `hsl(${(hue + 100) % 360}, 75%, 15%)`
+          ]
+        };
+      }
+    }
+
+    // PROCEDURAL PASSENGERS
+    const CLOTHING_BOTTOMS = ['#1e293b', '#2563eb', '#15803d', '#b45309', '#be123c'];
+    const CLOTHING_TOPS    = ['#f8fafc', '#ef4444', '#06b6d4', '#eab308', '#8b5cf6'];
+    const HAIR_STYLES      = ['none', 'short', 'long', 'spiky', 'afro'];
+    const HAT_STYLES       = ['none', 'cap', 'beanie', 'fedora', 'visor'];
+    const HAIR_COLORS      = ['#451a03', '#f59e0b', '#18181b', '#d97706', '#92400e'];
+
+    // MAP & GAME OBJECTS
+    let obstacles = [];
+    let seats = [];
+    let passengers = [];
+    let clouds = [];
+    let enemies = [];
+    let enemyProjectiles = [];
+
+    // SECTIONS MAP
+    const sections = [
+      { name: "Cargo Bay", startX: 70, endX: 750 },
+      { name: "Coach Class", startX: 750, endX: 2000 },
+      { name: "Business Class", startX: 2000, endX: 2900 },
+      { name: "First Class", startX: 2900, endX: 3550 },
+      { name: "Cockpit", startX: 3550, endX: 3950 }
+    ];
+
+    function getRandomItem(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function updateHeartsUI() {
+      let fullHearts = Math.floor(player.health / 2);
+      let halfHeart = player.health % 2 === 1;
+      let heartStr = '';
+      for (let i = 0; i < fullHearts; i++) heartStr += '❤️';
+      if (halfHeart) heartStr += '💔';
+      heartsContainer.innerText = heartStr || '💀';
+    }
+
+    function applyDamage(halfHearts, ignoreIFrame = false) {
+      if ((player.invulnerableTimer > 0 && !ignoreIFrame) || isGameOver) return;
+
+      player.health -= halfHearts;
+      if (!ignoreIFrame) {
+        player.invulnerableTimer = 0.8;
+      }
+      updateHeartsUI();
+      playSound('hit');
+
+      if (player.health <= 0) {
+        player.health = 0;
+        updateHeartsUI();
+        isGameOver = true;
+        finalLevelDisplay.innerText = currentLevel;
+        gameoverOverlay.style.display = 'block';
+      }
+    }
+
+    function initClouds() {
+      clouds = [];
+      for (let i = 0; i < 50; i++) {
+        clouds.push({
+          x: Math.random() * WORLD.width,
+          y: Math.random() * WORLD.height,
+          radius: 20 + Math.random() * 35,
+          speed: 1.2 + Math.random() * 2.8,
+          opacity: 0.2 + Math.random() * 0.4
+        });
+      }
+    }
+
+    function updateClouds() {
+      clouds.forEach(cloud => {
+        cloud.x -= cloud.speed;
+        if (cloud.x < -100) {
+          cloud.x = WORLD.width + 100;
+          cloud.y = Math.random() * WORLD.height;
+        }
+      });
+    }
+
+    // BUILD AIRCRAFT LAYOUT & DIFFICULTY-SCALED ENEMIES
+    function initAircraftLayout() {
+      obstacles = [];
+      seats = [];
+      passengers = [];
+      enemies = [];
+      enemyProjectiles = [];
+
+      // Bulkheads
+      const bulkheads = [750, 2000, 2900, 3550];
+      bulkheads.forEach((bx, idx) => {
+        if (idx === 3) {
+          obstacles.push({ x: bx, y: WORLD.topY, w: 15, h: 185, type: 'wall' });
+          obstacles.push({ x: bx, y: 315, w: 15, h: WORLD.bottomY - 315, type: 'wall' });
+        } else {
+          obstacles.push({ x: bx, y: WORLD.topY, w: 15, h: 105, type: 'wall' });
+          obstacles.push({ x: bx, y: 220, w: 15, h: 160, type: 'wall' });
+          obstacles.push({ x: bx, y: 425, w: 15, h: WORLD.bottomY - 425, type: 'wall' });
+        }
+      });
+
+      // Crates
+      obstacles.push({ x: 290, y: 120, w: 110, h: 70, type: 'crate', label: 'CARGO' });
+      obstacles.push({ x: 290, y: 410, w: 110, h: 70, type: 'crate', label: 'CARGO' });
+      obstacles.push({ x: 440, y: 240, w: 130, h: 120, type: 'crate', label: 'PALLET' });
+
+      // Coach Seating
+      for (let x = 810; x < 1950; x += 42) {
+        if (x >= 1340 && x <= 1440) continue;
+        seats.push({ x: x, y: 90, w: 28, h: 28 });
+        seats.push({ x: x, y: 125, w: 28, h: 28 });
+        seats.push({ x: x, y: 235, w: 28, h: 26 });
+        seats.push({ x: x, y: 268, w: 28, h: 26 });
+        seats.push({ x: x, y: 308, w: 28, h: 26 });
+        seats.push({ x: x, y: 341, w: 28, h: 26 });
+        seats.push({ x: x, y: 450, w: 28, h: 28 });
+        seats.push({ x: x, y: 485, w: 28, h: 28 });
+      }
+
+      // Restrooms
+      obstacles.push({ x: 1350, y: WORLD.topY, w: 80, h: 105, type: 'restroom', label: 'LAV' });
+      obstacles.push({ x: 1350, y: 425, w: 80, h: WORLD.bottomY - 425, type: 'restroom', label: 'LAV' });
+
+      // Business Class
+      for (let x = 2060; x < 2850; x += 75) {
+        seats.push({ x: x, y: 98, w: 38, h: 40 });
+        seats.push({ x: x, y: 248, w: 38, h: 38 });
+        seats.push({ x: x, y: 312, w: 38, h: 38 });
+        seats.push({ x: x, y: 462, w: 38, h: 40 });
+      }
+
+      // First Class
+      for (let x = 2960; x < 3500; x += 110) {
+        seats.push({ x: x, y: 105, w: 50, h: 55 });
+        seats.push({ x: x, y: 270, w: 50, h: 60 });
+        seats.push({ x: x, y: 440, w: 50, h: 55 });
+      }
+
+      seats.forEach(s => obstacles.push({ x: s.x, y: s.y, w: s.w, h: s.h, type: 'seat' }));
+
+      // Cockpit Controls
+      obstacles.push({ x: 3820, y: 200, w: 45, h: 40, type: 'pilot-seat' });
+      obstacles.push({ x: 3820, y: 360, w: 45, h: 40, type: 'pilot-seat' });
+      obstacles.push({ x: 3890, y: 140, w: 40, h: 320, type: 'controls', label: 'PANEL' });
+
+      // Passengers
+      seats.forEach(s => {
+        if (Math.random() < 0.85) {
+          passengers.push({
+            x: s.x + s.w / 2,
+            y: s.y + s.h / 2,
+            bottomColor: getRandomItem(CLOTHING_BOTTOMS),
+            topColor: getRandomItem(CLOTHING_TOPS),
+            hairStyle: getRandomItem(HAIR_STYLES),
+            hatStyle: getRandomItem(HAT_STYLES),
+            hairColor: getRandomItem(HAIR_COLORS)
+          });
+        }
+      });
+
+      // DIFFICULTY SPAWN MULTIPLIERS
+      const setting = DIFFICULTY_SETTINGS[selectedDifficulty];
+      const spawnMult = setting.spawnMult;
+      const speedMult = 1.02;
+
+      // 1. EVIL SUITCASES
+      const numSuitcases = Math.max(1, Math.round(currentLevel * 2 * spawnMult));
+      for (let i = 0; i < numSuitcases; i++) {
+        enemies.push({
+          type: 'suitcase',
+          x: 850 + Math.random() * 2600,
+          y: 180 + Math.random() * 240,
+          speed: (0.6 + Math.random() * 0.4) * speedMult,
+          shootTimer: 1.5 + Math.random() * 2.0,
+          frozenTimer: 0,
+          w: 24,
+          h: 22
+        });
+      }
+
+      // 2. EVIL FOOD CARTS
+      const numFoodCarts = Math.max(1, Math.round(currentLevel * spawnMult));
+      for (let i = 0; i < numFoodCarts; i++) {
+        const spawnX = 1100 + (i * (2200 / Math.max(1, numFoodCarts))) + (Math.random() * 100 - 50);
+        enemies.push({
+          type: 'foodcart',
+          x: Math.min(3400, Math.max(850, spawnX)),
+          y: 180 + (i % 2) * 160,
+          vy: (i % 2 === 0 ? 1 : -1) * (0.55 + Math.random() * 0.2) * speedMult,
+          shootTimer: 2.0 + Math.random() * 3.0,
+          frozenTimer: 0,
+          w: 32,
+          h: 40
+        });
+      }
+
+      // 3. EVIL LINEN CABINETS
+      const numCabinets = Math.max(1, Math.round(currentLevel * spawnMult));
+      const availableBulkheads = [750, 2000, 2900, 3550];
+      for (let i = 0; i < numCabinets; i++) {
+        const bx = availableBulkheads[i % availableBulkheads.length];
+        enemies.push({
+          type: 'linencabinet',
+          x: bx - 18,
+          y: (i % 2 === 0) ? 140 : 400,
+          w: 36,
+          h: 48,
+          shootTimer: 1.5 + Math.random() * 2.0,
+          frozenTimer: 0
+        });
+      }
+
+      // 4. EVIL NECK PILLOWS
+      const numNeckPillows = Math.max(1, Math.round((3 + currentLevel) * spawnMult));
+      for (let i = 0; i < numNeckPillows; i++) {
+        enemies.push({
+          type: 'neckpillow',
+          x: 900 + Math.random() * 2500,
+          y: 180 + Math.random() * 220,
+          vx: (Math.random() - 0.5) * 1.0 * speedMult,
+          vy: (Math.random() - 0.5) * 1.0 * speedMult,
+          radius: 12,
+          frozenTimer: 0
+        });
+      }
+    }
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvas-wrapper');
+      canvas.width = wrapper.clientWidth;
+      canvas.height = wrapper.clientHeight;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // CONTROLS HANDLERS (WASD EXCLUSIVE - ARROWS STRICTLY BLOCKED)
+    window.addEventListener('keydown', (e) => {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+        e.preventDefault();
+        return;
+      }
+
+      if (['Enter', 'NumpadEnter'].includes(e.code)) {
+        e.preventDefault();
+        return;
+      }
+
+      if (e.code === 'Space') {
+        if (player.isTrapped) {
+          player.escapePressesNeeded--;
+          escapeCountDisplay.innerText = player.escapePressesNeeded;
+          playSound('escape');
+          if (player.escapePressesNeeded <= 0) {
+            player.isTrapped = false;
+            player.trapDamageTick = 0;
+            trapPrompt.style.display = 'none';
+            player.x = player.trappedCabinetX + 45;
+          }
+        }
+      }
+
+      if (['KeyE', 'KeyF', 'Keye', 'Keyf'].includes(e.code)) {
+        if (!player.isTrapped && player.freezeTimer <= 0) {
+          player.extinguisherActive = true;
+        }
+      }
+
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
+        e.preventDefault();
+        keys[e.code] = true;
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (['KeyE', 'KeyF', 'Keye', 'Keyf'].includes(e.code)) {
+        player.extinguisherActive = false;
+      }
+
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
+        keys[e.code] = false;
+      }
+    });
+
+    function showDifficultyScreen() {
+      difficultyOverlay.style.display = 'block';
+      gameoverOverlay.style.display = 'none';
+      trapPrompt.style.display = 'none';
+      freezePrompt.style.display = 'none';
+    }
+
+    function selectDifficulty(mode) {
+      selectedDifficulty = mode;
+      const setting = DIFFICULTY_SETTINGS[mode];
+
+      difficultyBadge.innerText = setting.name;
+      difficultyBadge.className = setting.cssClass;
+
+      player.maxHealth = setting.maxHealth;
+      player.health = setting.maxHealth;
+
+      difficultyOverlay.style.display = 'none';
+      resetSimulation();
+    }
+
+    function resetSimulation() {
+      currentLevel = 1;
+      const setting = DIFFICULTY_SETTINGS[selectedDifficulty];
+      player.maxHealth = setting.maxHealth;
+      player.health = setting.maxHealth;
+
+      player.x = 320;
+      player.y = 300;
+      player.facing = 1;
+      player.walkFrame = 0;
+      player.hasWon = false;
+      player.invulnerableTimer = 0;
+      player.freezeTimer = 0;
+      player.isTrapped = false;
+      player.trapDamageTick = 0;
+      player.extinguisherActive = false;
+      player.sprayParticles = [];
+      isGameOver = false;
+
+      gameoverOverlay.style.display = 'none';
+      trapPrompt.style.display = 'none';
+      freezePrompt.style.display = 'none';
+
+      levelDisplay.innerText = currentLevel;
+      updateHeartsUI();
+      initClouds();
+      initAircraftLayout();
+    }
+
+    // ACCURATE DIAGONAL TAIL WALL & FUSELAGE COLLISION
+    function checkCollision(px, py, radius, checkSeats = true) {
+      // 1. Nose Tip Cap (X > 3830) and Tail Apex Cap (X < 70)
+      if (px - radius < 70 || px + radius > 3830) return true;
+
+      // 2. Angled Tail Cone Hull Collision (X between 70 and 280)
+      if (px < 280) {
+        let minAllowedY = 300 - (1.0714 * (px - 70)); // Top diagonal wall
+        let maxAllowedY = 300 + (1.0714 * (px - 70)); // Bottom diagonal wall
+
+        if (py - radius < minAllowedY || py + radius > maxAllowedY) {
+          return true; // Blocked by angled tail wall!
+        }
+      } else {
+        // 3. Standard Rectangular Fuselage Hull (X >= 280)
+        if (py - radius < WORLD.topY + 2 || py + radius > WORLD.bottomY - 2) {
+          return true;
+        }
+      }
+
+      // 4. Interior Object Collisions (walls, bulkheads, seats, crates)
+      for (let obs of obstacles) {
+        if (!checkSeats && obs.type === 'seat') continue;
+
+        let closestX = Math.max(obs.x, Math.min(px, obs.x + obs.w));
+        let closestY = Math.max(obs.y, Math.min(py, obs.y + obs.h));
+
+        let distanceX = px - closestX;
+        let distanceY = py - closestY;
+        let distanceSquared = (distanceX * distanceX) + (distanceY * distanceY);
+
+        if (distanceSquared < (radius * radius)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // PHYSICS & GAME LOOP UPDATES
+    function updatePhysics(dt) {
+      updateClouds();
+      if (player.hasWon || isGameOver || difficultyOverlay.style.display === 'block') return;
+
+      if (player.invulnerableTimer > 0) player.invulnerableTimer -= dt;
+
+      // LINEN CABINET TRAP DoT
+      if (player.isTrapped) {
+        trapPrompt.style.display = 'block';
+        player.trapDamageTick = (player.trapDamageTick || 0) + dt;
+        if (player.trapDamageTick >= 0.5) {
+          applyDamage(1, true);
+          player.trapDamageTick -= 0.5;
+        }
+      } else {
+        trapPrompt.style.display = 'none';
+        player.trapDamageTick = 0;
+      }
+
+      // SODA CAN FREEZE TIMER
+      if (player.freezeTimer > 0) {
+        player.freezeTimer -= dt;
+        freezePrompt.style.display = 'block';
+        freezeTimeDisplay.innerText = Math.max(0, player.freezeTimer).toFixed(1);
+      } else {
+        freezePrompt.style.display = 'none';
+      }
+
+      // PLAYER WASD MOVEMENT
+      if (!player.isTrapped && player.freezeTimer <= 0) {
+        let dx = 0;
+        let dy = 0;
+
+        if (keys['KeyW'] || keys['Keyw']) dy -= 1;
+        if (keys['KeyS'] || keys['Keys']) dy += 1;
+        if (keys['KeyA'] || keys['Keya']) { dx -= 1; player.facing = -1; }
+        if (keys['KeyD'] || keys['Keyd']) { dx += 1; player.facing = 1; }
+
+        if (dx !== 0 && dy !== 0) {
+          dx *= 0.7071;
+          dy *= 0.7071;
+        }
+
+        let nextX = player.x + dx * player.speed;
+        if (!checkCollision(nextX, player.y, player.radius)) {
+          player.x = nextX;
+        }
+
+        let nextY = player.y + dy * player.speed;
+        if (!checkCollision(player.x, nextY, player.radius)) {
+          player.y = nextY;
+        }
+
+        if (dx !== 0 || dy !== 0) {
+          player.walkFrame += 0.125;
+        } else {
+          player.walkFrame = 0;
+        }
+      }
+
+      // FIRE EXTINGUISHER SPRAY MECHANIC
+      if (player.extinguisherActive && !player.isTrapped && player.freezeTimer <= 0) {
+        if (Math.random() < 0.3) playSound('spray');
+
+        for (let i = 0; i < 4; i++) {
+          const angle = (player.facing === 1 ? 0 : Math.PI) + (Math.random() - 0.5) * 0.6;
+          const spd = 3.5 + Math.random() * 3.5;
+          player.sprayParticles.push({
+            x: player.x + player.facing * 12,
+            y: player.y - 4,
+            vx: Math.cos(angle) * spd,
+            vy: Math.sin(angle) * spd,
+            radius: 4 + Math.random() * 6,
+            life: 0.35
+          });
+        }
+      }
+
+      // SPRAY COLLISION WITH ENEMIES & INCOMING PROJECTILES
+      for (let i = player.sprayParticles.length - 1; i >= 0; i--) {
+        let sp = player.sprayParticles[i];
+        sp.x += sp.vx;
+        sp.y += sp.vy;
+        sp.life -= dt;
+
+        // 1. Freeze Monsters (10 seconds)
+        enemies.forEach(e => {
+          const dist = Math.hypot(sp.x - e.x, sp.y - e.y);
+          if (dist < 32) {
+            if (e.frozenTimer <= 0) playSound('freeze');
+            e.frozenTimer = 10.0;
+          }
+        });
+
+        // 2. Freeze/Extinguish/Destroy Incoming Projectiles
+        for (let j = enemyProjectiles.length - 1; j >= 0; j--) {
+          let proj = enemyProjectiles[j];
+          const distToProj = Math.hypot(sp.x - proj.x, sp.y - proj.y);
+          if (distToProj < sp.radius + proj.radius + 6) {
+            playSound('destroy_proj');
+            enemyProjectiles.splice(j, 1);
+          }
+        }
+
+        if (sp.life <= 0) {
+          player.sprayParticles.splice(i, 1);
+        }
+      }
+
+      const currentZone = sections.find(s => player.x >= s.startX && player.x <= s.endX);
+      if (currentZone) {
+        zoneDisplay.innerText = `ZONE: ${currentZone.name.toUpperCase()}`;
+      }
+
+      // ADVANCE LEVEL
+      if (player.x > 3800) {
+        currentLevel++;
+        levelDisplay.innerText = currentLevel;
+        player.x = 320;
+        player.y = 300;
+        updateHeartsUI();
+        initAircraftLayout();
+      }
+
+      // ENEMY UPDATES
+      enemies.forEach(e => {
+        if (e.frozenTimer > 0) {
+          e.frozenTimer -= dt;
+          return;
+        }
+
+        if (e.type === 'suitcase') {
+          let moveX = 0;
+          let moveY = 0;
+          if (player.x > e.x) moveX += e.speed * 0.6;
+          if (player.x < e.x) moveX -= e.speed * 0.6;
+          if (player.y > e.y) moveY += e.speed * 0.4;
+          if (player.y < e.y) moveY -= e.speed * 0.4;
+
+          if (!checkCollision(e.x + moveX, e.y, 12, true)) e.x += moveX;
+          if (!checkCollision(e.x, e.y + moveY, 12, true)) e.y += moveY;
+
+          e.shootTimer -= dt;
+          if (e.shootTimer <= 0) {
+            e.shootTimer = 2.5 + Math.random() * 1.5;
+            const angle = Math.atan2(player.y - e.y, player.x - e.x);
+            enemyProjectiles.push({
+              type: 'pretzel',
+              x: e.x,
+              y: e.y,
+              vx: Math.cos(angle) * 2.3,
+              vy: Math.sin(angle) * 2.3,
+              radius: 6,
+              life: 4.0
+            });
+          }
+        } else if (e.type === 'foodcart') {
+          if (!checkCollision(e.x, e.y + e.vy, 16, true)) {
+            e.y += e.vy;
+          } else {
+            e.vy *= -1;
+          }
+          if (e.y < 160 || e.y > 420) e.vy *= -1;
+
+          e.shootTimer -= dt;
+          if (e.shootTimer <= 0) {
+            e.shootTimer = 4.0 + Math.random() * 2.0;
+            const angle = Math.atan2(player.y - e.y, player.x - e.x);
+            enemyProjectiles.push({
+              type: 'soda',
+              x: e.x,
+              y: e.y,
+              vx: Math.cos(angle) * 2.55,
+              vy: Math.sin(angle) * 2.55,
+              radius: 8,
+              life: 3.5
+            });
+          }
+        } else if (e.type === 'linencabinet') {
+          e.shootTimer -= dt;
+          if (e.shootTimer <= 0) {
+            e.shootTimer = 2.5 + Math.random() * 1.5;
+            const angle = Math.atan2(player.y - e.y, player.x - e.x);
+            enemyProjectiles.push({
+              type: 'pillow',
+              x: e.x,
+              y: e.y,
+              vx: Math.cos(angle) * 2.04,
+              vy: Math.sin(angle) * 2.04,
+              radius: 10,
+              cabinetX: e.x,
+              cabinetY: e.y,
+              life: 4.0
+            });
+          }
+        } else if (e.type === 'neckpillow') {
+          e.x += e.vx;
+          e.y += e.vy;
+          if (e.x < 750 || e.x > 3550) e.vx *= -1;
+          if (e.y < 120 || e.y > 480) e.vy *= -1;
+        }
+
+        const enemyRadius = e.radius || 14;
+        const distToPlayer = Math.hypot(player.x - e.x, player.y - e.y);
+        if (distToPlayer < player.radius + enemyRadius) {
+          applyDamage(1);
+        }
+      });
+
+      // PROJECTILE MOVEMENTS & DAMAGE
+      for (let i = enemyProjectiles.length - 1; i >= 0; i--) {
+        let p = enemyProjectiles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= dt;
+
+        if (checkCollision(p.x, p.y, p.radius, false)) {
+          enemyProjectiles.splice(i, 1);
+          continue;
+        }
+
+        const dist = Math.hypot(player.x - p.x, player.y - p.y);
+        if (dist < player.radius + p.radius) {
+          if (p.type === 'pretzel') {
+            applyDamage(1);
+          } else if (p.type === 'soda') {
+            applyDamage(1);
+            player.freezeTimer = 3.0;
+            playSound('soda');
+          } else if (p.type === 'pillow') {
+            player.isTrapped = true;
+            player.trapDamageTick = 0;
+            player.escapePressesNeeded = 6;
+            player.trappedCabinetX = p.cabinetX;
+            player.trappedCabinetY = p.cabinetY;
+            player.x = p.cabinetX;
+            player.y = p.cabinetY;
+            playSound('trap');
+          }
+          enemyProjectiles.splice(i, 1);
+          continue;
+        }
+
+        if (p.life <= 0) {
+          enemyProjectiles.splice(i, 1);
+        }
+      }
+    }
+
+    // RENDERING FUNCTIONS
+    function drawPassenger(p) {
+      const x = p.x;
+      const y = p.y;
+
+      ctx.fillStyle = p.bottomColor;
+      ctx.fillRect(x - 5, y + 2, 10, 8);
+
+      ctx.fillStyle = p.topColor;
+      ctx.fillRect(x - 6, y - 5, 12, 9);
+      ctx.strokeStyle = p.topColor;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x - 6, y - 3);
+      ctx.lineTo(x - 9, y + 3);
+      ctx.moveTo(x + 6, y - 3);
+      ctx.lineTo(x + 9, y + 3);
+      ctx.stroke();
+
+      ctx.fillStyle = '#fce7f3';
+      ctx.beginPath();
+      ctx.arc(x, y - 8, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (p.hairStyle !== 'none') {
+        ctx.fillStyle = p.hairColor;
+        ctx.strokeStyle = p.hairColor;
+        ctx.lineWidth = 1.5;
+
+        if (p.hairStyle === 'short') {
+          ctx.beginPath();
+          ctx.arc(x, y - 9, 5, Math.PI, Math.PI * 2);
+          ctx.fill();
+        } else if (p.hairStyle === 'long') {
+          ctx.beginPath();
+          ctx.arc(x, y - 9, 5, Math.PI, Math.PI * 2);
+          ctx.fill();
+          ctx.fillRect(x - 6, y - 9, 3, 10);
+          ctx.fillRect(x + 3, y - 9, 3, 10);
+        } else if (p.hairStyle === 'spiky') {
+          for (let angle = Math.PI; angle <= Math.PI * 2; angle += 0.8) {
+            ctx.beginPath();
+            ctx.moveTo(x + Math.cos(angle) * 4, y - 8 + Math.sin(angle) * 4);
+            ctx.lineTo(x + Math.cos(angle) * 8, y - 8 + Math.sin(angle) * 8);
+            ctx.stroke();
+          }
+        } else if (p.hairStyle === 'afro') {
+          ctx.beginPath();
+          ctx.arc(x, y - 9, 7.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      if (p.hatStyle !== 'none') {
+        if (p.hatStyle === 'cap') {
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(x - 5, y - 13, 10, 4);
+          ctx.fillRect(x + 1, y - 12, 7, 2);
+        } else if (p.hatStyle === 'beanie') {
+          ctx.fillStyle = '#0284c7';
+          ctx.beginPath();
+          ctx.arc(x, y - 9, 5.5, Math.PI, Math.PI * 2);
+          ctx.fill();
+          ctx.fillRect(x - 6, y - 10, 12, 3);
+        } else if (p.hatStyle === 'fedora') {
+          ctx.fillStyle = '#451a03';
+          ctx.beginPath();
+          ctx.ellipse(x, y - 9, 8, 5, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#27272a';
+          ctx.arc(x, y - 9, 4, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (p.hatStyle === 'visor') {
+          ctx.strokeStyle = '#e11d48';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(x, y - 8, 6, Math.PI * 0.8, Math.PI * 2.2);
+          ctx.stroke();
+        }
+      }
+    }
+
+    function drawPilot(x, y, facing, walkFrame) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      if (player.invulnerableTimer > 0 && Math.floor(Date.now() / 100) % 2 === 0) {
+        ctx.globalAlpha = 0.4;
+      }
+
+      const armSwing = Math.sin(walkFrame) * 4;
+      const legSwing = Math.sin(walkFrame) * 5;
+
+      // Legs
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-4 - legSwing, 12);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(4 + legSwing, 12);
+      ctx.stroke();
+
+      // Shirt & Tie
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-6, -10, 12, 12);
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(-1, -10, 2, 8);
+
+      // Gold Epaulets
+      ctx.fillStyle = '#eab308';
+      ctx.fillRect(-7, -10, 3, 4);
+      ctx.fillRect(4, -10, 3, 4);
+
+      // Fire Extinguisher Tank on Back
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(-facing * 9, -10, 5, 12);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(-facing * 9, -12, 5, 2);
+
+      // Arms
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-6, -8);
+      ctx.lineTo(-8, 0 + armSwing);
+      ctx.moveTo(6, -8);
+      ctx.lineTo(8, 0 - armSwing);
+      ctx.stroke();
+
+      // Head
+      ctx.fillStyle = '#fde047';
+      ctx.beginPath();
+      ctx.arc(0, -15, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Eye
+      ctx.fillStyle = '#000000';
+      ctx.beginPath();
+      ctx.arc(facing * 3, -15, 1, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Cap
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(-6, -20, 12, 4);
+      ctx.fillStyle = '#eab308';
+      ctx.fillRect(facing * 2 - 2, -18, 4, 2);
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(facing * 2, -16, facing * 6, 2);
+
+      ctx.restore();
+    }
+
+    function drawEnemiesAndProjectiles() {
+      player.sprayParticles.forEach(sp => {
+        ctx.fillStyle = 'rgba(224, 242, 254, 0.85)';
+        ctx.beginPath();
+        ctx.arc(sp.x, sp.y, sp.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(sp.x - 1, sp.y - 1, sp.radius * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      enemies.forEach(e => {
+        ctx.save();
+        ctx.translate(e.x, e.y);
+
+        if (e.frozenTimer > 0) {
+          ctx.translate((Math.random() - 0.5) * 2, 0);
+        }
+
+        if (e.type === 'suitcase') {
+          ctx.fillStyle = e.frozenTimer > 0 ? '#38bdf8' : '#7e22ce';
+          ctx.fillRect(-12, -10, 24, 20);
+          ctx.strokeStyle = e.frozenTimer > 0 ? '#e0f2fe' : '#eab308';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(-12, -10, 24, 20);
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.moveTo(-4, -10);
+          ctx.lineTo(-4, -14);
+          ctx.lineTo(4, -14);
+          ctx.lineTo(4, -10);
+          ctx.stroke();
+
+          ctx.fillStyle = e.frozenTimer > 0 ? '#0284c7' : '#ef4444';
+          ctx.fillRect(-6, -4, 4, 4);
+          ctx.fillRect(2, -4, 4, 4);
+
+          ctx.fillStyle = '#000000';
+          ctx.beginPath();
+          ctx.arc(-8, 11, 3, 0, Math.PI * 2);
+          ctx.arc(8, 11, 3, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (e.type === 'foodcart') {
+          ctx.fillStyle = e.frozenTimer > 0 ? '#0284c7' : '#94a3b8';
+          ctx.fillRect(-16, -20, 32, 40);
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(-16, -20, 32, 40);
+
+          ctx.fillStyle = '#cbd5e1';
+          ctx.beginPath();
+          ctx.arc(-7, -8, 4, 0, Math.PI * 2);
+          ctx.arc(7, -8, 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#f97316';
+          ctx.beginPath();
+          ctx.arc(0, 4, 8, 0, Math.PI);
+          ctx.fill();
+
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(-12, -24, 6, 8);
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillRect(6, -24, 6, 8);
+        } else if (e.type === 'linencabinet') {
+          ctx.fillStyle = e.frozenTimer > 0 ? '#0284c7' : '#854d0e';
+          ctx.fillRect(-18, -24, 36, 48);
+          ctx.strokeStyle = '#fde047';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(-18, -24, 36, 48);
+
+          ctx.strokeStyle = '#a16207';
+          ctx.beginPath();
+          ctx.moveTo(0, -24);
+          ctx.lineTo(0, 24);
+          ctx.stroke();
+
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(-5, -6, 3, 3);
+          ctx.fillRect(2, -6, 3, 3);
+        } else if (e.type === 'neckpillow') {
+          ctx.fillStyle = e.frozenTimer > 0 ? '#38bdf8' : '#a855f7';
+          ctx.beginPath();
+          ctx.arc(0, 0, 12, Math.PI, 0);
+          ctx.lineTo(12, 8);
+          ctx.arc(8, 8, 4, 0, Math.PI);
+          ctx.lineTo(4, 0);
+          ctx.arc(0, 0, 4, 0, Math.PI, true);
+          ctx.lineTo(-4, 8);
+          ctx.arc(-8, 8, 4, 0, Math.PI);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(-4, -4, 2, 0, Math.PI * 2);
+          ctx.arc(4, -4, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        if (e.frozenTimer > 0) {
+          ctx.fillStyle = 'rgba(186, 230, 253, 0.55)';
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.fillRect(-20, -26, 40, 52);
+          ctx.strokeRect(-20, -26, 40, 52);
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 12px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(`❄️ ${Math.ceil(e.frozenTimer)}s`, 0, -30);
+        }
+
+        ctx.restore();
+      });
+
+      enemyProjectiles.forEach(p => {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+
+        if (p.type === 'pretzel') {
+          ctx.fillStyle = '#b45309';
+          ctx.beginPath();
+          ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(-2, -2, 2, 2);
+          ctx.fillRect(1, 1, 2, 2);
+        } else if (p.type === 'soda') {
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(-5, -7, 10, 14);
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillRect(-5, -2, 10, 4);
+        } else if (p.type === 'pillow') {
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.roundRect(-10, -7, 20, 14, 4);
+          ctx.fill();
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      });
+    }
+
+    // MAIN RENDER ROUTINE
+    function draw() {
+      const palette = getLevelPalette(currentLevel);
+
+      const skyGradient = ctx.createRadialGradient(
+        canvas.width / 2, canvas.height / 2, 100,
+        canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height)
+      );
+      skyGradient.addColorStop(0, palette.sky[0]);
+      skyGradient.addColorStop(0.5, palette.sky[1]);
+      skyGradient.addColorStop(1, palette.sky[2]);
+      ctx.fillStyle = skyGradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const scale = canvas.height / WORLD.height;
+      let cameraX = player.x - (canvas.width / scale) / 2;
+      cameraX = Math.max(0, Math.min(WORLD.width - canvas.width / scale, cameraX));
+
+      ctx.save();
+      ctx.scale(scale, scale);
+      ctx.translate(-cameraX, 0);
+
+      clouds.forEach(cloud => {
+        ctx.fillStyle = `rgba(255, 255, 255, ${cloud.opacity})`;
+        ctx.beginPath();
+        ctx.arc(cloud.x, cloud.y, cloud.radius, 0, Math.PI * 2);
+        ctx.arc(cloud.x + cloud.radius * 0.6, cloud.y - cloud.radius * 0.2, cloud.radius * 0.7, 0, Math.PI * 2);
+        ctx.arc(cloud.x - cloud.radius * 0.6, cloud.y + cloud.radius * 0.1, cloud.radius * 0.6, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Tail Wings
+      ctx.fillStyle = palette.wing;
+      ctx.strokeStyle = palette.wingBorder;
+      ctx.lineWidth = 4;
+
+      ctx.beginPath();
+      ctx.moveTo(520, WORLD.topY);
+      ctx.lineTo(-100, -180);
+      ctx.lineTo(-100, 160);
+      ctx.lineTo(70, WORLD.height / 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(520, WORLD.bottomY);
+      ctx.lineTo(-100, WORLD.height + 180);
+      ctx.lineTo(-100, WORLD.height - 160);
+      ctx.lineTo(70, WORLD.height / 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Main Wings
+      ctx.beginPath();
+      ctx.moveTo(1700, WORLD.topY);
+      ctx.lineTo(1250, -180);
+      ctx.lineTo(1000, -180);
+      ctx.lineTo(1350, WORLD.topY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(1700, WORLD.bottomY);
+      ctx.lineTo(1250, WORLD.height + 180);
+      ctx.lineTo(1000, WORLD.height + 180);
+      ctx.lineTo(1350, WORLD.bottomY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Floors
+      sections.forEach((sec, idx) => {
+        ctx.fillStyle = palette.sections[idx];
+        if (sec.name === "Cargo Bay") {
+          ctx.beginPath();
+          ctx.moveTo(sec.endX, WORLD.topY);
+          ctx.lineTo(sec.endX, WORLD.bottomY);
+          ctx.lineTo(280, WORLD.bottomY);
+          ctx.lineTo(70, WORLD.height / 2);
+          ctx.lineTo(280, WORLD.topY);
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          ctx.fillRect(sec.startX, WORLD.topY, sec.endX - sec.startX, WORLD.bottomY - WORLD.topY);
+        }
+      });
+
+      // Aisles
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.fillRect(280, 185, 3270, 35);
+      ctx.fillRect(280, 385, 3270, 35);
+
+      // Section Labels
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.font = 'bold 28px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText("CARGO BAY", 480, 310);
+      ctx.fillText("COACH CLASS", 1375, 310);
+      ctx.fillText("BUSINESS CLASS", 2450, 310);
+      ctx.fillText("FIRST CLASS", 3225, 310);
+      ctx.fillText("COCKPIT", 3750, 310);
+
+      // Fuselage Outer Wall Line
+      ctx.strokeStyle = palette.hull;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(280, WORLD.topY);
+      ctx.lineTo(3830, WORLD.topY);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(280, WORLD.bottomY);
+      ctx.lineTo(3830, WORLD.bottomY);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(280, WORLD.topY);
+      ctx.lineTo(70, WORLD.height / 2);
+      ctx.lineTo(280, WORLD.bottomY);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(3830, WORLD.topY);
+      ctx.quadraticCurveTo(4000, WORLD.height / 2, 3830, WORLD.bottomY);
+      ctx.stroke();
+
+      // Obstacles
+      obstacles.forEach(obs => {
+        if (obs.type === 'boundary') return;
+
+        if (obs.type === 'crate') {
+          ctx.fillStyle = '#78350f';
+          ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+          ctx.fillStyle = '#f59e0b';
+          ctx.font = '10px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(obs.label, obs.x + obs.w / 2, obs.y + obs.h / 2 + 3);
+        } else if (obs.type === 'seat') {
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+          ctx.strokeStyle = '#64748b';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+        } else if (obs.type === 'controls') {
+          ctx.fillStyle = '#065f46';
+          ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+        } else if (obs.type === 'pilot-seat') {
+          ctx.fillStyle = '#991b1b';
+          ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+        } else {
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+        }
+      });
+
+      // Seated Passengers
+      passengers.forEach(p => drawPassenger(p));
+
+      // Enemies & Projectiles
+      drawEnemiesAndProjectiles();
+
+      // Pilot Player
+      drawPilot(player.x, player.y, player.facing, player.walkFrame);
+
+      ctx.restore();
+    }
+
+    let lastTime = performance.now();
+    function animate(now) {
+      const dt = (now - lastTime) / 1000;
+      lastTime = now;
+
+      updatePhysics(dt);
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    window.onload = function() {
+      resizeCanvas();
+      showDifficultyScreen();
+      requestAnimationFrame(animate);
+    };
+  </script>
+</body>
+</html>

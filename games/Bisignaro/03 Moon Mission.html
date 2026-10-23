@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stickman Moon Mission - Ultimate Bugfix Edition 🚀</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700;900&display=swap');
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      font-family: 'Fredoka', 'Comic Sans MS', cursive, sans-serif;
+    }
+
+    body {
+      background: #090518;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      overflow: hidden;
+      padding: 10px;
+    }
+
+    /* Top Header HUD Bar */
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 1100px;
+      margin-bottom: 8px;
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    h1 {
+      font-size: 20px;
+      letter-spacing: 1px;
+      font-weight: 900;
+      color: #ffd166;
+      text-shadow: 0 0 12px rgba(255, 209, 102, 0.8);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hud-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .hud-badge {
+      font-size: 14px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .hud-level {
+      color: #ff70a6;
+      background: rgba(255, 112, 166, 0.25);
+      border: 1.5px solid #ff70a6;
+    }
+
+    .hud-hearts {
+      color: #ff477e;
+      background: rgba(255, 71, 126, 0.25);
+      border: 1.5px solid #ff477e;
+      letter-spacing: 2px;
+    }
+
+    .hud-parts {
+      color: #06d6a0;
+      background: rgba(6, 214, 160, 0.25);
+      border: 1.5px solid #06d6a0;
+    }
+
+    .hud-timer {
+      color: #ffd166;
+      background: rgba(255, 209, 102, 0.2);
+      border: 1.5px solid #ffd166;
+    }
+
+    .hud-dragon-timer {
+      color: #7209b7;
+      background: rgba(114, 9, 183, 0.3);
+      border: 1.5px solid #f72585;
+    }
+
+    .btn-reset {
+      background: linear-gradient(135deg, #ef476f, #ff70a6);
+      color: #ffffff;
+      border: none;
+      padding: 8px 18px;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #b82d4f;
+      transition: all 0.1s ease;
+    }
+
+    .btn-reset:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 0 #b82d4f;
+    }
+
+    .btn-reset:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #b82d4f;
+    }
+
+    /* Canvas Container */
+    #canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 1100px;
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7), 0 0 30px rgba(255, 112, 166, 0.4);
+      border: 3px solid #5d4a88;
+    }
+
+    canvas {
+      background-color: #0b071e;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Controls Instruction Footer */
+    .instructions-bar {
+      margin-top: 6px;
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 10px;
+    }
+
+    .instructions {
+      font-size: 13px;
+      font-weight: 600;
+      color: #b8c0e0;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .key-badge {
+      background: #2b2d42;
+      color: #ffd166;
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid #ff70a6;
+      font-weight: 700;
+    }
+
+    .warning-badge {
+      color: #ff477e;
+      font-weight: 700;
+    }
+
+    /* On-Screen Touch / Mouse Controls for Accessibility */
+    .touch-controls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .touch-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1.5px solid rgba(255, 255, 255, 0.4);
+      color: #ffffff;
+      padding: 6px 14px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .touch-btn:active {
+      background: #ffd166;
+      color: #000;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header HUD Section -->
+  <div id="header">
+    <h1>🌙 MOON MISSION 🚀</h1>
+    <div class="hud-group">
+      <div class="hud-badge hud-level" id="levelDisplay">STAGE 1</div>
+      <div class="hud-badge hud-hearts" id="heartsDisplay">❤️ ❤️ ❤️</div>
+      <div class="hud-badge hud-parts" id="partsCounter">PARTS: 0 / 4</div>
+      <div class="hud-badge hud-timer" id="meteorTimerDisplay">☄️ METEOR PAIR: 5.0s</div>
+      <div class="hud-badge hud-dragon-timer" id="dragonTimerDisplay">🐉 DRAGON ATTACK: 5.0s</div>
+    </div>
+    <button class="btn-reset" onclick="resetSimulation(true)">RESTART GAME</button>
+  </div>
+
+  <!-- Canvas Container -->
+  <div id="canvas-wrapper">
+    <canvas id="simCanvas"></canvas>
+  </div>
+
+  <!-- Instructions & Touch Button Controls -->
+  <div class="instructions-bar">
+    <div class="instructions">
+      <span>Controls: <span class="key-badge">W</span> JUMP (Double Jump!) | <span class="key-badge">A</span> LEFT | <span class="key-badge">S</span> CROUCH/DOWN | <span class="key-badge">D</span> RIGHT</span>
+      <span class="warning-badge">⚠️ Arrow keys disabled!</span>
+    </div>
+
+    <!-- On-screen fallback buttons for easy clicking / touch -->
+    <div class="touch-controls">
+      <button class="touch-btn" onmousedown="triggerTouchKey('KeyA', true)" onmouseup="triggerTouchKey('KeyA', false)" ontouchstart="triggerTouchKey('KeyA', true)" ontouchend="triggerTouchKey('KeyA', false)">◀ LEFT</button>
+      <button class="touch-btn" onmousedown="triggerTouchKey('KeyW', true)" onmouseup="triggerTouchKey('KeyW', false)" ontouchstart="triggerTouchKey('KeyW', true)" ontouchend="triggerTouchKey('KeyW', false)">🦘 JUMP (W)</button>
+      <button class="touch-btn" onmousedown="triggerTouchKey('KeyS', true)" onmouseup="triggerTouchKey('KeyS', false)" ontouchstart="triggerTouchKey('KeyS', true)" ontouchend="triggerTouchKey('KeyS', false)">▼ DOWN</button>
+      <button class="touch-btn" onmousedown="triggerTouchKey('KeyD', true)" onmouseup="triggerTouchKey('KeyD', false)" ontouchstart="triggerTouchKey('KeyD', true)" ontouchend="triggerTouchKey('KeyD', false)">RIGHT ▶</button>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // HUD ELEMENTS
+    const levelDisplayEl = document.getElementById('levelDisplay');
+    const heartsDisplayEl = document.getElementById('heartsDisplay');
+    const partsCounterEl = document.getElementById('partsCounter');
+    const meteorTimerEl = document.getElementById('meteorTimerDisplay');
+    const dragonTimerEl = document.getElementById('dragonTimerDisplay');
+
+    // KEYBOARD INPUT STATE
+    const keys = {};
+
+    // GAMEPLAY STATE
+    let currentLevel = 1;
+    let gameState = 'PLAYING'; // 'PLAYING', 'LAUNCHING', 'GAMEOVER'
+    let launchTimer = 0;
+    let grabEscapeTimer = 0;
+    let lastTime = performance.now();
+
+    // 5-SECOND COUNTDOWN TIMERS (as requested by students)
+    let meteorCountdown = 5.0; // 5-second meteor pair spawner
+    let dragonCountdown = 5.0; // 5-second dragon attack cycle
+
+    // STICKMAN PLAYER STATE (With Gravity & Jump)
+    const gravity = 0.5;
+    const player = {
+      x: 0,
+      y: 0,
+      vx: 0,
+      vy: 0,
+      speed: 5.2,
+      jumpForce: -11.5,
+      isGrounded: false,
+      jumpCount: 0,
+      maxJumps: 2, // Double Jump enabled to escape corners!
+      facing: 1, // 1 = Right, -1 = Left
+      walkFrame: 0,
+      bobOffset: 0,
+      hp: 3,
+      maxHp: 3,
+      invulnTimer: 0,
+      isGrabbed: false,
+      isCrouching: false
+    };
+
+    // GROUND LEVEL
+    let groundY = 0;
+
+    // ROCKET PARTS DEFINITION
+    let rocketParts = [];
+    const totalParts = 4;
+
+    // ENEMIES & OBJECTS
+    let activeMeteors = [];
+    let evilSun = null;
+    let sunRays = [];
+    let lollipopAnt = null;
+    let spaceDragon = null;
+    let dragonRocks = [];
+
+    // SCENERY & PARTICLES
+    let stars = [];
+    let craters = [];
+    let particles = [];
+    let notifications = [];
+
+    // --- INITIALIZATION FUNCTIONS --- //
+
+    function initScenery() {
+      // Background Stars
+      stars = [];
+      for (let i = 0; i < 90; i++) {
+        stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * (canvas.height * 0.65),
+          radius: Math.random() * 2.5 + 1,
+          alpha: Math.random(),
+          speed: Math.random() * 0.04 + 0.01,
+          color: ['#ffffff', '#ffd166', '#4cc9f0', '#ff70a6', '#70d6ff', '#a0c4ff'][Math.floor(Math.random() * 6)]
+        });
+      }
+
+      // Moon Craters
+      craters = [];
+      const moonTop = canvas.height * 0.68;
+      for (let i = 0; i < 12; i++) {
+        craters.push({
+          x: Math.random() * canvas.width,
+          y: moonTop + 15 + Math.random() * (canvas.height - moonTop - 35),
+          rx: Math.random() * 28 + 14,
+          ry: Math.random() * 10 + 5
+        });
+      }
+    }
+
+    function initRocketParts() {
+      const partNames = ['Nose Cone', 'Fuel Tank', 'Side Wings', 'Main Engine'];
+      const partColors = ['#ef476f', '#06d6a0', '#118ab2', '#ffd166'];
+      
+      rocketParts = [];
+      const margin = 80;
+      const spawnWidth = canvas.width - margin * 2;
+      const startY = groundY - 10;
+
+      for (let i = 0; i < totalParts; i++) {
+        rocketParts.push({
+          id: i,
+          name: partNames[i],
+          x: margin + (spawnWidth / (totalParts - 1)) * i + (Math.random() * 30 - 15),
+          y: startY,
+          color: partColors[i],
+          collected: false,
+          floatOffset: Math.random() * Math.PI * 2
+        });
+      }
+    }
+
+    function initEnemies() {
+      activeMeteors = [];
+      meteorCountdown = 5.0;
+
+      // 1. Evil Sun (Patrols sky, fires rays)
+      evilSun = {
+        x: canvas.width * 0.2,
+        y: 80,
+        radius: 40,
+        shootTimer: 0,
+        shootInterval: Math.max(100, 180 - currentLevel * 15),
+        pulse: 0
+      };
+      sunRays = [];
+
+      // 2. Swirly Lollipop Space Ant
+      lollipopAnt = {
+        x: canvas.width * 0.5,
+        y: groundY,
+        vx: 2.2,
+        swirlAngle: 0,
+        beamTimer: 0,
+        isFiringBeam: false,
+        beamDuration: 0
+      };
+
+      // 3. Three-Headed Space Dragon (Patrols LEFT to RIGHT continuously)
+      spaceDragon = {
+        x: canvas.width * 0.2,
+        y: 110,
+        vx: 2.5 + currentLevel * 0.3, // Left-to-right patrol speed
+        wingAngle: 0,
+        state: 'PATROL', // 'PATROL', 'SWOOP'
+        swoopProgress: 0,
+        swoopStartX: 0
+      };
+      dragonRocks = [];
+      dragonCountdown = 5.0;
+    }
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvas-wrapper');
+      canvas.width = wrapper.clientWidth;
+      canvas.height = wrapper.clientHeight;
+
+      groundY = canvas.height * 0.76;
+      
+      initScenery();
+      if (player.x === 0 && player.y === 0) {
+        resetSimulation(true);
+      } else {
+        player.y = Math.min(player.y, groundY);
+      }
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // CONTROLS HANDLERS (WASD)
+    window.addEventListener('keydown', (e) => {
+      // Explicitly block arrow keys with warning popup
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+        e.preventDefault();
+        addNotification("Use WASD to Jump & Move!", player.x, player.y - 45, '#ff477e');
+        return;
+      }
+
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
+        e.preventDefault();
+
+        // Handle Jump on W keypress event
+        if ((e.code === 'KeyW' || e.code === 'Keyw') && !keys[e.code]) {
+          triggerJump();
+        }
+
+        keys[e.code] = true;
+
+        // If grabbed by dragon, button mashing releases player!
+        if (player.isGrabbed) {
+          grabEscapeTimer += 1;
+          addParticles(player.x, player.y, '#ffd166', 6);
+          if (grabEscapeTimer > 7) {
+            player.isGrabbed = false;
+            player.vy = 2;
+            addNotification("Escaped Dragon! 💨", player.x, player.y - 30, '#06d6a0');
+          }
+        }
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
+        keys[e.code] = false;
+      }
+    });
+
+    function triggerTouchKey(code, state) {
+      if (state && !keys[code] && (code === 'KeyW' || code === 'Keyw')) {
+        triggerJump();
+      }
+      keys[code] = state;
+    }
+
+    function triggerJump() {
+      if (player.isGrabbed || gameState !== 'PLAYING') return;
+
+      if (player.isGrounded) {
+        player.vy = player.jumpForce;
+        player.isGrounded = false;
+        player.jumpCount = 1;
+        addParticles(player.x, player.y + 10, '#ffffff', 10);
+        addNotification("JUMP! 🦘", player.x, player.y - 35, '#70d6ff');
+      } else if (player.jumpCount < player.maxJumps) {
+        // Double Jump mechanic to easily escape corner trapping!
+        player.vy = player.jumpForce * 0.9;
+        player.jumpCount++;
+        addParticles(player.x, player.y + 5, '#ffd166', 12);
+        addNotification("DOUBLE JUMP! ✨", player.x, player.y - 35, '#ffd166');
+      }
+    }
+
+    function addNotification(text, x, y, color) {
+      notifications.push({
+        text, x, y, color, alpha: 1, life: 70
+      });
+    }
+
+    function addParticles(x, y, color, count = 15) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 5 + 1;
+        particles.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          radius: Math.random() * 4 + 2,
+          color,
+          alpha: 1,
+          decay: Math.random() * 0.03 + 0.015
+        });
+      }
+    }
+
+    function resetSimulation(fullReset = false) {
+      if (fullReset) {
+        currentLevel = 1;
+        player.hp = 3;
+      }
+      gameState = 'PLAYING';
+      launchTimer = 0;
+      grabEscapeTimer = 0;
+      meteorCountdown = 5.0;
+      dragonCountdown = 5.0;
+
+      player.x = canvas.width * 0.12;
+      player.y = groundY;
+      player.vx = 0;
+      player.vy = 0;
+      player.isGrounded = true;
+      player.jumpCount = 0;
+      player.facing = 1;
+      player.walkFrame = 0;
+      player.invulnTimer = 0;
+      player.isGrabbed = false;
+
+      particles = [];
+      notifications = [];
+      
+      initRocketParts();
+      initEnemies();
+      updateHUD();
+    }
+
+    function damagePlayer(amount = 1, cause = '') {
+      if (player.invulnTimer > 0 || gameState !== 'PLAYING') return;
+
+      player.hp -= amount;
+      player.invulnTimer = 55; // Invincibility frames
+      addParticles(player.x, player.y - 15, '#ef476f', 25);
+
+      if (cause) {
+        addNotification(`-1 Heart! (${cause})`, player.x, player.y - 40, '#ef476f');
+      }
+
+      updateHUD();
+
+      if (player.hp <= 0) {
+        gameState = 'GAMEOVER';
+      }
+    }
+
+    function updateHUD() {
+      levelDisplayEl.innerText = `STAGE ${currentLevel}`;
+      
+      let heartsStr = '';
+      for (let i = 0; i < player.maxHp; i++) {
+        heartsStr += i < player.hp ? '❤️ ' : '🖤 ';
+      }
+      heartsDisplayEl.innerText = heartsStr.trim();
+
+      const count = rocketParts.filter(p => p.collected).length;
+      partsCounterEl.innerText = `PARTS: ${count} / ${totalParts}`;
+      if (count === totalParts && gameState === 'PLAYING') {
+        partsCounterEl.innerText = "ROCKET READY! GO TO LAUNCHPAD 🚀";
+      }
+
+      meteorTimerEl.innerText = `☄️ METEOR PAIR: ${meteorCountdown.toFixed(1)}s`;
+      dragonTimerEl.innerText = `🐉 DRAGON ATTACK: ${dragonCountdown.toFixed(1)}s`;
+    }
+
+    // --- SPAWN METEOR PAIR (BUGFIX: 2 METEORS AT A TIME EVERY 5 SECONDS) --- //
+    function spawnMeteorPair() {
+      addNotification("☄️ METEOR STORM! (2x) ☄️", canvas.width / 2, canvas.height * 0.3, '#ff9f1c');
+
+      // Meteor 1: Aimed slightly ahead of player
+      activeMeteors.push({
+        x: Math.max(30, Math.min(canvas.width - 30, player.x + (Math.random() * 100 - 50))),
+        y: -40,
+        vx: (Math.random() - 0.5) * 2,
+        vy: 4.5 + currentLevel * 0.4,
+        radius: 18,
+        rotation: 0,
+        rotSpeed: 0.05
+      });
+
+      // Meteor 2: Aimed directly at player or corner target
+      activeMeteors.push({
+        x: Math.max(30, Math.min(canvas.width - 30, player.x + (Math.random() > 0.5 ? 140 : -140))),
+        y: -80,
+        vx: (Math.random() - 0.5) * 2,
+        vy: 5.0 + currentLevel * 0.4,
+        radius: 20,
+        rotation: 0,
+        rotSpeed: -0.06
+      });
+    }
+
+    // --- PHYSICS & GAME LOGIC LOOP --- //
+
+    function updatePhysics(dt) {
+      if (gameState === 'GAMEOVER') return;
+
+      // Launch Sequence Update
+      if (gameState === 'LAUNCHING') {
+        launchTimer += 1;
+        const launchpadX = canvas.width * 0.88;
+        addParticles(launchpadX, groundY - launchTimer * 4, '#ff9f1c', 6);
+        addParticles(launchpadX, groundY - launchTimer * 4, '#ef476f', 5);
+
+        if (launchTimer > 140) {
+          currentLevel += 1;
+          player.hp = Math.min(player.maxHp, player.hp + 1); // Extra heart bonus on level pass!
+          resetSimulation(false);
+          addNotification(`STAGE ${currentLevel} CLEARED! 🌟`, canvas.width / 2, canvas.height / 3, '#ffd166');
+        }
+        return;
+      }
+
+      if (player.invulnTimer > 0) player.invulnTimer--;
+
+      // --- 1. COUNTDOWN TIMERS UPDATE (5-SECOND CYCLES) --- //
+      meteorCountdown -= dt;
+      if (meteorCountdown <= 0) {
+        spawnMeteorPair();
+        meteorCountdown = 5.0; // Reset 5s countdown
+      }
+
+      dragonCountdown -= dt;
+      if (dragonCountdown <= 0) {
+        triggerDragonAttack();
+        dragonCountdown = 5.0; // Reset 5s countdown
+      }
+
+      updateHUD();
+
+      // --- 2. PLAYER MOVEMENT & GRAVITY --- //
+      if (!player.isGrabbed) {
+        let dx = 0;
+
+        if (keys['KeyA'] || keys['Keya']) { dx -= 1; player.facing = -1; }
+        if (keys['KeyD'] || keys['Keyd']) { dx += 1; player.facing = 1; }
+
+        player.isCrouching = keys['KeyS'] || keys['Keys'];
+
+        // Apply Horizontal Movement
+        const currentSpeed = player.isCrouching ? player.speed * 0.5 : player.speed;
+        player.vx = player.vx * 0.7 + (dx * currentSpeed) * 0.3;
+        player.x += player.vx;
+
+        // Apply Gravity Acceleration
+        if (player.isCrouching && !player.isGrounded) {
+          player.vy += gravity * 2.0; // Fast fall option
+        } else {
+          player.vy += gravity;
+        }
+
+        player.y += player.vy;
+
+        // Moon Floor Landing Collision
+        if (player.y >= groundY) {
+          player.y = groundY;
+          player.vy = 0;
+          player.isGrounded = true;
+          player.jumpCount = 0;
+        } else {
+          player.isGrounded = false;
+        }
+
+        // Keep player strictly bounded inside screen
+        player.x = Math.max(18, Math.min(canvas.width - 18, player.x));
+
+        // Walk Animation
+        if (Math.abs(player.vx) > 0.5 && player.isGrounded) {
+          player.walkFrame += 0.25;
+          player.bobOffset = Math.sin(player.walkFrame * 2) * 3;
+        } else {
+          player.walkFrame = 0;
+          player.bobOffset = 0;
+        }
+      } else {
+        // Player is grabbed in Dragon's claws!
+        if (spaceDragon) {
+          player.x = spaceDragon.x;
+          player.y = spaceDragon.y + 36;
+        }
+      }
+
+      // --- 3. ROCKET PARTS COLLECTION --- //
+      rocketParts.forEach(part => {
+        if (!part.collected) {
+          const dist = Math.hypot(player.x - part.x, (player.y - 15) - part.y);
+          if (dist < 32) {
+            part.collected = true;
+            addParticles(part.x, part.y, part.color, 25);
+            addNotification(`Found ${part.name}! 🎉`, part.x, part.y - 25, part.color);
+            updateHUD();
+          }
+        }
+      });
+
+      // Launchpad Check
+      const collectedCount = rocketParts.filter(p => p.collected).length;
+      const launchpadX = canvas.width * 0.88;
+
+      if (collectedCount === totalParts) {
+        const distToPad = Math.abs(player.x - launchpadX);
+        if (distToPad < 40 && player.isGrounded) {
+          gameState = 'LAUNCHING';
+          addParticles(launchpadX, groundY, '#06d6a0', 45);
+        }
+      }
+
+      // --- 4. METEORS (SHOOTING 2 AT A TIME) UPDATE --- //
+      for (let i = activeMeteors.length - 1; i >= 0; i--) {
+        const ast = activeMeteors[i];
+        ast.rotation += ast.rotSpeed;
+        ast.x += ast.vx;
+        ast.y += ast.vy;
+
+        // Meteor Trail Flame Particles
+        if (Math.random() < 0.6) {
+          addParticles(ast.x, ast.y - 10, '#ff9f1c', 2);
+        }
+
+        // Collision with Stickman Player
+        const playerCenterY = player.y - 20;
+        const dist = Math.hypot(player.x - ast.x, playerCenterY - ast.y);
+        if (dist < ast.radius + 14) {
+          // Knockback escape vector
+          const knockAngle = Math.atan2(playerCenterY - ast.y, player.x - ast.x);
+          player.vx = Math.cos(knockAngle) * 12;
+          player.vy = -7; // Lift up so player isn't stuck
+
+          damagePlayer(1, 'Meteor Hit!');
+          addParticles(ast.x, ast.y, '#ffd166', 20);
+          activeMeteors.splice(i, 1);
+          continue;
+        }
+
+        // Ground Impact Crater Blast (Meteors explode on ground so corners don't get blocked!)
+        if (ast.y >= groundY + 10) {
+          addParticles(ast.x, groundY, '#ff70a6', 20);
+          activeMeteors.splice(i, 1);
+        }
+      }
+
+      // --- 5. ENEMY: EVIL SUN & SUN RAYS --- //
+      if (evilSun) {
+        evilSun.pulse += 0.05;
+        evilSun.x += (player.x - evilSun.x) * 0.012; // Slowly tracks above player
+
+        evilSun.shootTimer++;
+        if (evilSun.shootTimer > evilSun.shootInterval) {
+          evilSun.shootTimer = 0;
+          const raysToShoot = currentLevel;
+          for (let r = 0; r < raysToShoot; r++) {
+            const spreadAngle = Math.atan2(player.y - evilSun.y, player.x - evilSun.x) + (r - (raysToShoot - 1) / 2) * 0.22;
+            sunRays.push({
+              x: evilSun.x,
+              y: evilSun.y + 20,
+              vx: Math.cos(spreadAngle) * 6.5,
+              vy: Math.sin(spreadAngle) * 6.5,
+              radius: 9
+            });
+          }
+          addParticles(evilSun.x, evilSun.y + 20, '#ff9f1c', 12);
+        }
+      }
+
+      // Update Sun Rays
+      for (let i = sunRays.length - 1; i >= 0; i--) {
+        const ray = sunRays[i];
+        ray.x += ray.vx;
+        ray.y += ray.vy;
+
+        const dist = Math.hypot(player.x - ray.x, (player.y - 20) - ray.y);
+        if (dist < ray.radius + 14) {
+          damagePlayer(1, 'Sun Blast!');
+          sunRays.splice(i, 1);
+        } else if (ray.y > canvas.height + 20 || ray.x < -20 || ray.x > canvas.width + 20) {
+          sunRays.splice(i, 1);
+        }
+      }
+
+      // --- 6. ENEMY: SWIRLY LOLLIPOP SPACE ANT --- //
+      if (lollipopAnt) {
+        lollipopAnt.swirlAngle += 0.08;
+
+        if (!lollipopAnt.isFiringBeam) {
+          // Patrol moon floor
+          lollipopAnt.x += lollipopAnt.vx;
+          if (lollipopAnt.x < 80 || lollipopAnt.x > canvas.width - 80) {
+            lollipopAnt.vx *= -1;
+          }
+
+          lollipopAnt.beamTimer++;
+          if (lollipopAnt.beamTimer > 190) {
+            lollipopAnt.isFiringBeam = true;
+            lollipopAnt.beamDuration = 50; // Beam firing window
+            lollipopAnt.beamTimer = 0;
+          }
+        } else {
+          // Firing Horizontal Mandible Laser
+          lollipopAnt.beamDuration--;
+
+          const beamDir = player.x > lollipopAnt.x ? 1 : -1;
+          const beamWidth = 380;
+          const beamHeight = 26;
+          const beamX = lollipopAnt.x + (beamDir === 1 ? 20 : -beamWidth - 20);
+          const beamY = lollipopAnt.y - 18;
+
+          // Hitbox check
+          if (
+            player.x > beamX && player.x < beamX + beamWidth &&
+            player.y > beamY - 10 && player.y < beamY + beamHeight + 10
+          ) {
+            damagePlayer(1, 'Ant Beam Blast!');
+            player.vx = beamDir * 10;
+          }
+
+          if (lollipopAnt.beamDuration <= 0) {
+            lollipopAnt.isFiringBeam = false;
+          }
+        }
+      }
+
+      // --- 7. ENEMY: 3-HEADED SPACE DRAGON (LEFT TO RIGHT PATROL & 5s ATTACK) --- //
+      if (spaceDragon) {
+        spaceDragon.wingAngle += 0.08;
+
+        if (spaceDragon.state === 'PATROL') {
+          // BUGFIX: Smooth Continuous LEFT-TO-RIGHT patrol movement!
+          spaceDragon.x += spaceDragon.vx;
+          if (spaceDragon.x > canvas.width - 80) {
+            spaceDragon.x = canvas.width - 80;
+            spaceDragon.vx = -Math.abs(spaceDragon.vx); // Move Left
+          } else if (spaceDragon.x < 80) {
+            spaceDragon.x = 80;
+            spaceDragon.vx = Math.abs(spaceDragon.vx); // Move Right
+          }
+
+          // Smooth hovering height
+          spaceDragon.y = 110 + Math.sin(Date.now() * 0.003) * 15;
+
+        } else if (spaceDragon.state === 'SWOOP') {
+          spaceDragon.swoopProgress += 0.022;
+          const swoopFactor = Math.sin(spaceDragon.swoopProgress * Math.PI);
+
+          // Swoop arc down to player level
+          spaceDragon.x += spaceDragon.vx * 0.5;
+          spaceDragon.y = 110 + swoopFactor * (groundY - 140);
+
+          // Claw Grab Collision
+          const distToClaws = Math.hypot(player.x - spaceDragon.x, player.y - (spaceDragon.y + 30));
+          if (distToClaws < 48 && !player.isGrabbed && player.invulnTimer === 0) {
+            player.isGrabbed = true;
+            grabEscapeTimer = 0;
+            addNotification('GRABBED! MASH WASD TO ESCAPE! 💥', player.x, player.y - 45, '#ffd166');
+          }
+
+          if (spaceDragon.swoopProgress >= 1) {
+            spaceDragon.state = 'PATROL';
+
+            if (player.isGrabbed) {
+              player.isGrabbed = false;
+              damagePlayer(1, 'Dragon Drop!');
+              player.vy = 4;
+            }
+          }
+        }
+      }
+
+      // Update Dragon Fire Rocks
+      for (let i = dragonRocks.length - 1; i >= 0; i--) {
+        const rock = dragonRocks[i];
+        rock.x += rock.vx;
+        rock.y += rock.vy;
+
+        const dist = Math.hypot(player.x - rock.x, (player.y - 20) - rock.y);
+        if (dist < rock.radius + 14) {
+          damagePlayer(1, 'Dragon Rock Hit!');
+          dragonRocks.splice(i, 1);
+        } else if (rock.y > canvas.height + 20 || rock.x < -20 || rock.x > canvas.width + 20) {
+          dragonRocks.splice(i, 1);
+        }
+      }
+
+      // --- 8. UPDATE PARTICLES & FLOATING NOTIFICATIONS --- //
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= p.decay;
+        if (p.alpha <= 0) particles.splice(i, 1);
+      }
+
+      for (let i = notifications.length - 1; i >= 0; i--) {
+        const n = notifications[i];
+        n.y -= 0.8;
+        n.alpha -= 0.015;
+        if (n.alpha <= 0) notifications.splice(i, 1);
+      }
+    }
+
+    // Trigger Dragon Attack Cycle (Called every 5 seconds)
+    function triggerDragonAttack() {
+      if (!spaceDragon) return;
+
+      const attackType = Math.random() > 0.5 ? 'ROCKS' : 'SWOOP';
+
+      if (attackType === 'ROCKS' || spaceDragon.state === 'SWOOP') {
+        // Fire 3-way dragon rock blast from heads
+        for (let head = -1; head <= 1; head++) {
+          const rockAngle = Math.atan2(player.y - spaceDragon.y, player.x - (spaceDragon.x + head * 28));
+          dragonRocks.push({
+            x: spaceDragon.x + head * 28,
+            y: spaceDragon.y + 20,
+            vx: Math.cos(rockAngle) * 5.8,
+            vy: Math.sin(rockAngle) * 5.8,
+            radius: 9
+          });
+        }
+        addNotification('Dragon Triple Fire! 🐉', spaceDragon.x, spaceDragon.y - 30, '#ff70a6');
+      } else {
+        // Claw Swoop Attack
+        spaceDragon.state = 'SWOOP';
+        spaceDragon.swoopProgress = 0;
+        addNotification('DRAGON CLAW SWOOP! ⚠️', spaceDragon.x, spaceDragon.y - 35, '#ef476f');
+      }
+    }
+
+    // --- DRAWING & RENDERING FUNCTIONS --- //
+
+    function drawBackground() {
+      // Celestial Deep Space Gradient
+      const spaceGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      spaceGrad.addColorStop(0, '#060312');
+      spaceGrad.addColorStop(0.5, '#120b2e');
+      spaceGrad.addColorStop(1, '#231445');
+      ctx.fillStyle = spaceGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Twinkling Stars
+      stars.forEach(star => {
+        star.alpha += star.speed;
+        const currentAlpha = (Math.sin(star.alpha) + 1) / 2;
+        ctx.fillStyle = star.color;
+        ctx.globalAlpha = currentAlpha * 0.85 + 0.15;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+
+      // Earth Graphic in distant backdrop
+      const earthX = canvas.width * 0.82;
+      const earthY = canvas.height * 0.18;
+      ctx.beginPath();
+      ctx.arc(earthX, earthY, 36, 0, Math.PI * 2);
+      ctx.fillStyle = '#118ab2';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(earthX - 9, earthY - 5, 18, 0, Math.PI * 2);
+      ctx.fillStyle = '#06d6a0';
+      ctx.fill();
+
+      // Moon Floor Curve
+      const moonTop = canvas.height * 0.68;
+      const moonGrad = ctx.createLinearGradient(0, moonTop, 0, canvas.height);
+      moonGrad.addColorStop(0, '#a0c4ff');
+      moonGrad.addColorStop(0.12, '#8d99ae');
+      moonGrad.addColorStop(0.6, '#5c677d');
+      moonGrad.addColorStop(1, '#2b2d42');
+
+      ctx.beginPath();
+      ctx.moveTo(0, moonTop);
+      ctx.quadraticCurveTo(canvas.width / 2, moonTop - 25, canvas.width, moonTop + 10);
+      ctx.lineTo(canvas.width, canvas.height);
+      ctx.lineTo(0, canvas.height);
+      ctx.closePath();
+      ctx.fillStyle = moonGrad;
+      ctx.fill();
+
+      // Moon Craters
+      craters.forEach(c => {
+        ctx.beginPath();
+        ctx.ellipse(c.x, c.y, c.rx, c.ry, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#4a4e69';
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#9a8c98';
+        ctx.stroke();
+      });
+    }
+
+    function drawLaunchPad() {
+      const padX = canvas.width * 0.88;
+      const padY = groundY + 5;
+
+      // Base Pad Ring
+      ctx.fillStyle = '#2b2d42';
+      ctx.beginPath();
+      ctx.ellipse(padX, padY, 52, 18, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ffd166';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 12px Fredoka';
+      ctx.textAlign = 'center';
+      ctx.fillText('LAUNCHPAD', padX, padY + 30);
+
+      // Assembled Rocket Build Progress
+      const collectedCount = rocketParts.filter(p => p.collected).length;
+      let rocketY = padY - 20;
+
+      if (gameState === 'LAUNCHING') {
+        rocketY -= launchTimer * 4;
+      }
+
+      if (collectedCount > 0) { // Base Engine
+        ctx.fillStyle = '#ef476f';
+        ctx.fillRect(padX - 12, rocketY - 14, 24, 14);
+      }
+      if (collectedCount > 1) { // Tank
+        ctx.fillStyle = '#f8f9fa';
+        ctx.fillRect(padX - 14, rocketY - 42, 28, 28);
+        ctx.fillStyle = '#118ab2';
+        ctx.beginPath();
+        ctx.arc(padX, rocketY - 28, 7, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (collectedCount > 2) { // Wings
+        ctx.fillStyle = '#ffd166';
+        ctx.beginPath();
+        ctx.moveTo(padX - 14, rocketY - 14);
+        ctx.lineTo(padX - 25, rocketY);
+        ctx.lineTo(padX - 14, rocketY - 32);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(padX + 14, rocketY - 14);
+        ctx.lineTo(padX + 25, rocketY);
+        ctx.lineTo(padX + 14, rocketY - 32);
+        ctx.fill();
+      }
+      if (collectedCount > 3) { // Nose Cone
+        ctx.fillStyle = '#ef476f';
+        ctx.beginPath();
+        ctx.moveTo(padX - 14, rocketY - 42);
+        ctx.lineTo(padX, rocketY - 68);
+        ctx.lineTo(padX + 14, rocketY - 42);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    function drawRocketParts() {
+      const time = Date.now() * 0.003;
+
+      rocketParts.forEach((part, i) => {
+        if (!part.collected) {
+          const floatY = part.y + Math.sin(time + part.floatOffset) * 6 - 15;
+
+          // Glowing halo
+          ctx.beginPath();
+          ctx.arc(part.x, floatY, 20, 0, Math.PI * 2);
+          ctx.fillStyle = part.color;
+          ctx.globalAlpha = 0.35;
+          ctx.fill();
+          ctx.globalAlpha = 1.0;
+
+          ctx.fillStyle = part.color;
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+
+          ctx.beginPath();
+          if (i === 0) { // Nose Cone
+            ctx.moveTo(part.x, floatY - 12);
+            ctx.lineTo(part.x - 9, floatY + 9);
+            ctx.lineTo(part.x + 9, floatY + 9);
+            ctx.closePath();
+          } else if (i === 1) { // Tank
+            ctx.roundRect(part.x - 9, floatY - 10, 18, 20, 5);
+          } else if (i === 2) { // Wings
+            ctx.moveTo(part.x - 11, floatY + 9);
+            ctx.lineTo(part.x, floatY - 9);
+            ctx.lineTo(part.x + 11, floatY + 9);
+            ctx.closePath();
+          } else { // Engine
+            ctx.arc(part.x, floatY, 11, 0, Math.PI * 2);
+          }
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 11px Fredoka';
+          ctx.textAlign = 'center';
+          ctx.fillText(part.name, part.x, floatY + 24);
+        }
+      });
+    }
+
+    function drawMeteors() {
+      activeMeteors.forEach(ast => {
+        ctx.save();
+        ctx.translate(ast.x, ast.y);
+        ctx.rotate(ast.rotation);
+
+        // Blazing Fire Tail
+        ctx.fillStyle = '#ff70a6';
+        ctx.beginPath();
+        ctx.arc(0, 0, ast.radius + 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Rocky Body
+        ctx.fillStyle = '#e07a5f';
+        ctx.strokeStyle = '#f4a261';
+        ctx.lineWidth = 3;
+
+        ctx.beginPath();
+        const pts = 8;
+        for (let i = 0; i < pts; i++) {
+          const a = (i / pts) * Math.PI * 2;
+          const r = ast.radius + (i % 2 === 0 ? 3 : -3);
+          const px = Math.cos(a) * r;
+          const py = Math.sin(a) * r;
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.restore();
+      });
+    }
+
+    function drawEvilSun() {
+      if (!evilSun) return;
+
+      const x = evilSun.x;
+      const y = evilSun.y;
+      const pulseR = evilSun.radius + Math.sin(evilSun.pulse) * 4;
+
+      // Flaming Sun Rays Outer Halo
+      ctx.fillStyle = '#ffb703';
+      ctx.beginPath();
+      for (let i = 0; i < 12; i++) {
+        const angle = (i / 12) * Math.PI * 2 + evilSun.pulse * 0.5;
+        const outerR = pulseR + 14;
+        ctx.lineTo(x + Math.cos(angle) * outerR, y + Math.sin(angle) * outerR);
+        const innerA = angle + Math.PI / 24;
+        ctx.lineTo(x + Math.cos(innerA) * pulseR, y + Math.sin(innerA) * pulseR);
+      }
+      ctx.closePath();
+      ctx.fill();
+
+      // Main Sun Face
+      ctx.beginPath();
+      ctx.arc(x, y, pulseR, 0, Math.PI * 2);
+      ctx.fillStyle = '#ff9000';
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Angry Face Details
+      ctx.fillStyle = '#2b2d42';
+      ctx.beginPath();
+      ctx.arc(x - 11, y - 6, 4.5, 0, Math.PI * 2);
+      ctx.arc(x + 11, y - 6, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = '#2b2d42';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x - 16, y - 14);
+      ctx.lineTo(x - 5, y - 8);
+      ctx.moveTo(x + 16, y - 14);
+      ctx.lineTo(x + 5, y - 8);
+      ctx.stroke();
+
+      // Active Sun Rays
+      sunRays.forEach(ray => {
+        ctx.beginPath();
+        ctx.arc(ray.x, ray.y, ray.radius, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffb703';
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      });
+    }
+
+    function drawSwirlyLollipopAnt() {
+      if (!lollipopAnt) return;
+
+      const antX = lollipopAnt.x;
+      const antY = lollipopAnt.y;
+
+      // Draw Laser Beam Blast
+      if (lollipopAnt.isFiringBeam) {
+        const beamDir = player.x > antX ? 1 : -1;
+        const beamLength = 400;
+        const beamY = antY - 18;
+        const startX = antX + (beamDir === 1 ? 20 : -20);
+
+        ctx.fillStyle = 'rgba(112, 214, 255, 0.45)';
+        ctx.fillRect(beamDir === 1 ? startX : startX - beamLength, beamY - 12, beamLength, 24);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(beamDir === 1 ? startX : startX - beamLength, beamY - 5, beamLength, 10);
+      }
+
+      // Ant Legs
+      ctx.strokeStyle = '#ff70a6';
+      ctx.lineWidth = 3;
+      for (let i = -1; i <= 1; i++) {
+        ctx.beginPath();
+        ctx.moveTo(antX + i * 9, antY - 10);
+        ctx.lineTo(antX + i * 15, antY);
+        ctx.stroke();
+      }
+
+      // Lollipop Spiral Head
+      ctx.save();
+      ctx.translate(antX, antY - 20);
+      ctx.rotate(lollipopAnt.swirlAngle);
+
+      const radius = 20;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, Math.PI * 2);
+      ctx.fillStyle = '#ff70a6';
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      ctx.strokeStyle = '#ff97b7';
+      ctx.lineWidth = 3.5;
+      for (let a = 0; a < Math.PI * 2; a += Math.PI / 2) {
+        ctx.beginPath();
+        ctx.arc(0, 0, radius - 5, a, a + Math.PI / 4);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // Antennae & Jaws
+      ctx.strokeStyle = '#ffd166';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(antX - 7, antY - 38);
+      ctx.lineTo(antX - 14, antY - 50);
+      ctx.moveTo(antX + 7, antY - 38);
+      ctx.lineTo(antX + 14, antY - 50);
+      ctx.stroke();
+    }
+
+    function drawSpaceDragon() {
+      if (!spaceDragon) return;
+
+      const dX = spaceDragon.x;
+      const dY = spaceDragon.y;
+
+      ctx.save();
+
+      // Dragon Wings
+      const wingSweep = Math.sin(spaceDragon.wingAngle) * 22;
+      ctx.fillStyle = '#7209b7';
+      ctx.strokeStyle = '#f72585';
+      ctx.lineWidth = 3;
+
+      // Left Wing
+      ctx.beginPath();
+      ctx.moveTo(dX - 18, dY);
+      ctx.lineTo(dX - 70, dY - 38 + wingSweep);
+      ctx.lineTo(dX - 32, dY + 14);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Right Wing
+      ctx.beginPath();
+      ctx.moveTo(dX + 18, dY);
+      ctx.lineTo(dX + 70, dY - 38 + wingSweep);
+      ctx.lineTo(dX + 32, dY + 14);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Dragon Body
+      ctx.fillStyle = '#3a0ca3';
+      ctx.beginPath();
+      ctx.ellipse(dX, dY, 24, 32, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 3 Dragon Heads
+      const headOffsets = [-26, 0, 26];
+      headOffsets.forEach((hOffset, idx) => {
+        const headX = dX + hOffset;
+        const headY = dY - 26 + (idx === 1 ? -10 : 0);
+
+        ctx.strokeStyle = '#3a0ca3';
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.moveTo(dX + hOffset * 0.5, dY - 8);
+        ctx.lineTo(headX, headY);
+        ctx.stroke();
+
+        ctx.fillStyle = '#4cc9f0';
+        ctx.beginPath();
+        ctx.arc(headX, headY, 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ef476f';
+        ctx.beginPath();
+        ctx.arc(headX - 3.5, headY - 2, 2.5, 0, Math.PI * 2);
+        ctx.arc(headX + 3.5, headY - 2, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Sharp Dragon Claws
+      ctx.strokeStyle = '#ffd166';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(dX - 12, dY + 28);
+      ctx.lineTo(dX - 18, dY + 42);
+      ctx.moveTo(dX + 12, dY + 28);
+      ctx.lineTo(dX + 18, dY + 42);
+      ctx.stroke();
+
+      ctx.restore();
+
+      // Dragon Rocks
+      dragonRocks.forEach(rock => {
+        ctx.beginPath();
+        ctx.arc(rock.x, rock.y, rock.radius, 0, Math.PI * 2);
+        ctx.fillStyle = '#f72585';
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      });
+    }
+
+    function drawAstronautStickman(x, y, facing, walkFrame, bob) {
+      if (gameState === 'LAUNCHING') return;
+
+      const currY = y + bob;
+
+      if (player.invulnTimer > 0 && Math.floor(player.invulnTimer / 4) % 2 === 0) {
+        ctx.globalAlpha = 0.4;
+      }
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.fillStyle = '#ffffff';
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = 'round';
+
+      const headRadius = 9;
+      const bodyLength = player.isCrouching ? 10 : 18;
+      const legLength = player.isCrouching ? 8 : 14;
+      const neckY = currY - bodyLength;
+      const headY = neckY - headRadius;
+      const shoulderY = neckY + 4;
+
+      // Backpack
+      ctx.fillStyle = '#adb5bd';
+      ctx.fillRect(x - facing * 12 - 4, neckY, 8, 14);
+
+      // Bubble Space Helmet
+      ctx.beginPath();
+      ctx.arc(x, headY, headRadius + 3, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(76, 201, 240, 0.5)';
+      ctx.fill();
+      ctx.strokeStyle = '#4cc9f0';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Stick Head Inside
+      ctx.beginPath();
+      ctx.arc(x, headY, headRadius - 2, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+
+      // Visor Eye
+      ctx.fillStyle = '#2b2d42';
+      ctx.beginPath();
+      ctx.arc(x + facing * 3, headY - 1, 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Torso
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(x, neckY);
+      ctx.lineTo(x, currY);
+      ctx.stroke();
+
+      // Legs
+      const legSwing = Math.sin(walkFrame) * 8;
+      ctx.beginPath();
+      ctx.moveTo(x, currY);
+      ctx.lineTo(x - legSwing, currY + legLength);
+      ctx.moveTo(x, currY);
+      ctx.lineTo(x + legSwing, currY + legLength);
+      ctx.stroke();
+
+      // Arms
+      const armSwing = Math.sin(walkFrame + Math.PI) * 6;
+      ctx.beginPath();
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(x - facing * 6 - armSwing, shoulderY + 8);
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(x + facing * 6 + armSwing, shoulderY + 8);
+      ctx.stroke();
+
+      ctx.globalAlpha = 1.0;
+    }
+
+    function drawUIOverlay() {
+      // Particles
+      particles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.alpha;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1.0;
+
+      // Floating Notifications
+      notifications.forEach(n => {
+        ctx.fillStyle = n.color;
+        ctx.globalAlpha = n.alpha;
+        ctx.font = 'bold 16px Fredoka';
+        ctx.textAlign = 'center';
+        ctx.fillText(n.text, n.x, n.y);
+      });
+      ctx.globalAlpha = 1.0;
+
+      // Game Over Screen
+      if (gameState === 'GAMEOVER') {
+        ctx.fillStyle = 'rgba(9, 5, 24, 0.85)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#ef476f';
+        ctx.font = 'bold 46px Fredoka';
+        ctx.textAlign = 'center';
+        ctx.fillText('MISSION FAILED! 💔', canvas.width / 2, canvas.height / 2 - 20);
+
+        ctx.fillStyle = '#ffd166';
+        ctx.font = 'bold 22px Fredoka';
+        ctx.fillText('Press RESTART GAME to try again!', canvas.width / 2, canvas.height / 2 + 30);
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawBackground();
+      drawLaunchPad();
+      drawRocketParts();
+      drawMeteors();
+      drawEvilSun();
+      drawSwirlyLollipopAnt();
+      drawSpaceDragon();
+      drawAstronautStickman(player.x, player.y, player.facing, player.walkFrame, player.bobOffset);
+      drawUIOverlay();
+    }
+
+    function animate(currentTime) {
+      const dt = Math.min((currentTime - lastTime) / 1000, 0.1); // Calculate delta time
+      lastTime = currentTime;
+
+      updatePhysics(dt);
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    window.onload = function() {
+      resizeCanvas();
+      requestAnimationFrame(animate);
+    };
+  </script>
+</body>
+</html>

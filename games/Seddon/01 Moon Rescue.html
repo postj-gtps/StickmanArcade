@@ -1,0 +1,2218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stickman Moon Rescue - Seddon Team 1</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace, sans-serif;
+        }
+
+        body {
+            background-color: #020208;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            overflow: hidden;
+            padding: 10px;
+        }
+
+        /* Top Header Navigation & Controls */
+        #header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1100px;
+            margin-bottom: 8px;
+            padding: 8px 14px;
+            border-bottom: 3px solid #00ffff;
+            background: rgba(10, 20, 40, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0, 255, 255, 0.25);
+        }
+
+        .title-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        h1 {
+            font-size: 19px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+        }
+
+        .team-badge {
+            background: #ffaa00;
+            color: #000000;
+            font-weight: 900;
+            font-size: 11px;
+            padding: 4px 9px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 8px rgba(255, 170, 0, 0.6);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .level-selector {
+            display: flex;
+            align-items: center;
+            background: #1a2233;
+            border: 2px solid #00ffff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .level-btn {
+            background: #25334d;
+            color: #ffffff;
+            border: none;
+            padding: 6px 14px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 15px;
+            transition: all 0.15s ease;
+        }
+
+        .level-btn:hover {
+            background: #00ffff;
+            color: #000000;
+        }
+
+        .level-display {
+            padding: 0 12px;
+            font-weight: 900;
+            font-size: 13px;
+            color: #00ffff;
+            letter-spacing: 1px;
+        }
+
+        .btn-action {
+            background: #00ccff;
+            color: #000000;
+            border: none;
+            border-radius: 8px;
+            padding: 7px 14px;
+            font-size: 12px;
+            font-weight: 900;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.15s ease-in-out;
+            box-shadow: 0 0 10px rgba(0, 204, 255, 0.5);
+        }
+
+        .btn-action:hover {
+            background: #66e0ff;
+            transform: scale(1.05);
+        }
+
+        .btn-reset {
+            background: #ff3355;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            padding: 7px 16px;
+            font-size: 12px;
+            font-weight: 900;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.15s ease-in-out;
+            box-shadow: 0 0 12px rgba(255, 51, 85, 0.5);
+        }
+
+        .btn-reset:hover {
+            background: #ff6680;
+            transform: scale(1.05);
+        }
+
+        /* Canvas Container */
+        #canvas-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 1100px;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            background-color: #020208;
+            border: 3px solid #00ffff;
+            border-radius: 10px;
+            display: block;
+            width: 100%;
+            height: 100%;
+            box-shadow: 0 8px 30px rgba(0, 255, 255, 0.2);
+        }
+
+        .instructions {
+            margin-top: 6px;
+            font-size: 12px;
+            color: #55ffff;
+            text-align: center;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-shadow: 0 0 5px rgba(0, 255, 255, 0.4);
+        }
+
+        /* Dynamic Notification Toast Banner */
+        .toast-banner {
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 15, 30, 0.95);
+            border: 3px solid #ffaa00;
+            color: #ffea00;
+            font-weight: 900;
+            padding: 10px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 20px rgba(255, 170, 0, 0.8);
+            text-align: center;
+            z-index: 10;
+        }
+
+        .toast-banner.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(6px);
+        }
+
+        /* Skip Intro Button */
+        #btn-skip-intro {
+            position: absolute;
+            bottom: 24px;
+            right: 24px;
+            background: #ffaa00;
+            color: #000000;
+            font-weight: 900;
+            border: 2px solid #ffffff;
+            padding: 10px 22px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            letter-spacing: 1px;
+            box-shadow: 0 0 18px rgba(255, 170, 0, 0.9);
+            z-index: 20;
+            display: none;
+            transition: transform 0.15s ease;
+        }
+
+        #btn-skip-intro:hover {
+            transform: scale(1.08);
+            background: #ffcc00;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="header">
+        <div class="title-group">
+            <h1>Stickman Moon Rescue</h1>
+            <span class="team-badge">Seddon Team 1</span>
+        </div>
+        
+        <div class="header-actions">
+            <button class="btn-action" onclick="startIntro()">Watch Intro 🎬</button>
+            <div class="level-selector">
+                <button class="level-btn" onclick="changeLevel(-1)">-</button>
+                <div class="level-display" id="levelText">LEVEL 1</div>
+                <button class="level-btn" onclick="changeLevel(1)">+</button>
+            </div>
+            <button class="btn-reset" onclick="resetSimulation()">Reset 🔄</button>
+        </div>
+    </div>
+
+    <div id="canvas-wrapper">
+        <canvas id="simCanvas"></canvas>
+        <div id="toast" class="toast-banner">Warning: Alien Activity Detected!</div>
+        <button id="btn-skip-intro" onclick="skipIntro()">[ SKIP INTRO ⏩ ]</button>
+    </div>
+
+    <div class="instructions">
+        CONTROLS: [W] Moon Jump | [A] Left | [S] FLY SWATTER 🧹 / Fast Drop | [D] Right
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const toastEl = document.getElementById('toast');
+        const skipBtn = document.getElementById('btn-skip-intro');
+
+        // WEB AUDIO SYNTHESIZER FOR RETRO SOUND EFFECTS
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function playSound(type) {
+            try {
+                if (!audioCtx) audioCtx = new AudioCtx();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'jump') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(480, now + 0.15);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'swat') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(750, now);
+                    osc.frequency.exponentialRampToValueAtTime(150, now + 0.15);
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'splat') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(260, now);
+                    osc.frequency.linearRampToValueAtTime(70, now + 0.22);
+                    gain.gain.setValueAtTime(0.5, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.22);
+                    osc.start(now);
+                    osc.stop(now + 0.22);
+                } else if (type === 'pickup') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.08);
+                    osc.frequency.setValueAtTime(783.99, now + 0.16);
+                    gain.gain.setValueAtTime(0.35, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'eat') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(190, now);
+                    osc.frequency.linearRampToValueAtTime(50, now + 0.32);
+                    gain.gain.setValueAtTime(0.45, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.32);
+                    osc.start(now);
+                    osc.stop(now + 0.32);
+                } else if (type === 'pop') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(900, now + 0.18);
+                    gain.gain.setValueAtTime(0.45, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.18);
+                    osc.start(now);
+                    osc.stop(now + 0.18);
+                } else if (type === 'net') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(450, now);
+                    osc.frequency.linearRampToValueAtTime(180, now + 0.25);
+                    gain.gain.setValueAtTime(0.35, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'hit') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(140, now);
+                    osc.frequency.exponentialRampToValueAtTime(35, now + 0.25);
+                    gain.gain.setValueAtTime(0.6, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'warp') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(200, now);
+                    osc.frequency.linearRampToValueAtTime(1300, now + 0.8);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.8);
+                    osc.start(now);
+                    osc.stop(now + 0.8);
+                } else if (type === 'launch') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(100, now);
+                    osc.frequency.exponentialRampToValueAtTime(650, now + 1.2);
+                    gain.gain.setValueAtTime(0.5, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 1.2);
+                    osc.start(now);
+                    osc.stop(now + 1.2);
+                }
+            } catch (e) {
+                // Audio context blocked or uninitialized
+            }
+        }
+
+        // GAME STATES: 'INTRO' | 'PLAYING'
+        let gameState = 'INTRO';
+
+        // WORLD CONSTANTS
+        const WORLD_WIDTH = 8000;
+        let GROUND_Y = 0;
+
+        // GAME PROGRESSION & TIMERS
+        let currentLevel = 1;
+        let lastAsteroidTime = Date.now();
+        let toastTimeout = null;
+
+        // PERIODIC ALIEN SLIME SPAWNER TIMER (30 SECONDS)
+        let slimeSpawnTimer = 30.0;
+
+        // KEYBOARD INPUT STATE
+        const keys = {};
+
+        // SCREEN SHAKE STATE
+        let shakeTimer = 0;
+
+        // INTRO CUTSCENE STATE
+        const intro = {
+            phase: 0, // 0: Cruise with burger, 1: Burger drops, 2: Warp dimensions, 3: Moon crash
+            timer: 0,
+            shipX: 0,
+            shipY: 0,
+            burgerX: 0,
+            burgerY: 0,
+            burgerAngle: 0,
+            warpHue: 0
+        };
+
+        // PLAYER STATE
+        const player = {
+            x: 4050,
+            y: 0,
+            vx: 0,
+            vy: 0,
+            speed: 5.4,
+            jumpForce: -8.2,
+            gravity: 0.22,
+            facing: 1, // 1 = Right, -1 = Left
+            walkFrame: 0,
+            isGrounded: false,
+            partsCollected: 0,
+            insideRocket: false,
+            eatenState: null, // { timer: 3.0, slug: obj }
+            netState: null, // { buggy: obj }
+            invulnerableTimer: 0,
+            // FLY SWATTER MECHANIC (3-second cooldown, twice the range)
+            swatterCooldown: 0,
+            swatterCooldownMax: 3.0, // 3-second cooldown
+            swatterAnimTimer: 0,
+            isSwatting: false
+        };
+
+        // ROCKET STATE
+        const rocket = {
+            x: 4000,
+            y: 0,
+            width: 60,
+            height: 130,
+            isRepaired: false,
+            takingOff: false,
+            launchY: 0,
+            launchVy: 0
+        };
+
+        // ENVIRONMENT DATA
+        let stars = [];
+        let nebulae = [];
+        let planets = [];
+        let moonMountains = [];
+        let craters = [];
+        let moonRocks = [];
+        let parts = [];
+        let particles = [];
+        let comicTexts = [];
+
+        // ENEMIES DATA
+        let groundSlugs = [];
+        let buggySlugs = [];
+        let fallingAsteroids = [];
+        let groundedAsteroids = [];
+
+        const ROCKET_PARTS_TOTAL = 5;
+
+        // Toast Banner Notification Function
+        function showToast(msg, duration = 2500) {
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastEl.innerText = msg;
+            toastEl.classList.add('show');
+            toastTimeout = setTimeout(() => {
+                toastEl.classList.remove('show');
+            }, duration);
+        }
+
+        function changeLevel(delta) {
+            if (delta !== 0) {
+                currentLevel = Math.max(1, Math.min(5, currentLevel + delta));
+            }
+            document.getElementById('levelText').innerText = `LEVEL ${currentLevel}`;
+            showToast(`Switched to Level ${currentLevel}`);
+            resetSimulation();
+        }
+
+        function startIntro() {
+            gameState = 'INTRO';
+            intro.phase = 0;
+            intro.timer = 0;
+            intro.shipX = -100;
+            intro.shipY = canvas.height * 0.4;
+            intro.burgerX = 0;
+            intro.burgerY = -35;
+            intro.burgerAngle = 0;
+            intro.warpHue = 0;
+            skipBtn.style.display = 'block';
+            playSound('warp');
+        }
+
+        function skipIntro() {
+            gameState = 'PLAYING';
+            skipBtn.style.display = 'none';
+            resetSimulation();
+            showToast("GET ALL 5 ROCKET PARTS & FLY HOME!", 3000);
+        }
+
+        function initWorldData() {
+            // 1. Starfield Generation
+            stars = [];
+            for (let i = 0; i < 350; i++) {
+                stars.push({
+                    x: Math.random() * WORLD_WIDTH,
+                    y: Math.random() * 0.65,
+                    size: Math.random() * 2.0 + 0.5,
+                    alpha: Math.random() * 0.7 + 0.3
+                });
+            }
+
+            // 2. Nebulae Clouds
+            nebulae = [
+                { x: 1200, y: 100, radius: 240, color: 'rgba(140, 60, 255, 0.22)' },
+                { x: 3800, y: 80, radius: 300, color: 'rgba(0, 220, 255, 0.18)' },
+                { x: 6200, y: 120, radius: 260, color: 'rgba(255, 80, 160, 0.2)' }
+            ];
+
+            // 3. Earth & Outer Planets
+            planets = [
+                { x: 3200, y: 130, radius: 52, color: '#2b65ec', isEarth: true },
+                { x: 6800, y: 110, radius: 32, color: '#e77d11', ring: true }
+            ];
+
+            // 4. Moon Mountain Ranges
+            moonMountains = [];
+            let mX = 0;
+            while (mX < WORLD_WIDTH + 500) {
+                const width = 180 + Math.random() * 240;
+                const height = 90 + Math.random() * 110;
+                moonMountains.push({ x: mX, width: width, height: height });
+                mX += width - 35;
+            }
+
+            // 5. Daylight Moon Craters
+            craters = [];
+            for (let x = 200; x < WORLD_WIDTH - 200; x += 160 + Math.random() * 220) {
+                if (Math.abs(x - rocket.x) > 220) {
+                    craters.push({
+                        x: x,
+                        rx: 35 + Math.random() * 55,
+                        ry: 8 + Math.random() * 12
+                    });
+                }
+            }
+
+            // 6. Moon Rocks
+            moonRocks = [];
+            for (let x = 150; x < WORLD_WIDTH - 150; x += 110 + Math.random() * 160) {
+                if (Math.abs(x - rocket.x) > 160) {
+                    moonRocks.push({
+                        x: x,
+                        w: 12 + Math.random() * 24,
+                        h: 10 + Math.random() * 20
+                    });
+                }
+            }
+
+            // 7. Scattered Rocket Parts (5 Total: Left and Right of Rocket Base)
+            const partNames = ['Engine Nozzle 🚀', 'Guidance Module 🛰️', 'Fuel Cell ⚡', 'Solar Array ☀️', 'Thruster Control 🕹️'];
+            const partPositions = [600, 2200, 5400, 6800, 7600];
+            parts = partPositions.map((xPos, idx) => ({
+                id: idx,
+                name: partNames[idx],
+                x: xPos,
+                y: GROUND_Y - 20,
+                vx: 0,
+                vy: 0,
+                isFlying: false,
+                collected: false,
+                floatOffset: Math.random() * Math.PI * 2
+            }));
+
+            // Reset 30-second Slime Spawner Timer
+            slimeSpawnTimer = 30.0;
+
+            // 8. Spawn Enemies
+            initEnemies();
+        }
+
+        function initEnemies() {
+            groundSlugs = [];
+            buggySlugs = [];
+            fallingAsteroids = [];
+            groundedAsteroids = [];
+
+            // Ground Slugs Initial Spawn: Frequency = (Level * 3)
+            const groundSlugCount = currentLevel * 3;
+            const colors = ['#33ff55', '#ff33cc', '#00e5ff', '#ffaa00', '#aa33ff', '#ffee00'];
+            for (let i = 0; i < groundSlugCount; i++) {
+                const spawnX = (i % 2 === 0) 
+                    ? 400 + Math.random() * 3200 
+                    : 4400 + Math.random() * 3200;
+                groundSlugs.push({
+                    id: Date.now() + i,
+                    x: spawnX,
+                    y: GROUND_Y,
+                    vx: (Math.random() > 0.5 ? 1 : -1) * (1.3 + Math.random() * 0.5),
+                    vy: 0,
+                    speed: 1.5 + Math.random() * 0.5,
+                    width: 38,
+                    height: 22,
+                    pulse: Math.random() * Math.PI * 2,
+                    color: colors[i % colors.length],
+                    isEating: false,
+                    eatCooldown: 0,
+                    respawnTimer: 0,
+                    lastX: spawnX,
+                    stuckTimer: 0
+                });
+            }
+
+            // Moon Buggy Slugs: Frequency = Level * 1
+            const buggyCount = currentLevel;
+            for (let i = 0; i < buggyCount; i++) {
+                const spawnX = 1200 + i * 2200;
+                buggySlugs.push({
+                    id: i,
+                    x: spawnX,
+                    y: GROUND_Y,
+                    speed: 7.35, // Slower for gameplay balance
+                    facing: i % 2 === 0 ? 1 : -1,
+                    width: 65,
+                    height: 35,
+                    state: 'PATROL', // 'PATROL' | 'TRANSPORT_PLAYER' | 'TRANSPORT_PARTS'
+                    targetDropX: 0,
+                    targetPartsX: 0,
+                    stolenParts: [],
+                    cooldown: 0
+                });
+            }
+
+            lastAsteroidTime = Date.now();
+        }
+
+        function resizeCanvas() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            canvas.width = wrapper.clientWidth;
+            canvas.height = wrapper.clientHeight;
+            GROUND_Y = canvas.height - 90;
+
+            if (player.y === 0) {
+                resetSimulation();
+            }
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // CONTROLS HANDLERS - STRICT WASD ONLY (STRICTLY INTERCEPT AND BLOCK ARROW KEYS)
+        window.addEventListener('keydown', (e) => {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+                e.preventDefault(); // Intercept and block arrow key scrolling completely
+                return;
+            }
+
+            if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
+                e.preventDefault();
+                keys[e.code.toUpperCase()] = true;
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Keyw', 'Keya', 'Keys', 'Keyd'].includes(e.code)) {
+                keys[e.code.toUpperCase()] = false;
+            }
+        });
+
+        function resetSimulation() {
+            initWorldData();
+            player.x = 4050;
+            player.y = GROUND_Y;
+            player.vx = 0;
+            player.vy = 0;
+            player.facing = 1;
+            player.walkFrame = 0;
+            player.partsCollected = 0;
+            player.insideRocket = false;
+            player.eatenState = null;
+            player.netState = null;
+            player.invulnerableTimer = 0;
+            player.swatterCooldown = 0;
+            player.swatterAnimTimer = 0;
+            player.isSwatting = false;
+
+            rocket.x = 4000;
+            rocket.y = GROUND_Y;
+            rocket.isRepaired = false;
+            rocket.takingOff = false;
+            rocket.launchY = GROUND_Y;
+            rocket.launchVy = 0;
+
+            particles = [];
+            comicTexts = [];
+            shakeTimer = 0;
+        }
+
+        function updateIntro(dt) {
+            intro.timer += dt;
+
+            if (intro.phase === 0) {
+                // Flying peacefully in spaceship
+                intro.shipX += 3.5;
+                intro.shipY = canvas.height * 0.35 + Math.sin(intro.timer * 3) * 15;
+
+                if (intro.shipX > canvas.width * 0.4) {
+                    intro.phase = 1;
+                    intro.timer = 0;
+                }
+            } 
+            else if (intro.phase === 1) {
+                // Turbulence! Burger slides off dashboard onto controller button!
+                intro.shipX += 1.2;
+                intro.shipY = canvas.height * 0.35 + (Math.random() - 0.5) * 12;
+
+                intro.burgerY += 2.5;
+                intro.burgerX += 1.5;
+                intro.burgerAngle += 0.15;
+
+                if (intro.timer > 2.0) {
+                    intro.phase = 2;
+                    intro.timer = 0;
+                    playSound('warp');
+                }
+            } 
+            else if (intro.phase === 2) {
+                // Dimensional Warp Swirl!
+                intro.warpHue = (intro.warpHue + 8) % 360;
+                shakeTimer = 0.2;
+
+                if (intro.timer > 3.0) {
+                    intro.phase = 3;
+                    intro.timer = 0;
+                    intro.shipX = canvas.width * 0.5;
+                    intro.shipY = -80;
+                }
+            } 
+            else if (intro.phase === 3) {
+                // Crash Landing on Moon!
+                intro.shipY += 12.0;
+
+                if (intro.shipY >= GROUND_Y - 40) {
+                    intro.shipY = GROUND_Y - 40;
+                    shakeTimer = 0.6;
+                    playSound('hit');
+
+                    // Crash particles & comic explosion
+                    for (let i = 0; i < 40; i++) {
+                        particles.push({
+                            x: intro.shipX + (Math.random() * 60 - 30),
+                            y: GROUND_Y,
+                            vx: (Math.random() - 0.5) * 16,
+                            vy: -Math.random() * 12 - 2,
+                            life: 45,
+                            size: Math.random() * 8 + 3,
+                            color: Math.random() > 0.5 ? '#ffaa00' : '#ff3300'
+                        });
+                    }
+
+                    comicTexts.push({
+                        text: "CRASH!!",
+                        x: intro.shipX,
+                        y: GROUND_Y - 80,
+                        life: 60,
+                        color: '#ff3300'
+                    });
+
+                    // Start Game after short delay
+                    setTimeout(() => {
+                        skipIntro();
+                    }, 1200);
+
+                    intro.phase = 4;
+                }
+            }
+        }
+
+        function updatePhysics() {
+            const dt = 0.016; // 60 FPS delta
+            const now = Date.now();
+
+            if (gameState === 'INTRO') {
+                updateIntro(dt);
+                updateParticles();
+                return;
+            }
+
+            // Screen Shake Decay
+            if (shakeTimer > 0) shakeTimer -= dt;
+
+            // Invulnerability Timer
+            if (player.invulnerableTimer > 0) player.invulnerableTimer -= dt;
+
+            // Swatter Cooldown & Animation Timers
+            if (player.swatterCooldown > 0) player.swatterCooldown -= dt;
+            if (player.swatterAnimTimer > 0) {
+                player.swatterAnimTimer -= dt;
+                if (player.swatterAnimTimer <= 0) player.isSwatting = false;
+            }
+
+            // ROCKET TAKEOFF SEQUENCE
+            if (player.insideRocket) {
+                if (rocket.takingOff) {
+                    rocket.launchVy -= 0.15;
+                    rocket.launchY += rocket.launchVy;
+
+                    for (let i = 0; i < 5; i++) {
+                        particles.push({
+                            x: rocket.x + (Math.random() * 24 - 12),
+                            y: rocket.launchY,
+                            vx: Math.random() * 4 - 2,
+                            vy: Math.random() * 6 + 4,
+                            life: 30,
+                            size: Math.random() * 6 + 4,
+                            color: Math.random() > 0.5 ? '#ffaa00' : '#ff3300'
+                        });
+                    }
+
+                    if (rocket.launchY < -200) {
+                        playSound('launch');
+                        if (currentLevel < 5) {
+                            showToast(`MISSION SUCCESS! ADVANCING TO LEVEL ${currentLevel + 1}!`, 3500);
+                            changeLevel(1);
+                        } else {
+                            showToast(`ALL MOON MISSIONS COMPLETE! VICTORY!`, 5000);
+                            changeLevel(0);
+                        }
+                    }
+                }
+                updateParticles();
+                return;
+            }
+
+            // 1. PERIODIC ALIEN SLIME SPAWNER FEATURE (EVERY 30 SECONDS - ONLY SLIMES, NO BUGGIES)
+            slimeSpawnTimer -= dt;
+            if (slimeSpawnTimer <= 0) {
+                slimeSpawnTimer = 30.0; // Reset 30s timer
+
+                // Spawn 1 new slime at least 400px away from Stickman
+                let spawnX = player.x + (Math.random() > 0.5 ? 1 : -1) * (450 + Math.random() * 800);
+                spawnX = Math.max(250, Math.min(WORLD_WIDTH - 250, spawnX));
+
+                const colors = ['#33ff55', '#ff33cc', '#00e5ff', '#ffaa00', '#aa33ff', '#ffee00'];
+                groundSlugs.push({
+                    id: Date.now(),
+                    x: spawnX,
+                    y: GROUND_Y,
+                    vx: (Math.random() > 0.5 ? 1 : -1) * (1.5 + Math.random() * 0.5),
+                    vy: 0,
+                    speed: 1.5 + Math.random() * 0.5,
+                    width: 38,
+                    height: 22,
+                    pulse: Math.random() * Math.PI * 2,
+                    color: colors[groundSlugs.length % colors.length],
+                    isEating: false,
+                    eatCooldown: 0,
+                    respawnTimer: 0,
+                    lastX: spawnX,
+                    stuckTimer: 0
+                });
+
+                playSound('pop');
+                showToast("NEW ALIEN SLIME EMERGED FROM MOON SOIL! 🦠", 3000);
+            }
+
+            // 2. ASTEROID LAUNCHING MECHANIC
+            const asteroidInterval = Math.max(2500, (7000 - currentLevel * 900));
+            if (now - lastAsteroidTime > asteroidInterval) {
+                lastAsteroidTime = now;
+                fallingAsteroids.push({
+                    x: player.x + (Math.random() * 180 - 90),
+                    y: -60,
+                    vy: 6.8 + Math.min(4, currentLevel * 0.6),
+                    vx: (Math.random() - 0.5) * 1.2,
+                    size: 26,
+                    rotation: 0
+                });
+                showToast("INCOMING METEOR!", 1200);
+            }
+
+            // UPDATE FALLING ASTEROIDS & MID-AIR COLLISION FIX
+            for (let i = fallingAsteroids.length - 1; i >= 0; i--) {
+                const ast = fallingAsteroids[i];
+                ast.y += ast.vy;
+                ast.x += ast.vx;
+                ast.rotation += 0.06;
+
+                // Flame trail particles
+                if (Math.random() < 0.7) {
+                    particles.push({
+                        x: ast.x + (Math.random() * 12 - 6),
+                        y: ast.y - 15,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: -Math.random() * 3 - 1,
+                        life: 22,
+                        size: Math.random() * 5 + 3,
+                        color: Math.random() > 0.5 ? '#ff4400' : '#ffbb00'
+                    });
+                }
+
+                // BUG FIX #1: MID-AIR METEOR COLLISION CHECK
+                // Check direct hit between falling meteor and Stickman on EVERY FRAME (ground or air!)
+                const distToStickman = Math.hypot(ast.x - player.x, ast.y - (player.y - 15));
+                if (distToStickman < (ast.size + 14) && player.invulnerableTimer <= 0 && !player.eatenState && !player.netState) {
+                    shakeTimer = 0.5;
+                    playSound('hit');
+                    player.vy = 3.5;
+                    player.vx = (player.x > ast.x ? 1 : -1) * 8.5;
+                    player.invulnerableTimer = 1.5;
+
+                    // Explosion particles
+                    for (let p = 0; p < 30; p++) {
+                        particles.push({
+                            x: ast.x,
+                            y: ast.y,
+                            vx: (Math.random() - 0.5) * 12,
+                            vy: (Math.random() - 0.5) * 12,
+                            life: 35,
+                            size: Math.random() * 7 + 3,
+                            color: Math.random() > 0.5 ? '#ff3300' : '#ffaa00'
+                        });
+                    }
+
+                    comicTexts.push({
+                        text: "DIRECT HIT!!",
+                        x: ast.x,
+                        y: ast.y - 20,
+                        life: 45,
+                        color: '#ff3300'
+                    });
+
+                    showToast("HIT BY METEOR IN MID-AIR!", 2000);
+                    fallingAsteroids.splice(i, 1);
+                    continue;
+                }
+
+                // Meteor touches ground without hitting Stickman -> Becomes Moon Rock
+                if (ast.y >= GROUND_Y - 10) {
+                    groundedAsteroids.push({
+                        x: ast.x,
+                        y: GROUND_Y,
+                        size: ast.size
+                    });
+
+                    for (let p = 0; p < 12; p++) {
+                        particles.push({
+                            x: ast.x,
+                            y: GROUND_Y,
+                            vx: (Math.random() - 0.5) * 6,
+                            vy: -Math.random() * 4 - 1,
+                            life: 20,
+                            size: Math.random() * 4 + 2,
+                            color: '#b0b8cc'
+                        });
+                    }
+                    fallingAsteroids.splice(i, 1);
+                }
+            }
+
+            // 3. PLAYER TRAPPED IN ALIEN SLUG DIGESTION STATE
+            if (player.eatenState) {
+                const slug = player.eatenState.slug;
+                player.x = slug.x;
+                player.y = GROUND_Y;
+                player.eatenState.timer -= dt;
+
+                if (Math.random() < 0.4) {
+                    particles.push({
+                        x: slug.x + (Math.random() * 20 - 10),
+                        y: GROUND_Y - 12 + (Math.random() * 8 - 4),
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: -Math.random() * 3 - 1,
+                        life: 20,
+                        size: Math.random() * 4 + 2,
+                        color: slug.color
+                    });
+                }
+
+                // TIMER EXPIRED: EJECT STICKMAN WITH RANDOM PARABOLIC TRAJECTORY
+                if (player.eatenState.timer <= 0) {
+                    slug.isEating = false;
+                    slug.eatCooldown = 2.5;
+                    player.eatenState = null;
+                    player.invulnerableTimer = 2.0;
+
+                    const minAngleRad = Math.PI / 6;
+                    const maxAngleRad = (5 * Math.PI) / 6;
+                    const angle = minAngleRad + Math.random() * (maxAngleRad - minAngleRad);
+
+                    const sin2Theta = Math.abs(Math.sin(2 * angle));
+                    const maxRange = WORLD_WIDTH / 2;
+                    
+                    const maxVelocity = sin2Theta > 0.05 
+                        ? Math.min(29.5, Math.sqrt((maxRange * player.gravity) / sin2Theta)) 
+                        : 29.5;
+                    
+                    const minVelocity = 10.0;
+                    const launchSpeed = minVelocity + Math.random() * Math.max(0, maxVelocity - minVelocity);
+
+                    player.vx = launchSpeed * Math.cos(angle);
+                    player.vy = -launchSpeed * Math.sin(angle);
+                    player.isGrounded = false;
+
+                    // Scatter collected rocket parts
+                    let scatteredCount = 0;
+                    parts.forEach(part => {
+                        if (part.collected) {
+                            part.collected = false;
+                            part.isFlying = true;
+                            part.x = slug.x;
+                            part.y = GROUND_Y - 25;
+
+                            const pAngle = (Math.PI / 6) + Math.random() * ((2 * Math.PI) / 3);
+                            const pSpeed = 6.0 + Math.random() * 10.0;
+                            part.vx = pSpeed * Math.cos(pAngle) * (Math.random() > 0.5 ? 1 : -1);
+                            part.vy = -pSpeed * Math.sin(pAngle);
+                            scatteredCount++;
+                        }
+                    });
+
+                    player.partsCollected = 0;
+                    playSound('pop');
+
+                    if (scatteredCount > 0) {
+                        showToast(`SLIME EJECTED! ${scatteredCount} ROCKET PARTS SCATTERED!`, 3500);
+                    } else {
+                        showToast("EJECTED FROM ALIEN SLIME!", 2200);
+                    }
+
+                    for (let p = 0; p < 35; p++) {
+                        particles.push({
+                            x: slug.x,
+                            y: GROUND_Y - 15,
+                            vx: (Math.random() - 0.5) * 14,
+                            vy: (Math.random() - 0.5) * 14,
+                            life: 30,
+                            size: Math.random() * 6 + 2,
+                            color: slug.color
+                        });
+                    }
+                }
+
+                updateEnemies(dt);
+                updatePartsPhysics(dt);
+                updateParticles();
+                return;
+            }
+
+            // 4. PLAYER TRAPPED IN MOON BUGGY NET STATE
+            if (player.netState) {
+                const buggy = player.netState.buggy;
+                player.x = buggy.x;
+                player.y = GROUND_Y - 15;
+
+                updateEnemies(dt);
+                updatePartsPhysics(dt);
+                updateParticles();
+                return;
+            }
+
+            // WASD Movement Controls
+            let dx = 0;
+            if (keys['KEYA'] || keys['KeyA']) { dx -= 1; player.facing = -1; }
+            if (keys['KEYD'] || keys['KeyD']) { dx += 1; player.facing = 1; }
+
+            if (dx !== 0) {
+                player.vx = dx * player.speed;
+            } else if (player.isGrounded) {
+                player.vx = 0;
+            } else {
+                player.vx *= 0.985;
+            }
+
+            // Low-gravity Moon Jump (W Key)
+            if ((keys['KEYW'] || keys['KeyW']) && player.isGrounded) {
+                player.vy = player.jumpForce;
+                player.isGrounded = false;
+                playSound('jump');
+            }
+
+            // BUG FIX #7: DISABLE FLY SWATTER SPAM INSIDE SLIME / BUGGY
+            // FLY SWATTER MECHANIC & FAST DROP (S Key)
+            if (keys['KEYS'] || keys['KeyS']) {
+                // Airborne S key gives fast drop
+                if (!player.isGrounded) {
+                    player.vy += 0.42;
+                }
+
+                // BUG FIX #3: FLY SWATTER 3-SECOND COOLDOWN & BUG FIX #4: TWICE THE RANGE
+                if (player.swatterCooldown <= 0 && !player.eatenState && !player.netState && !player.insideRocket) {
+                    player.swatterCooldown = player.swatterCooldownMax; // 3 SECONDS COOLDOWN
+                    player.swatterAnimTimer = 0.28;
+                    player.isSwatting = true;
+                    playSound('swat');
+
+                    // BUG FIX #4: TWICE THE RANGE (Width increased to 130px, Height 70px)
+                    // BUG FIX #2: SWATTER AIR FIX (Swat Y evaluates at Stickman's actual height)
+                    const swatW = 130; // Twice the range!
+                    const swatH = 70;
+                    const swatX = player.facing === 1 ? player.x + 5 : player.x - 135;
+                    const swatY = player.y - 45; // Follows player height in air!
+
+                    groundSlugs.forEach(slug => {
+                        if (slug.respawnTimer <= 0 && !slug.isEating) {
+                            // Check collision between swatter area and slug bounding box
+                            const slugX = slug.x - slug.width / 2;
+                            const slugY = slug.y - slug.height;
+
+                            const hit = (
+                                swatX < slugX + slug.width &&
+                                swatX + swatW > slugX &&
+                                swatY < slugY + slug.height &&
+                                swatY + swatH > slugY
+                            );
+
+                            if (hit) {
+                                // DEFEAT SLIME MONSTER!
+                                slug.respawnTimer = 7.0; // Defeated! Respawns after 7s
+                                playSound('splat');
+
+                                for (let p = 0; p < 28; p++) {
+                                    particles.push({
+                                        x: slug.x,
+                                        y: GROUND_Y - 10,
+                                        vx: (Math.random() - 0.5) * 14,
+                                        vy: -Math.random() * 9 - 2,
+                                        life: 30,
+                                        size: Math.random() * 7 + 3,
+                                        color: slug.color
+                                    });
+                                }
+
+                                comicTexts.push({
+                                    text: "SPLATT!!",
+                                    x: slug.x,
+                                    y: GROUND_Y - 45,
+                                    life: 40,
+                                    color: '#00ffcc'
+                                });
+
+                                showToast("SLIME SPLATTED WITH FLY SWATTER!", 1800);
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Apply Physics
+            player.vy += player.gravity;
+            player.x += player.vx;
+            player.y += player.vy;
+
+            // Lunar Surface Floor Collision
+            if (player.y >= GROUND_Y) {
+                player.y = GROUND_Y;
+                player.vy = 0;
+                player.isGrounded = true;
+            }
+
+            // Grounded Asteroid Obstacle Collisions
+            groundedAsteroids.forEach(ast => {
+                const leftBoundary = ast.x - ast.size - 8;
+                const rightBoundary = ast.x + ast.size + 8;
+                const topBoundary = GROUND_Y - ast.size * 1.2;
+
+                if (player.x > leftBoundary && player.x < rightBoundary) {
+                    if (player.y > topBoundary) {
+                        if (player.x < ast.x) player.x = leftBoundary;
+                        else player.x = rightBoundary;
+                    }
+                }
+            });
+
+            // Keep Player inside Map Boundaries (30 to 7970)
+            player.x = Math.max(30, Math.min(WORLD_WIDTH - 30, player.x));
+
+            // Walk Animation Frame Update
+            if (dx !== 0 && player.isGrounded) {
+                player.walkFrame += 0.24;
+            } else if (!player.isGrounded) {
+                player.walkFrame = 1.2;
+            } else {
+                player.walkFrame = 0;
+            }
+
+            updateEnemies(dt);
+            updatePartsPhysics(dt);
+
+            // Part Collection Collision Check
+            parts.forEach(part => {
+                if (!part.collected) {
+                    const partY = part.isFlying ? part.y : GROUND_Y - 20;
+                    const dist = Math.hypot(player.x - part.x, (player.y - 15) - partY);
+                    if (dist < 38) {
+                        part.collected = true;
+                        part.isFlying = false;
+                        player.partsCollected++;
+                        playSound('pickup');
+
+                        for (let i = 0; i < 20; i++) {
+                            particles.push({
+                                x: part.x,
+                                y: partY,
+                                vx: (Math.random() - 0.5) * 7,
+                                vy: (Math.random() - 0.5) * 7,
+                                life: 35,
+                                size: Math.random() * 4 + 2,
+                                color: '#00ffff'
+                            });
+                        }
+                    }
+                }
+            });
+
+            // Rocket Repair & Launch Check
+            const distToRocket = Math.abs(player.x - rocket.x);
+            if (player.partsCollected >= ROCKET_PARTS_TOTAL) {
+                rocket.isRepaired = true;
+                if (distToRocket < 45 && player.isGrounded) {
+                    player.insideRocket = true;
+                    rocket.takingOff = true;
+                    playSound('launch');
+                    showToast("ROCKET REPAIRED! LIFTOFF IN PROGRESS!", 3000);
+                }
+            } else {
+                if (Math.random() < 0.25) {
+                    particles.push({
+                        x: rocket.x + (Math.random() * 20 - 10),
+                        y: GROUND_Y - 70,
+                        vx: (Math.random() - 0.5) * 1.5,
+                        vy: -Math.random() * 2 - 0.5,
+                        life: 45,
+                        size: Math.random() * 5 + 3,
+                        color: '#777777'
+                    });
+                }
+            }
+
+            updateParticles();
+            updateComicTexts();
+        }
+
+        function updateEnemies(dt) {
+            // BUG FIX #6: REFACTORED GROUND SLUG AI & STUCK PREVENTION
+            groundSlugs.forEach(slug => {
+                if (slug.respawnTimer > 0) {
+                    slug.respawnTimer -= dt;
+                    return;
+                }
+
+                if (slug.eatCooldown > 0) slug.eatCooldown -= dt;
+                slug.pulse += 0.08;
+
+                if (slug.isEating) return;
+
+                // Chase player when within line of sight
+                const dxToPlayer = player.x - slug.x;
+                if (Math.abs(dxToPlayer) < 700) {
+                    slug.vx = (dxToPlayer > 0 ? 1 : -1) * slug.speed;
+                }
+
+                // Apply slug gravity & hopping
+                slug.vy += 0.2;
+                slug.y += slug.vy;
+                if (slug.y >= GROUND_Y) {
+                    slug.y = GROUND_Y;
+                    slug.vy = 0;
+                }
+
+                slug.x += slug.vx;
+
+                // Hop over grounded asteroid rocks if blocked
+                groundedAsteroids.forEach(ast => {
+                    if (Math.abs(slug.x - ast.x) < 30 && slug.y >= GROUND_Y) {
+                        slug.vy = -3.8; // Mini hop over rock!
+                    }
+                });
+
+                // STUCK DETECTION & UN-STICKING LOGIC
+                if (Math.abs(slug.x - slug.lastX) < 0.2) {
+                    slug.stuckTimer += dt;
+                    if (slug.stuckTimer > 0.8) {
+                        slug.vx *= -1; // Reverse direction
+                        slug.vy = -4.2; // Un-stick hop!
+                        slug.stuckTimer = 0;
+                    }
+                } else {
+                    slug.stuckTimer = 0;
+                }
+                slug.lastX = slug.x;
+
+                if (slug.x < 150) { slug.x = 150; slug.vx *= -1; }
+                if (slug.x > WORLD_WIDTH - 150) { slug.x = WORLD_WIDTH - 150; slug.vx *= -1; }
+
+                // Collision with Stickman
+                const distToPlayer = Math.hypot(player.x - slug.x, player.y - GROUND_Y);
+                if (
+                    distToPlayer < 34 &&
+                    slug.eatCooldown <= 0 &&
+                    player.invulnerableTimer <= 0 &&
+                    !player.eatenState &&
+                    !player.netState &&
+                    !player.insideRocket
+                ) {
+                    slug.isEating = true;
+                    player.eatenState = { slug: slug, timer: 3.0 };
+                    playSound('eat');
+                    showToast("SWALLOWED BY ALIEN SLIME! TRAPPED FOR 3 SECONDS!", 3000);
+                }
+            });
+
+            // MOON BUGGY SLUGS AI
+            buggySlugs.forEach(buggy => {
+                if (buggy.cooldown > 0) buggy.cooldown -= dt;
+
+                if (buggy.state === 'PATROL') {
+                    buggy.x += buggy.speed * buggy.facing;
+
+                    if (buggy.x < 300) { buggy.x = 300; buggy.facing = 1; }
+                    if (buggy.x > WORLD_WIDTH - 300) { buggy.x = WORLD_WIDTH - 300; buggy.facing = -1; }
+
+                    const distToPlayer = Math.hypot(player.x - buggy.x, player.y - (GROUND_Y - 10));
+                    if (
+                        distToPlayer < 42 &&
+                        buggy.cooldown <= 0 &&
+                        player.invulnerableTimer <= 0 &&
+                        !player.eatenState &&
+                        !player.netState &&
+                        !player.insideRocket
+                    ) {
+                        buggy.state = 'TRANSPORT_PLAYER';
+                        player.netState = { buggy: buggy };
+
+                        buggy.stolenParts = [];
+                        parts.forEach(part => {
+                            if (part.collected) {
+                                part.collected = false;
+                                buggy.stolenParts.push(part);
+                            }
+                        });
+                        player.partsCollected = 0;
+
+                        if (player.x < 4000) {
+                            buggy.targetDropX = 150;
+                            buggy.targetPartsX = 7850;
+                        } else {
+                            buggy.targetDropX = 7850;
+                            buggy.targetPartsX = 150;
+                        }
+
+                        buggy.facing = buggy.targetDropX > buggy.x ? 1 : -1;
+                        playSound('net');
+                        showToast("CAUGHT IN MOON BUGGY NET! BEING TRANSPORTED!", 3000);
+                    }
+                } 
+                else if (buggy.state === 'TRANSPORT_PLAYER') {
+                    const driveSpeed = buggy.speed * 1.35;
+                    buggy.x += driveSpeed * buggy.facing;
+
+                    if (player.netState && player.netState.buggy === buggy) {
+                        player.x = buggy.x;
+                        player.y = GROUND_Y - 15;
+                    }
+
+                    const reachedDrop = (buggy.facing === 1 && buggy.x >= buggy.targetDropX) ||
+                                        (buggy.facing === -1 && buggy.x <= buggy.targetDropX);
+
+                    if (reachedDrop) {
+                        buggy.x = buggy.targetDropX;
+
+                        player.netState = null;
+                        player.x = buggy.targetDropX;
+                        player.invulnerableTimer = 2.0;
+
+                        buggy.state = 'TRANSPORT_PARTS';
+                        buggy.facing = buggy.targetPartsX > buggy.x ? 1 : -1;
+
+                        if (buggy.stolenParts.length > 0) {
+                            showToast("RELEASED! BUGGY TAKING PARTS TO OPPOSITE SIDE!", 3500);
+                        } else {
+                            showToast("RELEASED BY MOON BUGGY!", 2000);
+                        }
+                    }
+                } 
+                else if (buggy.state === 'TRANSPORT_PARTS') {
+                    const driveSpeed = buggy.speed * 1.5;
+                    buggy.x += driveSpeed * buggy.facing;
+
+                    const reachedParts = (buggy.facing === 1 && buggy.x >= buggy.targetPartsX) ||
+                                         (buggy.facing === -1 && buggy.x <= buggy.targetPartsX);
+
+                    if (reachedParts) {
+                        buggy.x = buggy.targetPartsX;
+
+                        buggy.stolenParts.forEach(part => {
+                            part.x = buggy.targetPartsX + (Math.random() * 80 - 40);
+                            part.y = GROUND_Y - 20;
+                            part.isFlying = true;
+                            part.vx = (Math.random() - 0.5) * 10;
+                            part.vy = -6 - Math.random() * 4;
+                        });
+
+                        buggy.stolenParts = [];
+                        buggy.state = 'PATROL';
+                        buggy.cooldown = 1.0;
+                        buggy.facing = Math.random() > 0.5 ? 1 : -1;
+                    }
+                }
+            });
+        }
+
+        function updatePartsPhysics(dt) {
+            parts.forEach(part => {
+                if (part.isFlying) {
+                    part.x += part.vx;
+                    part.y += part.vy;
+                    part.vy += 0.25;
+                    part.vx *= 0.98;
+
+                    if (part.y >= GROUND_Y - 10) {
+                        part.y = GROUND_Y - 10;
+                        part.vy = -part.vy * 0.4;
+                        if (Math.abs(part.vy) < 1) {
+                            part.isFlying = false;
+                        }
+                    }
+
+                    part.x = Math.max(50, Math.min(WORLD_WIDTH - 50, part.x));
+                }
+            });
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function updateComicTexts() {
+            for (let i = comicTexts.length - 1; i >= 0; i--) {
+                const c = comicTexts[i];
+                c.y -= 0.8;
+                c.life--;
+                if (c.life <= 0) comicTexts.splice(i, 1);
+            }
+        }
+
+        // RENDER INTRO CUTSCENE
+        function drawIntroScene() {
+            ctx.fillStyle = '#020208';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (intro.phase === 2) {
+                const cx = canvas.width / 2;
+                const cy = canvas.height / 2;
+                for (let r = 380; r > 10; r -= 20) {
+                    ctx.strokeStyle = `hsl(${(intro.warpHue + r) % 360}, 100%, 50%)`;
+                    ctx.lineWidth = 14;
+                    ctx.beginPath();
+                    ctx.arc(cx + Math.sin(intro.timer * 5 + r) * 15, cy + Math.cos(intro.timer * 5 + r) * 15, r, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '900 30px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText("DIMENSIONAL WARP!!", cx, 80);
+                return;
+            }
+
+            // Draw Space Starfield
+            ctx.fillStyle = '#ffffff';
+            stars.forEach(star => {
+                ctx.fillRect((star.x) % canvas.width, star.y * canvas.height, star.size, star.size);
+            });
+
+            if (intro.phase === 0 || intro.phase === 1) {
+                const shipX = intro.shipX;
+                const shipY = intro.shipY;
+
+                // Cockpit Hull
+                ctx.fillStyle = '#334466';
+                ctx.beginPath();
+                ctx.ellipse(shipX, shipY, 70, 35, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#00ffff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Glass Dome
+                ctx.fillStyle = 'rgba(0, 225, 255, 0.4)';
+                ctx.beginPath();
+                ctx.arc(shipX, shipY - 10, 32, Math.PI, 0);
+                ctx.fill();
+                ctx.stroke();
+
+                // Stickman Pilot
+                drawStickman(shipX - 10, shipY - 5, 1, 0);
+
+                // Dashboard Controller Box
+                ctx.fillStyle = '#ff2255';
+                ctx.fillRect(shipX + 15, shipY - 12, 18, 14);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 9px Courier New';
+                ctx.fillText("GO", shipX + 24, shipY - 2);
+
+                // Giant Burger on Dashboard
+                ctx.save();
+                ctx.translate(shipX + 20 + intro.burgerX, shipY - 28 + intro.burgerY);
+                ctx.rotate(intro.burgerAngle);
+
+                // Bun Top
+                ctx.fillStyle = '#e69933';
+                ctx.beginPath(); ctx.arc(0, -6, 12, Math.PI, 0); ctx.fill();
+                // Lettuce & Cheese
+                ctx.fillStyle = '#33cc33'; ctx.fillRect(-12, -6, 24, 3);
+                ctx.fillStyle = '#ffcc00'; ctx.fillRect(-10, -3, 20, 3);
+                // Patty
+                ctx.fillStyle = '#663300'; ctx.fillRect(-12, 0, 24, 4);
+                // Bun Bottom
+                ctx.fillStyle = '#e69933'; ctx.fillRect(-11, 4, 22, 4);
+                ctx.restore();
+
+                // Subtitle Text
+                ctx.fillStyle = '#ffff00';
+                ctx.font = 'bold 20px Courier New';
+                ctx.textAlign = 'center';
+
+                if (intro.phase === 0) {
+                    ctx.fillText("STICKMAN WAS ENJOYING A BURGER IN HIS SPACESHIP...", canvas.width / 2, canvas.height - 50);
+                } else {
+                    ctx.fillStyle = '#ff3333';
+                    ctx.fillText("OH NO! BURGER FELL ON THE HYPERDRIVE CONTROLLER!!", canvas.width / 2, canvas.height - 50);
+                }
+            }
+            else if (intro.phase === 3) {
+                drawMoonForeground(0);
+
+                ctx.save();
+                ctx.translate(intro.shipX, intro.shipY);
+                ctx.rotate(0.3);
+
+                ctx.fillStyle = '#8899aa';
+                ctx.fillRect(-25, -40, 50, 70);
+                ctx.fillStyle = '#ff3333';
+                ctx.beginPath(); ctx.moveTo(-25, -40); ctx.lineTo(0, -70); ctx.lineTo(25, -40); ctx.fill();
+                ctx.restore();
+
+                ctx.fillStyle = '#ffaa00';
+                ctx.font = '900 24px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText("CRASH LANDING ON THE MOON!!", canvas.width / 2, 70);
+            }
+        }
+
+        // RENDER GAME ENVIRONMENT
+        function drawBackground(camX) {
+            ctx.fillStyle = '#020208';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Solar Glare
+            const sunX = 1800 - camX * 0.04;
+            const sunGrad = ctx.createRadialGradient(sunX, 80, 15, sunX, 80, 320);
+            sunGrad.addColorStop(0, 'rgba(255, 255, 230, 1)');
+            sunGrad.addColorStop(0.2, 'rgba(255, 240, 180, 0.35)');
+            sunGrad.addColorStop(1, 'rgba(255, 240, 180, 0)');
+            ctx.fillStyle = sunGrad;
+            ctx.beginPath();
+            ctx.arc(sunX, 80, 320, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 1. Starfield
+            ctx.fillStyle = '#ffffff';
+            stars.forEach(star => {
+                const screenX = (star.x - camX * 0.05) % canvas.width;
+                const renderX = screenX < 0 ? screenX + canvas.width : screenX;
+                ctx.globalAlpha = star.alpha;
+                ctx.fillRect(renderX, star.y * canvas.height, star.size, star.size);
+            });
+            ctx.globalAlpha = 1.0;
+
+            // 2. Nebulae
+            nebulae.forEach(neb => {
+                const renderX = neb.x - camX * 0.08;
+                if (renderX > -neb.radius && renderX < canvas.width + neb.radius) {
+                    const grad = ctx.createRadialGradient(renderX, neb.y, 10, renderX, neb.y, neb.radius);
+                    grad.addColorStop(0, neb.color);
+                    grad.addColorStop(1, 'transparent');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(renderX, neb.y, neb.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+
+            // 3. Earth & Outer Planets
+            planets.forEach(planet => {
+                const renderX = planet.x - camX * 0.12;
+                if (renderX > -100 && renderX < canvas.width + 100) {
+                    ctx.fillStyle = planet.color;
+                    ctx.beginPath();
+                    ctx.arc(renderX, planet.y, planet.radius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    if (planet.isEarth) {
+                        ctx.fillStyle = '#228b22';
+                        ctx.beginPath();
+                        ctx.arc(renderX - 10, planet.y - 10, 15, 0, Math.PI * 2);
+                        ctx.arc(renderX + 12, planet.y + 8, 18, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    if (planet.ring) {
+                        ctx.strokeStyle = 'rgba(230, 200, 150, 0.6)';
+                        ctx.lineWidth = 4;
+                        ctx.beginPath();
+                        ctx.ellipse(renderX, planet.y, planet.radius * 1.8, 8, -0.2, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                }
+            });
+
+            // 4. Lunar Mountains
+            ctx.fillStyle = '#525766';
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height);
+            moonMountains.forEach(m => {
+                const renderX = m.x - camX * 0.22;
+                ctx.lineTo(renderX, GROUND_Y - m.height);
+                ctx.lineTo(renderX + m.width, GROUND_Y);
+            });
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.closePath();
+            ctx.fill();
+
+            // Highlights
+            ctx.fillStyle = '#7a8194';
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height);
+            moonMountains.forEach(m => {
+                const renderX = m.x - camX * 0.28 + 40;
+                ctx.lineTo(renderX, GROUND_Y - m.height * 0.7);
+                ctx.lineTo(renderX + m.width * 0.8, GROUND_Y);
+            });
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawMoonForeground(camX) {
+            ctx.fillStyle = '#c5cbda';
+            ctx.fillRect(0, GROUND_Y, canvas.width, canvas.height - GROUND_Y);
+
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            ctx.moveTo(0, GROUND_Y);
+            ctx.lineTo(canvas.width, GROUND_Y);
+            ctx.stroke();
+
+            // Craters
+            craters.forEach(c => {
+                const renderX = c.x - camX;
+                if (renderX > -100 && renderX < canvas.width + 100) {
+                    ctx.fillStyle = '#9aa1b2';
+                    ctx.beginPath();
+                    ctx.ellipse(renderX, GROUND_Y + 4, c.rx, c.ry, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.strokeStyle = '#eef2fc';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            });
+
+            // Moon Rocks
+            moonRocks.forEach(r => {
+                const renderX = r.x - camX;
+                if (renderX > -50 && renderX < canvas.width + 50) {
+                    ctx.fillStyle = '#838a9c';
+                    ctx.fillRect(renderX, GROUND_Y - r.h, r.w, r.h);
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(renderX, GROUND_Y - r.h, r.w, 2);
+                    ctx.strokeStyle = '#525766';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(renderX, GROUND_Y - r.h, r.w, r.h);
+                }
+            });
+
+            // Grounded Asteroids
+            groundedAsteroids.forEach(ast => {
+                const renderX = ast.x - camX;
+                if (renderX > -60 && renderX < canvas.width + 60) {
+                    ctx.fillStyle = '#6e5040';
+                    ctx.beginPath();
+                    ctx.arc(renderX, GROUND_Y - ast.size * 0.5, ast.size, Math.PI, 0);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    ctx.strokeStyle = '#3a2518';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#3a2518';
+                    ctx.beginPath();
+                    ctx.arc(renderX - 8, GROUND_Y - ast.size * 0.6, 4, 0, Math.PI * 2);
+                    ctx.arc(renderX + 8, GROUND_Y - ast.size * 0.4, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+        }
+
+        function drawRocket(camX) {
+            const renderX = rocket.x - camX;
+            const currentY = player.insideRocket ? rocket.launchY : GROUND_Y;
+
+            if (renderX < -150 || renderX > canvas.width + 150) return;
+
+            ctx.save();
+            ctx.translate(renderX, currentY);
+
+            if (!rocket.isRepaired && !rocket.takingOff) {
+                ctx.rotate(-0.22);
+            }
+
+            // Body
+            ctx.fillStyle = '#e8e8e8';
+            ctx.fillRect(-20, -90, 40, 70);
+
+            // Nose Cone
+            ctx.fillStyle = '#ff3333';
+            ctx.beginPath();
+            ctx.moveTo(-20, -90);
+            ctx.lineTo(0, -130);
+            ctx.lineTo(20, -90);
+            ctx.closePath();
+            ctx.fill();
+
+            // Porthole
+            ctx.fillStyle = '#00cdff';
+            ctx.beginPath();
+            ctx.arc(0, -65, 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#111111';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Fins
+            ctx.fillStyle = '#ff3333';
+            ctx.beginPath();
+            ctx.moveTo(-20, -40); ctx.lineTo(-35, -20); ctx.lineTo(-20, -20);
+            ctx.closePath(); ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(20, -40); ctx.lineTo(35, -20); ctx.lineTo(20, -20);
+            ctx.closePath(); ctx.fill();
+
+            // Engine
+            ctx.fillStyle = '#444444';
+            ctx.fillRect(-12, -20, 24, 12);
+
+            ctx.restore();
+        }
+
+        function drawRocketParts(camX) {
+            parts.forEach(part => {
+                if (part.collected) return;
+
+                const renderX = part.x - camX;
+                if (renderX < -60 || renderX > canvas.width + 60) return;
+
+                const floatY = part.isFlying 
+                    ? part.y 
+                    : GROUND_Y - 22 + Math.sin(Date.now() * 0.005 + part.floatOffset) * 6;
+
+                // Glowing Aura
+                const grad = ctx.createRadialGradient(renderX, floatY, 2, renderX, floatY, 26);
+                grad.addColorStop(0, 'rgba(0, 255, 255, 0.95)');
+                grad.addColorStop(1, 'rgba(0, 255, 255, 0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(renderX, floatY, 26, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Part Graphic Box
+                ctx.fillStyle = '#00ffff';
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.fillRect(renderX - 10, floatY - 10, 20, 20);
+                ctx.strokeRect(renderX - 10, floatY - 10, 20, 20);
+
+                // Label Text
+                ctx.fillStyle = '#00ffff';
+                ctx.font = 'bold 11px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText(part.name, renderX, floatY - 18);
+            });
+        }
+
+        function drawEnemies(camX) {
+            // 1. FALLING METEORS
+            fallingAsteroids.forEach(ast => {
+                const renderX = ast.x - camX;
+                if (renderX < -50 || renderX > canvas.width + 50) return;
+
+                ctx.save();
+                ctx.translate(renderX, ast.y);
+                ctx.rotate(ast.rotation);
+
+                ctx.fillStyle = '#e64a19';
+                ctx.beginPath();
+                ctx.arc(0, 0, ast.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ffb74d';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Angry Eyes
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(-8, -6, 6, 0, Math.PI * 2);
+                ctx.arc(8, -6, 6, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc(-7, -5, 2.5, 0, Math.PI * 2);
+                ctx.arc(7, -5, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(-14, -13); ctx.lineTo(-3, -7);
+                ctx.moveTo(14, -13); ctx.lineTo(3, -7);
+                ctx.stroke();
+
+                // Teeth
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(-8, 4, 16, 7);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(-6, 4, 4, 3);
+                ctx.fillRect(2, 4, 4, 3);
+
+                ctx.restore();
+            });
+
+            // 2. GROUND ALIEN SLUGS
+            groundSlugs.forEach(slug => {
+                if (slug.respawnTimer > 0) return;
+
+                const renderX = slug.x - camX;
+                if (renderX < -60 || renderX > canvas.width + 60) return;
+
+                const pulseY = Math.sin(slug.pulse) * 3;
+                const renderY = slug.y - slug.height + pulseY;
+
+                // Body
+                ctx.fillStyle = slug.color;
+                ctx.globalAlpha = slug.isEating ? 0.75 : 1.0;
+                ctx.beginPath();
+                ctx.ellipse(renderX, renderY + 10, slug.width * (slug.isEating ? 1.4 : 1.0), slug.height, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Eyestalks
+                const stalkDir = slug.vx > 0 ? 1 : -1;
+                ctx.strokeStyle = slug.color;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(renderX + stalkDir * 8, renderY + 2);
+                ctx.lineTo(renderX + stalkDir * 14, renderY - 10);
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(renderX + stalkDir * 14, renderY - 10, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc(renderX + stalkDir * 15, renderY - 10, 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // TRAPPED STICKMAN IN SLIME
+                if (slug.isEating && player.eatenState) {
+                    drawStickman(renderX, renderY + 18, 1, 0, true);
+
+                    ctx.fillStyle = '#ff0055';
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    const timerText = `SWALLOWED! ${player.eatenState.timer.toFixed(1)}s`;
+                    ctx.font = 'bold 12px Courier New';
+                    ctx.textAlign = 'center';
+                    ctx.fillRect(renderX - 60, renderY - 32, 120, 20);
+                    ctx.strokeRect(renderX - 60, renderY - 32, 120, 20);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillText(timerText, renderX, renderY - 18);
+                }
+            });
+
+            // 3. MOON BUGGY SLUGS
+            buggySlugs.forEach(buggy => {
+                const renderX = buggy.x - camX;
+                if (renderX < -100 || renderX > canvas.width + 100) return;
+
+                ctx.save();
+                ctx.translate(renderX, GROUND_Y - 15);
+
+                // Chassis
+                ctx.fillStyle = '#ffcc00';
+                ctx.fillRect(-28, -12, 56, 16);
+                ctx.strokeStyle = '#111111';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(-28, -12, 56, 16);
+
+                // Wheels
+                ctx.fillStyle = '#333333';
+                ctx.beginPath();
+                ctx.arc(-18, 6, 8, 0, Math.PI * 2);
+                ctx.arc(18, 6, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Driver Slug
+                ctx.fillStyle = '#00ffcc';
+                ctx.beginPath();
+                ctx.arc(buggy.facing * 8, -20, 10, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Cage
+                ctx.strokeStyle = '#ff3300';
+                ctx.lineWidth = 2.5;
+                ctx.strokeRect(-20, -32, 22, 20);
+
+                if (buggy.state === 'TRANSPORT_PLAYER') {
+                    ctx.fillStyle = 'rgba(255, 51, 0, 0.45)';
+                    ctx.fillRect(-20, -32, 22, 20);
+                }
+
+                ctx.restore();
+            });
+        }
+
+        function drawStickman(x, y, facing, walkFrame, insideSlug = false) {
+            if (player.insideRocket) return;
+
+            ctx.save();
+            if (!insideSlug && player.invulnerableTimer > 0 && Math.floor(Date.now() / 100) % 2 === 0) {
+                ctx.globalAlpha = 0.4;
+            }
+
+            ctx.strokeStyle = insideSlug ? '#5500aa' : '#111111';
+            ctx.fillStyle = '#ffffff';
+            ctx.lineWidth = 2.2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            const headRadius = 6;
+            const bodyLength = 16;
+            const legLength = 12;
+            const neckY = y - bodyLength;
+            const headY = neckY - headRadius;
+            const shoulderY = neckY + 4;
+
+            // Helmet Bubble
+            ctx.strokeStyle = '#00cdff';
+            ctx.beginPath();
+            ctx.arc(x, headY, headRadius + 3, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Head
+            ctx.strokeStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Eye Reflection
+            ctx.fillStyle = '#00cdff';
+            ctx.beginPath();
+            ctx.arc(x + facing * 2.5, headY - 1, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Torso
+            ctx.strokeStyle = '#000000';
+            ctx.beginPath();
+            ctx.moveTo(x, neckY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+
+            // Legs
+            const legSwing = Math.sin(walkFrame) * 7;
+            ctx.beginPath();
+            ctx.moveTo(x, y); ctx.lineTo(x - legSwing, y + legLength);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, y); ctx.lineTo(x + legSwing, y + legLength);
+            ctx.stroke();
+
+            // Arms
+            const armSwing = Math.sin(walkFrame + Math.PI) * 5;
+            ctx.beginPath();
+            ctx.moveTo(x, shoulderY); ctx.lineTo(x - facing * 5 - armSwing, shoulderY + 7);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x, shoulderY); ctx.lineTo(x + facing * 5 + armSwing, shoulderY + 7);
+            ctx.stroke();
+
+            // BUG FIX #4: DRAW ENHANCED FLY SWATTER WITH TWICE THE RANGE (130px Reach Area)
+            if (player.isSwatting && !insideSlug) {
+                ctx.save();
+                ctx.translate(x + facing * 8, shoulderY);
+                const swatProgress = player.swatterAnimTimer / 0.28;
+                const swatAngle = swatProgress * Math.PI * 0.9;
+                ctx.rotate(facing * (Math.PI / 2 - swatAngle));
+
+                // Motion Swing Arc Arc Trail
+                ctx.strokeStyle = 'rgba(0, 255, 255, 0.4)';
+                ctx.lineWidth = 14;
+                ctx.beginPath();
+                ctx.arc(0, 0, 75, -Math.PI / 3, Math.PI / 3);
+                ctx.stroke();
+
+                // Long Handle (Twice the range!)
+                ctx.strokeStyle = '#ffaa00';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(0, 0); ctx.lineTo(0, -65);
+                ctx.stroke();
+
+                // Giant Swatter Head
+                ctx.fillStyle = '#ff1155';
+                ctx.fillRect(-20, -100, 40, 35);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(-20, -100, 40, 35);
+
+                // Mesh Grid Lines
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(-10, -100); ctx.lineTo(-10, -65);
+                ctx.moveTo(10, -100); ctx.lineTo(10, -65);
+                ctx.moveTo(-20, -88); ctx.lineTo(20, -88);
+                ctx.moveTo(-20, -76); ctx.lineTo(20, -76);
+                ctx.stroke();
+
+                ctx.restore();
+            }
+
+            ctx.restore();
+        }
+
+        function drawParticles(camX) {
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x - camX, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function drawComicTexts(camX) {
+            comicTexts.forEach(c => {
+                ctx.fillStyle = c.color;
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 3;
+                ctx.font = '900 22px Courier New';
+                ctx.textAlign = 'center';
+                ctx.strokeText(c.text, c.x - camX, c.y);
+                ctx.fillText(c.text, c.x - camX, c.y);
+            });
+        }
+
+        function drawHUD() {
+            // Top Left Parts Progress Box
+            ctx.fillStyle = 'rgba(5, 10, 25, 0.92)';
+            ctx.strokeStyle = '#00ffff';
+            ctx.lineWidth = 2;
+            ctx.fillRect(15, 15, 280, 60);
+            ctx.strokeRect(15, 15, 280, 60);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 12px Courier New';
+            ctx.textAlign = 'left';
+            ctx.fillText(`PARTS: ${player.partsCollected} / ${ROCKET_PARTS_TOTAL}`, 25, 34);
+
+            ctx.font = '10px Courier New';
+            if (player.partsCollected < ROCKET_PARTS_TOTAL) {
+                ctx.fillStyle = '#ffaa00';
+                ctx.fillText(`STATUS: Collect 5 Parts`, 25, 52);
+            } else if (!player.insideRocket) {
+                ctx.fillStyle = '#00ff00';
+                ctx.fillText(`STATUS: Board Rocket Base Now!`, 25, 52);
+            } else {
+                ctx.fillStyle = '#00ffff';
+                ctx.fillText(`STATUS: TAKEOFF SUCCESS!`, 25, 52);
+            }
+
+            // ITEM BAR HUD (Bottom Center) - BUG FIX #3: SWATTER 3s COOLDOWN PROGRESS BAR
+            const barW = 260;
+            const barH = 54;
+            const barX = (canvas.width - barW) / 2;
+            const barY = canvas.height - 68;
+
+            ctx.fillStyle = 'rgba(10, 15, 30, 0.95)';
+            ctx.strokeStyle = '#ffaa00';
+            ctx.lineWidth = 2;
+            ctx.fillRect(barX, barY, barW, barH);
+            ctx.strokeRect(barX, barY, barW, barH);
+
+            // Icon Slot
+            ctx.fillStyle = '#1e2838';
+            ctx.fillRect(barX + 8, barY + 7, 40, 40);
+            ctx.strokeStyle = '#00ffff';
+            ctx.strokeRect(barX + 8, barY + 7, 40, 40);
+
+            // Swatter Icon 🧹
+            ctx.font = '22px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('🧹', barX + 28, barY + 35);
+
+            // Swatter Label & Cooldown Timer Display
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 11px Courier New';
+            ctx.textAlign = 'left';
+            ctx.fillText("SUPER SWATTER (2x RANGE)", barX + 56, barY + 22);
+
+            if (player.swatterCooldown <= 0) {
+                ctx.fillStyle = '#00ffcc';
+                ctx.fillText("READY! [PRESS S]", barX + 56, barY + 38);
+            } else {
+                // Cooldown Bar
+                const cooldownRatio = 1 - (player.swatterCooldown / player.swatterCooldownMax);
+                ctx.fillStyle = '#ff3355';
+                ctx.fillRect(barX + 56, barY + 28, 180 * cooldownRatio, 12);
+                ctx.strokeStyle = '#ffffff';
+                ctx.strokeRect(barX + 56, barY + 28, 180, 12);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 9px Courier New';
+                ctx.fillText(`RECHARGING (${player.swatterCooldown.toFixed(1)}s)`, barX + 60, barY + 38);
+            }
+
+            // Off-Screen Rocket Base Navigation Marker
+            const cameraX = Math.max(0, Math.min(WORLD_WIDTH - canvas.width, player.x - canvas.width / 2));
+            const rocketScreenX = rocket.x - cameraX;
+            if (rocketScreenX < 0 || rocketScreenX > canvas.width) {
+                ctx.fillStyle = '#ff3333';
+                ctx.font = 'bold 12px Courier New';
+                if (rocketScreenX < 0) {
+                    ctx.fillText('◄ ROCKET BASE', 20, 95);
+                } else {
+                    ctx.textAlign = 'right';
+                    ctx.fillText('ROCKET BASE ►', canvas.width - 20, 95);
+                }
+            }
+        }
+
+        function draw() {
+            ctx.save();
+            if (shakeTimer > 0) {
+                const shakeX = (Math.random() - 0.5) * 14;
+                const shakeY = (Math.random() - 0.5) * 14;
+                ctx.translate(shakeX, shakeY);
+            }
+
+            if (gameState === 'INTRO') {
+                drawIntroScene();
+                drawParticles(0);
+                drawComicTexts(0);
+                ctx.restore();
+                return;
+            }
+
+            const cameraX = Math.max(0, Math.min(WORLD_WIDTH - canvas.width, player.x - canvas.width / 2));
+
+            drawBackground(cameraX);
+            drawMoonForeground(cameraX);
+            drawRocketParts(cameraX);
+            drawRocket(cameraX);
+            drawEnemies(cameraX);
+            drawParticles(cameraX);
+            drawComicTexts(cameraX);
+
+            if (!player.eatenState) {
+                drawStickman(player.x - cameraX, player.y, player.facing, player.walkFrame);
+            }
+            drawHUD();
+
+            ctx.restore();
+        }
+
+        function animate() {
+            updatePhysics();
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = function() {
+            resizeCanvas();
+            startIntro();
+            animate();
+        };
+    </script>
+</body>
+</html>

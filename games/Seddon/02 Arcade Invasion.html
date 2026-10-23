@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seddon Team 2 - Arcade Engine (Universal Shield Update)</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      font-family: 'Courier New', Courier, monospace, sans-serif;
+    }
+
+    body {
+      background-color: #05020a;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      overflow: hidden;
+      padding: 12px;
+    }
+
+    /* Vibrant Header Bar */
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 1300px;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 3px solid #ff00ff;
+    }
+
+    h1 {
+      font-size: 18px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: bold;
+      background: linear-gradient(90deg, #00ffff, #ff00ff, #ffff00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 8px #ff00ff);
+    }
+
+    .header-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .level-badge {
+      font-size: 15px;
+      color: #ffff00;
+      font-weight: bold;
+      letter-spacing: 1px;
+      text-shadow: 0 0 10px #ffff00;
+    }
+
+    /* Stamina Bar HUD */
+    #stamina-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #110826;
+      border: 2px solid #00ff66;
+      padding: 4px 10px;
+      border-radius: 6px;
+      box-shadow: 0 0 8px #00ff66;
+    }
+
+    .stamina-label {
+      font-size: 11px;
+      font-weight: bold;
+      color: #00ff66;
+      letter-spacing: 1px;
+    }
+
+    #stamina-bar-outer {
+      width: 110px;
+      height: 12px;
+      background: #221133;
+      border: 1px solid #00ff66;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    #stamina-bar-fill {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #00ff66, #ffff00);
+      transition: width 0.05s linear;
+    }
+
+    .btn-reset {
+      background: #ff00aa;
+      color: #ffffff;
+      border: 2px solid #ffffff;
+      padding: 6px 18px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-radius: 6px;
+      box-shadow: 0 0 12px #ff00aa;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .btn-reset:hover {
+      background: #ffffff;
+      color: #000000;
+      box-shadow: 0 0 16px #ffffff;
+    }
+
+    /* Canvas Container */
+    #canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 1300px;
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    canvas {
+      background-color: #080314;
+      border: 3px solid #00ffff;
+      box-shadow: 0 0 22px #00ffff;
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+    }
+
+    .instructions {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #ff9900;
+      text-align: center;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Section -->
+  <div id="header">
+    <h1>Arcade Engine - Universal Shield Update</h1>
+    
+    <div class="header-info">
+      <!-- Stamina Gauge -->
+      <div id="stamina-container">
+        <span class="stamina-label">SPRINT [SHIFT]</span>
+        <div id="stamina-bar-outer">
+          <div id="stamina-bar-fill"></div>
+        </div>
+      </div>
+
+      <span id="level-display" class="level-badge">LEVEL: 1</span>
+      <button class="btn-reset" onclick="resetSimulation()">Reset Level</button>
+    </div>
+  </div>
+
+  <!-- Canvas Container -->
+  <div id="canvas-wrapper">
+    <canvas id="simCanvas"></canvas>
+  </div>
+
+  <div class="instructions">
+    [WASD] Move | Hold [SHIFT] Sprint | Shield Deflects ALL Facing Enemies (Ghosts, Balls, Rockets, Claws)!
+  </div>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // KEYBOARD INPUT STATE
+    const keys = {};
+
+    // MAZE & GRID CONFIG
+    let level = 1;
+    let transitionTimer = 0;
+    const GRID_COLS = 15; // Must be odd for DFS maze generation
+    const GRID_ROWS = 9;
+    let grid = []; // 1 = Cabinet Wall, 0 = Walkway
+    let cabinetGames = []; // 0 = Space Defender, 1 = Maze Muncher, 2 = Pong, 3 = Cyber Racer, 4 = Pixel Jump
+    let cabinetFacings = [];
+    let cellW = 0;
+    let cellH = 0;
+
+    // RANDOMIZED ENEMY TYPE UNLOCK ORDER
+    let enemyTypeOrder = [0, 1, 2, 3];
+
+    function shuffleEnemyOrder() {
+      for (let i = enemyTypeOrder.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [enemyTypeOrder[i], enemyTypeOrder[j]] = [enemyTypeOrder[j], enemyTypeOrder[i]];
+      }
+    }
+
+    // DOORS STATE
+    let entranceDoor = { gridX: 0, gridY: 0, x: 0, y: 0, w: 0, h: 0, side: 'LEFT' };
+    let exitDoor = { gridX: 0, gridY: 0, x: 0, y: 0, w: 0, h: 0, side: 'RIGHT' };
+
+    // STICKMAN PLAYER STATE
+    const player = {
+      x: 0,
+      y: 0,
+      radius: 12,
+      baseSpeed: 4.2,
+      sprintSpeed: 6.8,
+      facingX: 1, // Facing direction vector
+      facingY: 0,
+      walkFrame: 0,
+      stamina: 100,
+      maxStamina: 100,
+      isSprinting: false,
+      hasPaddle: false
+    };
+
+    // CLAW ESCAPE MINIGAME STATE
+    let clawMinigame = {
+      active: false,
+      presses: 0,
+      targetPresses: 5,
+      timer: 120,
+      clawRef: null
+    };
+
+    // ITEM & HAZARD DATA
+    let paddleItem = { x: 0, y: 0, spawned: false, pickedUp: false };
+    let ghosts = [];
+    let pongMachines = [];
+    let pongBalls = [];
+    let rocketLaunchers = [];
+    let rockets = [];
+    let explosions = [];
+    let clawTraps = [];
+
+    const GHOST_COLORS = ['#ff0055', '#00ffff', '#ffcc00', '#ff00ff', '#00ff66'];
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvas-wrapper');
+      canvas.width = wrapper.clientWidth;
+      canvas.height = wrapper.clientHeight;
+
+      cellW = canvas.width / GRID_COLS;
+      cellH = canvas.height / GRID_ROWS;
+
+      if (grid.length === 0) {
+        resetSimulation();
+      } else {
+        updateDoorCoordinates();
+      }
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // CONTROLS HANDLER (Strictly WASD + Shift for Sprint, Arrow keys blocked)
+    window.addEventListener('keydown', (e) => {
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ShiftLeft', 'ShiftRight'].includes(e.code)) {
+        e.preventDefault();
+      }
+
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ShiftLeft', 'ShiftRight'].includes(e.code)) {
+        if (clawMinigame.active && !keys[e.code] && ['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+          clawMinigame.presses++;
+        }
+        keys[e.code] = true;
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ShiftLeft', 'ShiftRight'].includes(e.code)) {
+        keys[e.code] = false;
+      }
+    });
+
+    function getCabinetFacingDir(r, c) {
+      const dirs = [
+        { dx: 0, dy: 1 },  // SOUTH
+        { dx: 0, dy: -1 }, // NORTH
+        { dx: 1, dy: 0 },  // EAST
+        { dx: -1, dy: 0 }  // WEST
+      ];
+      for (let d of dirs) {
+        let nr = r + d.dy;
+        let nc = c + d.dx;
+        if (nr >= 0 && nr < GRID_ROWS && nc >= 0 && nc < GRID_COLS && grid[nr][nc] === 0) {
+          return d;
+        }
+      }
+      return dirs[0];
+    }
+
+    // PROCEDURAL MAZE GENERATION
+    function generateMaze() {
+      grid = Array(GRID_ROWS).fill(0).map(() => Array(GRID_COLS).fill(1));
+      cabinetGames = Array(GRID_ROWS).fill(0).map(() => Array(GRID_COLS).fill(0));
+      cabinetFacings = Array(GRID_ROWS).fill(0).map(() => Array(GRID_COLS).fill(null));
+
+      function stackCarve(cx, cy) {
+        const stack = [[cx, cy]];
+        grid[cy][cx] = 0;
+
+        const dirs = [[0, -2], [0, 2], [-2, 0], [2, 0]];
+
+        while (stack.length > 0) {
+          const [currX, currY] = stack[stack.length - 1];
+          const neighbors = [];
+
+          for (let [dx, dy] of dirs) {
+            const nx = currX + dx;
+            const ny = currY + dy;
+            if (nx > 0 && nx < GRID_COLS - 1 && ny > 0 && ny < GRID_ROWS - 1 && grid[ny][nx] === 1) {
+              neighbors.push([nx, ny, dx, dy]);
+            }
+          }
+
+          if (neighbors.length > 0) {
+            const [nx, ny, dx, dy] = neighbors[Math.floor(Math.random() * neighbors.length)];
+            grid[currY + dy / 2][currX + dx / 2] = 0;
+            grid[ny][nx] = 0;
+            stack.push([nx, ny]);
+          } else {
+            stack.pop();
+          }
+        }
+      }
+
+      stackCarve(1, 1);
+
+      // ENTRANCE & EXIT DOORS ON OPPOSITE SIDES
+      const isHorizontalAxis = Math.random() < 0.5;
+      const validOddRows = [1, 3, 5, 7];
+      const validOddCols = [1, 3, 5, 7, 9, 11, 13];
+
+      if (isHorizontalAxis) {
+        const entryY = validOddRows[Math.floor(Math.random() * validOddRows.length)];
+        const exitY = validOddRows[Math.floor(Math.random() * validOddRows.length)];
+        
+        entranceDoor = { gridX: 0, gridY: entryY, side: 'LEFT' };
+        exitDoor = { gridX: GRID_COLS - 1, gridY: exitY, side: 'RIGHT' };
+
+        grid[entryY][0] = 0;
+        grid[exitY][GRID_COLS - 1] = 0;
+      } else {
+        const entryX = validOddCols[Math.floor(Math.random() * validOddCols.length)];
+        const exitX = validOddCols[Math.floor(Math.random() * validOddCols.length)];
+
+        entranceDoor = { gridX: entryX, gridY: 0, side: 'TOP' };
+        exitDoor = { gridX: exitX, gridY: GRID_ROWS - 1, side: 'BOTTOM' };
+
+        grid[0][entryX] = 0;
+        grid[GRID_ROWS - 1][exitX] = 0;
+      }
+
+      // ASSIGN GAMES
+      const cabinetListByGame = { 0: [], 1: [], 2: [], 3: [], 4: [] };
+
+      for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          if (grid[r][c] === 1) {
+            const game = Math.floor(Math.random() * 5);
+            cabinetGames[r][c] = game;
+            const facing = getCabinetFacingDir(r, c);
+            cabinetFacings[r][c] = facing;
+            cabinetListByGame[game].push({ r, c, facing });
+          }
+        }
+      }
+
+      // CLEAR LISTS
+      ghosts = [];
+      pongMachines = [];
+      pongBalls = [];
+      rocketLaunchers = [];
+      rockets = [];
+      explosions = [];
+      clawTraps = [];
+
+      // GUARANTEED PADDLE SPAWN ON OPEN WALKWAY TILE
+      let validWalkwayTiles = [];
+      for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          if (grid[r][c] === 0) {
+            if ((r !== entranceDoor.gridY || c !== entranceDoor.gridX) &&
+                (r !== exitDoor.gridY || c !== exitDoor.gridX)) {
+              validWalkwayTiles.push({ c, r });
+            }
+          }
+        }
+      }
+
+      let preferredPaddleTile = null;
+      if (cabinetListByGame[2].length > 0) {
+        for (let cab of cabinetListByGame[2]) {
+          let frontC = cab.c + cab.facing.dx;
+          let frontR = cab.r + cab.facing.dy;
+          if (frontR >= 0 && frontR < GRID_ROWS && frontC >= 0 && frontC < GRID_COLS && grid[frontR][frontC] === 0) {
+            preferredPaddleTile = { c: frontC, r: frontR };
+            break;
+          }
+        }
+      }
+
+      const finalPaddleTile = preferredPaddleTile || validWalkwayTiles[Math.floor(Math.random() * validWalkwayTiles.length)];
+      if (finalPaddleTile) {
+        paddleItem.x = (finalPaddleTile.c + 0.5) * cellW;
+        paddleItem.y = (finalPaddleTile.r + 0.5) * cellH;
+        paddleItem.spawned = true;
+        paddleItem.pickedUp = false;
+      }
+
+      // CALCULATE ACTIVE ENEMY TYPES
+      const numActiveTypes = Math.min(4, level);
+      const machinesPerType = level <= 4 ? 1 : (level - 3);
+
+      for (let t = 0; t < numActiveTypes; t++) {
+        const enemyTypeID = enemyTypeOrder[t];
+
+        if (enemyTypeID === 0) {
+          let candidates = [...cabinetListByGame[0], ...cabinetListByGame[3]];
+          for (let i = 0; i < Math.min(machinesPerType, candidates.length); i++) {
+            const chosen = candidates.splice(Math.floor(Math.random() * candidates.length), 1)[0];
+            rocketLaunchers.push({
+              c: chosen.c, r: chosen.r,
+              facing: chosen.facing,
+              cooldown: Math.random() * 600
+            });
+          }
+        } else if (enemyTypeID === 1) {
+          let candidates = [...cabinetListByGame[1]];
+          for (let i = 0; i < Math.min(machinesPerType, candidates.length); i++) {
+            const chosen = candidates.splice(Math.floor(Math.random() * candidates.length), 1)[0];
+            const speedFactor = 0.45 + Math.random() * 0.10;
+            ghosts.push({
+              x: (chosen.c + 0.5) * cellW,
+              y: (chosen.r + 0.5) * cellH,
+              speed: player.baseSpeed * speedFactor,
+              color: GHOST_COLORS[Math.floor(Math.random() * GHOST_COLORS.length)]
+            });
+          }
+        } else if (enemyTypeID === 2) {
+          let candidates = [...cabinetListByGame[2]];
+          for (let i = 0; i < Math.min(machinesPerType, candidates.length); i++) {
+            const chosen = candidates.splice(Math.floor(Math.random() * candidates.length), 1)[0];
+            const fireInterval = (0.5 + Math.random() * 1.0) * 60;
+            pongMachines.push({
+              c: chosen.c, r: chosen.r,
+              facing: chosen.facing,
+              fireInterval: fireInterval,
+              cooldown: Math.random() * fireInterval
+            });
+          }
+        } else if (enemyTypeID === 3) {
+          let candidates = [...cabinetListByGame[1], ...cabinetListByGame[4]];
+          for (let i = 0; i < candidates.length && clawTraps.length < machinesPerType; i++) {
+            const chosen = candidates[i];
+            const triggerX = chosen.c + chosen.facing.dx;
+            const triggerY = chosen.r + chosen.facing.dy;
+
+            const distToEnt = Math.hypot(triggerX - entranceDoor.gridX, triggerY - entranceDoor.gridY);
+            if (distToEnt > 2.5 && triggerX >= 0 && triggerX < GRID_COLS && triggerY >= 0 && triggerY < GRID_ROWS) {
+              clawTraps.push({
+                targetGridX: triggerX,
+                targetGridY: triggerY,
+                state: 'IDLE',
+                clawY: 0,
+                timer: 0
+              });
+            }
+          }
+        }
+      }
+
+      updateDoorCoordinates();
+    }
+
+    function updateDoorCoordinates() {
+      cellW = canvas.width / GRID_COLS;
+      cellH = canvas.height / GRID_ROWS;
+
+      entranceDoor.x = entranceDoor.gridX * cellW;
+      entranceDoor.y = entranceDoor.gridY * cellH;
+      entranceDoor.w = cellW;
+      entranceDoor.h = cellH;
+
+      exitDoor.x = exitDoor.gridX * cellW;
+      exitDoor.y = exitDoor.gridY * cellH;
+      exitDoor.w = cellW;
+      exitDoor.h = cellH;
+    }
+
+    function resetSimulation() {
+      generateMaze();
+      player.x = entranceDoor.x + cellW / 2;
+      player.y = entranceDoor.y + cellH / 2;
+      player.facingX = 1;
+      player.facingY = 0;
+      player.walkFrame = 0;
+      player.hasPaddle = false;
+      player.stamina = player.maxStamina;
+      player.isSprinting = false;
+
+      clawMinigame.active = false;
+      clawMinigame.presses = 0;
+
+      document.getElementById('level-display').innerText = `LEVEL: ${level}`;
+    }
+
+    function checkCabinetCollision(px, py) {
+      const pr = player.radius;
+      for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          if (grid[r][c] === 1) {
+            const bx = c * cellW;
+            const by = r * cellH;
+            if (px + pr > bx && px - pr < bx + cellW &&
+                py + pr > by && py - pr < by + cellH) {
+              return true;
+            }
+          }
+        }
+      }
+      return false;
+    }
+
+    // HELPER: Check if player's shield is facing toward a given target position
+    function isFacingTarget(targetX, targetY) {
+      const tx = targetX - player.x;
+      const ty = targetY - player.y;
+      const dot = tx * player.facingX + ty * player.facingY;
+      return player.hasPaddle && dot >= -2;
+    }
+
+    // UPDATE PHYSICS & ENEMY AI
+    function updatePhysics() {
+      const entranceCenterX = entranceDoor.x + cellW / 2;
+      const entranceCenterY = entranceDoor.y + cellH / 2;
+      const safeRadius = cellW * 1.8;
+      const distToEntrance = Math.hypot(player.x - entranceCenterX, player.y - entranceCenterY);
+      const isPlayerInSafeZone = (distToEntrance < safeRadius);
+
+      // CLAW ESCAPE MINIGAME HANDLER
+      if (clawMinigame.active) {
+        clawMinigame.timer--;
+
+        if (clawMinigame.presses >= clawMinigame.targetPresses) {
+          if (clawMinigame.clawRef) clawMinigame.clawRef.state = 'RETRACTING';
+          clawMinigame.active = false;
+          player.y += 15;
+        } else if (clawMinigame.timer <= 0) {
+          let openTiles = [];
+          for (let r = 0; r < GRID_ROWS; r++) {
+            for (let c = 0; c < GRID_COLS; c++) {
+              if (grid[r][c] === 0) openTiles.push({ c, r });
+            }
+          }
+          const randTile = openTiles[Math.floor(Math.random() * openTiles.length)];
+          player.x = (randTile.c + 0.5) * cellW;
+          player.y = (randTile.r + 0.5) * cellH;
+
+          if (clawMinigame.clawRef) clawMinigame.clawRef.state = 'RETRACTING';
+          clawMinigame.active = false;
+        }
+        return;
+      }
+
+      // SPRINT & STAMINA MECHANICS
+      let currentSpeed = player.baseSpeed;
+      const isShiftPressed = keys['ShiftLeft'] || keys['ShiftRight'];
+
+      let dx = 0;
+      let dy = 0;
+
+      if (keys['KeyW']) dy -= 1;
+      if (keys['KeyS']) dy += 1;
+      if (keys['KeyA']) dx -= 1;
+      if (keys['KeyD']) dx += 1;
+
+      const isMoving = (dx !== 0 || dy !== 0);
+
+      if (isMoving) {
+        // UPDATE WASD FACING DIRECTION FOR OMNI-SHIELD
+        const len = Math.hypot(dx, dy);
+        player.facingX = dx / len;
+        player.facingY = dy / len;
+      }
+
+      if (isShiftPressed && isMoving && player.stamina > 0) {
+        player.isSprinting = true;
+        currentSpeed = player.sprintSpeed;
+        player.stamina = Math.max(0, player.stamina - 1.8);
+      } else {
+        player.isSprinting = false;
+        if (player.stamina < player.maxStamina) {
+          player.stamina = Math.min(player.maxStamina, player.stamina + 0.5);
+        }
+      }
+
+      // Update Stamina Bar UI
+      const fillPct = (player.stamina / player.maxStamina) * 100;
+      const fillElem = document.getElementById('stamina-bar-fill');
+      if (fillElem) fillElem.style.width = fillPct + '%';
+
+      if (dx !== 0 && dy !== 0) {
+        dx *= 0.7071;
+        dy *= 0.7071;
+      }
+
+      const moveX = dx * currentSpeed;
+      const moveY = dy * currentSpeed;
+
+      if (!checkCabinetCollision(player.x + moveX, player.y)) {
+        player.x += moveX;
+      }
+      if (!checkCabinetCollision(player.x, player.y + moveY)) {
+        player.y += moveY;
+      }
+
+      const margin = 12;
+      player.x = Math.max(margin, Math.min(canvas.width - margin, player.x));
+      player.y = Math.max(margin, Math.min(canvas.height - margin, player.y));
+
+      if (isMoving) {
+        player.walkFrame += (player.isSprinting ? 0.45 : 0.25);
+      } else {
+        player.walkFrame = 0;
+      }
+
+      // PADDLE PICKUP CHECK
+      if (paddleItem.spawned && !paddleItem.pickedUp) {
+        const distToPaddle = Math.hypot(player.x - paddleItem.x, player.y - paddleItem.y);
+        if (distToPaddle < player.radius + 15) {
+          paddleItem.pickedUp = true;
+          player.hasPaddle = true;
+        }
+      }
+
+      // 1. NEON GHOSTS (DEFLECTED & KNOCKED BACK BY SHIELD WHEN FACING)
+      for (let g of ghosts) {
+        const distToSafe = Math.hypot(g.x - entranceCenterX, g.y - entranceCenterY);
+
+        if (isPlayerInSafeZone || distToSafe < safeRadius) {
+          const fleeAngle = Math.atan2(g.y - entranceCenterY, g.x - entranceCenterX);
+          g.x += Math.cos(fleeAngle) * g.speed;
+          g.y += Math.sin(fleeAngle) * g.speed;
+        } else {
+          const angle = Math.atan2(player.y - g.y, player.x - g.x);
+          g.x += Math.cos(angle) * g.speed;
+          g.y += Math.sin(angle) * g.speed;
+
+          const dist = Math.hypot(player.x - g.x, player.y - g.y);
+          if (dist < player.radius + 12) {
+            if (isFacingTarget(g.x, g.y)) {
+              // UNIVERSAL SHIELD DEFLECTION: KNOCK GHOST BACK!
+              g.x += player.facingX * 45;
+              g.y += player.facingY * 45;
+            } else {
+              // Unshielded / Back turned: Reset player
+              player.x = entranceCenterX;
+              player.y = entranceCenterY;
+            }
+          }
+        }
+      }
+
+      // 2. PONG MACHINES & BOUNCING BALLS (DEFLECTED BY SHIELD WHEN FACING)
+      for (let pm of pongMachines) {
+        pm.cooldown--;
+        if (pm.cooldown <= 0) {
+          pm.cooldown = pm.fireInterval;
+          const startX = (pm.c + 0.5) * cellW + pm.facing.dx * (cellW * 0.4);
+          const startY = (pm.r + 0.5) * cellH + pm.facing.dy * (cellH * 0.4);
+          
+          const perpAngle = Math.atan2(pm.facing.dy, pm.facing.dx);
+          const randomOffset = (Math.random() - 0.5) * (Math.PI / 2);
+          const launchAngle = perpAngle + randomOffset;
+          const ballSpeed = 5.0;
+
+          pongBalls.push({
+            x: startX,
+            y: startY,
+            vx: Math.cos(launchAngle) * ballSpeed,
+            vy: Math.sin(launchAngle) * ballSpeed,
+            radius: 5,
+            bounces: 0,
+            maxBounces: 8
+          });
+        }
+      }
+
+      for (let i = pongBalls.length - 1; i >= 0; i--) {
+        let b = pongBalls[i];
+        let nextX = b.x + b.vx;
+        let nextY = b.y + b.vy;
+
+        // Anti-camping forcefield near entrance
+        const distToSafe = Math.hypot(b.x - entranceCenterX, b.y - entranceCenterY);
+        if (distToSafe < safeRadius) {
+          b.vx *= -1;
+          b.vy *= -1;
+          b.x += b.vx * 3;
+          b.y += b.vy * 3;
+        }
+
+        // Horizontal bounce
+        let nextGridCX = Math.floor((b.vx > 0 ? nextX + b.radius : nextX - b.radius) / cellW);
+        let currentGridCY = Math.floor(b.y / cellH);
+        if (nextGridCX < 0 || nextGridCX >= GRID_COLS || grid[currentGridCY][nextGridCX] === 1) {
+          b.vx *= -1;
+          b.bounces++;
+        } else {
+          b.x += b.vx;
+        }
+
+        // Vertical bounce
+        let currentGridCX = Math.floor(b.x / cellW);
+        let nextGridCY = Math.floor((b.vy > 0 ? nextY + b.radius : nextY - b.radius) / cellH);
+        if (nextGridCY < 0 || nextGridCY >= GRID_ROWS || grid[nextGridCY][currentGridCX] === 1) {
+          b.vy *= -1;
+          b.bounces++;
+        } else {
+          b.y += b.vy;
+        }
+
+        // Universal Shield Ball Deflection
+        const distToPlayer = Math.hypot(player.x - b.x, player.y - b.y);
+        if (distToPlayer < player.radius + b.radius + 8) {
+          if (isFacingTarget(b.x, b.y)) {
+            const speed = Math.hypot(b.vx, b.vy) * 1.3;
+            b.vx = player.facingX * speed + (Math.random() - 0.5) * 2;
+            b.vy = player.facingY * speed + (Math.random() - 0.5) * 2;
+            b.bounces++;
+            b.x += b.vx * 3;
+            b.y += b.vy * 3;
+          } else if (!isPlayerInSafeZone) {
+            player.x = entranceCenterX;
+            player.y = entranceCenterY;
+            pongBalls.splice(i, 1);
+            continue;
+          }
+        }
+
+        if (b.bounces >= b.maxBounces) {
+          pongBalls.splice(i, 1);
+        }
+      }
+
+      // 3. ROCKET LAUNCHERS & ROCKETS (REFLECTED BY SHIELD WHEN FACING)
+      for (let rl of rocketLaunchers) {
+        rl.cooldown--;
+        if (rl.cooldown <= 0) {
+          rl.cooldown = 600;
+          rockets.push({
+            x: (rl.c + 0.5) * cellW + rl.facing.dx * (cellW * 0.5),
+            y: (rl.r + 0.5) * cellH + rl.facing.dy * (cellH * 0.5),
+            vx: rl.facing.dx * 7,
+            vy: rl.facing.dy * 7
+          });
+        }
+      }
+
+      for (let i = rockets.length - 1; i >= 0; i--) {
+        let r = rockets[i];
+        r.x += r.vx;
+        r.y += r.vy;
+
+        // Check shield deflection against rocket direct hit
+        const distToPlayer = Math.hypot(player.x - r.x, player.y - r.y);
+        if (distToPlayer < player.radius + 12) {
+          if (isFacingTarget(r.x, r.y)) {
+            // REFLECT ROCKET BACK!
+            r.vx = player.facingX * 10;
+            r.vy = player.facingY * 10;
+            r.x += r.vx * 2;
+            r.y += r.vy * 2;
+            continue;
+          }
+        }
+
+        const gridC = Math.floor(r.x / cellW);
+        const gridR = Math.floor(r.y / cellH);
+
+        if (gridC < 0 || gridC >= GRID_COLS || gridR < 0 || gridR >= GRID_ROWS || grid[gridR][gridC] === 1) {
+          explosions.push({
+            centerC: gridC,
+            centerR: gridR,
+            radius: 0,
+            maxRadius: cellW * 1.5,
+            duration: 25
+          });
+
+          // 4. BLAST SHIELDING AGAINST EXPLOSIONS
+          const exX = (gridC + 0.5) * cellW;
+          const exY = (gridR + 0.5) * cellH;
+          const pGridC = Math.floor(player.x / cellW);
+          const pGridR = Math.floor(player.y / cellH);
+
+          if (Math.abs(pGridC - gridC) <= 1 && Math.abs(pGridR - gridR) <= 1 && !isPlayerInSafeZone) {
+            if (!isFacingTarget(exX, exY)) {
+              player.x = entranceCenterX;
+              player.y = entranceCenterY;
+            }
+          }
+
+          rockets.splice(i, 1);
+        }
+      }
+
+      for (let i = explosions.length - 1; i >= 0; i--) {
+        let ex = explosions[i];
+        ex.radius += ex.maxRadius / 25;
+        ex.duration--;
+        if (ex.duration <= 0) explosions.splice(i, 1);
+      }
+
+      // 5. CEILING CLAW TRAPS (BLOCKED BY UPWARD/FACING SHIELD)
+      const pGridX = Math.floor(player.x / cellW);
+      const pGridY = Math.floor(player.y / cellH);
+
+      for (let claw of clawTraps) {
+        if (claw.state === 'IDLE') {
+          if (pGridX === claw.targetGridX && pGridY === claw.targetGridY) {
+            claw.state = 'DROPPING';
+            claw.clawY = 0;
+          }
+        } else if (claw.state === 'DROPPING') {
+          claw.clawY += 5;
+          if (claw.clawY >= cellH * 0.7) {
+            if (pGridX === claw.targetGridX && pGridY === claw.targetGridY) {
+              const clawX = (claw.targetGridX + 0.5) * cellW;
+              const clawY = claw.clawY;
+
+              if (player.hasPaddle && (player.facingY < -0.3 || isFacingTarget(clawX, clawY))) {
+                // SHIELD BLOCKS CEILING CLAW!
+                claw.state = 'RETRACTING';
+              } else {
+                // Snagged! Trigger WASD Escape Minigame
+                claw.state = 'GRABBED';
+                clawMinigame.active = true;
+                clawMinigame.presses = 0;
+                clawMinigame.timer = 110;
+                clawMinigame.clawRef = claw;
+              }
+            } else {
+              claw.state = 'RETRACTING';
+            }
+          }
+        } else if (claw.state === 'RETRACTING') {
+          claw.clawY -= 5;
+          if (claw.clawY <= 0) claw.state = 'IDLE';
+        }
+      }
+
+      // LEVEL WIN CHECK
+      const distToExit = Math.hypot(player.x - (exitDoor.x + cellW / 2), player.y - (exitDoor.y + cellH / 2));
+      if (distToExit < cellW * 0.45 && transitionTimer === 0) {
+        level++;
+        transitionTimer = 25;
+        resetSimulation();
+      }
+
+      if (transitionTimer > 0) transitionTimer--;
+    }
+
+    // DRAW CRT CABINET SCREENS
+    function drawGameScreen(sx, sy, sw, sh, gameType) {
+      ctx.fillStyle = '#020205';
+      ctx.fillRect(sx, sy, sw, sh);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(sx, sy, sw, sh);
+      ctx.clip();
+
+      if (gameType === 0) { // SPACE DEFENDER
+        ctx.fillStyle = '#04041a';
+        ctx.fillRect(sx, sy, sw, sh);
+        ctx.fillStyle = '#00ff66';
+        ctx.fillRect(sx + sw * 0.2, sy + sh * 0.25, sw * 0.15, sh * 0.15);
+        ctx.fillRect(sx + sw * 0.65, sy + sh * 0.25, sw * 0.15, sh * 0.15);
+        ctx.fillStyle = '#00ffff';
+        ctx.fillRect(sx + sw * 0.42, sy + sh * 0.7, sw * 0.16, sh * 0.2);
+      } else if (gameType === 1) { // MAZE MUNCHER
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(sx, sy, sw, sh);
+        ctx.fillStyle = '#ffff00';
+        ctx.beginPath();
+        ctx.arc(sx + sw * 0.3, sy + sh * 0.5, Math.min(sw, sh) * 0.15, 0.2 * Math.PI, 1.8 * Math.PI);
+        ctx.lineTo(sx + sw * 0.3, sy + sh * 0.5);
+        ctx.fill();
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(sx + sw * 0.7, sy + sh * 0.4, sw * 0.18, sh * 0.22);
+      } else if (gameType === 2) { // RETRO PONG
+        ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(sx, sy, sw, sh);
+        ctx.fillStyle = '#00ffff';
+        ctx.fillRect(sx + 2, sy + sh * 0.2, sw * 0.08, sh * 0.4);
+        ctx.fillStyle = '#ff00aa';
+        ctx.fillRect(sx + sw - sw * 0.08 - 2, sy + sh * 0.4, sw * 0.08, sh * 0.4);
+      } else if (gameType === 3) { // CYBER RACER
+        ctx.fillStyle = '#222222';
+        ctx.fillRect(sx, sy, sw, sh);
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(sx + sw * 0.3, sy + sh * 0.5, sw * 0.2, sh * 0.3);
+      } else { // PIXEL JUMP
+        ctx.fillStyle = '#050a18';
+        ctx.fillRect(sx, sy, sw, sh);
+        ctx.fillStyle = '#00ff66';
+        ctx.fillRect(sx, sy + sh * 0.8, sw, sh * 0.2);
+      }
+
+      ctx.restore();
+    }
+
+    function drawArcadeFloor() {
+      ctx.fillStyle = '#080314';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = '#1d0a36';
+      ctx.lineWidth = 1;
+
+      for (let x = 0; x < canvas.width; x += 32) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += 32) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+    }
+
+    function drawDoor(door, isEntrance) {
+      const x = door.x;
+      const y = door.y;
+      const w = door.w;
+      const h = door.h;
+      const color = isEntrance ? '#00ff66' : '#ff0055';
+      const label = isEntrance ? 'ENTRANCE' : 'EXIT';
+
+      // ENTRANCE SAFE ZONE GLOW FIELD
+      if (isEntrance) {
+        const cx = x + w / 2;
+        const cy = y + h / 2;
+        const safeRadius = cellW * 1.8;
+
+        ctx.fillStyle = 'rgba(0, 255, 102, 0.14)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, safeRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#00ff66';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 6]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#00ff66';
+        ctx.font = 'bold 10px Courier New';
+        ctx.textAlign = 'center';
+        ctx.fillText("SAFE ZONE", cx, cy - safeRadius + 12);
+      }
+
+      ctx.fillStyle = isEntrance ? 'rgba(0, 255, 102, 0.25)' : 'rgba(255, 0, 85, 0.25)';
+      ctx.fillRect(x + 2, y + 2, w - 4, h - 4);
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x + 4, y + 4, w - 8, h - 8);
+
+      ctx.fillStyle = color;
+      ctx.font = 'bold 10px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, x + w / 2, y + h / 2 + 3);
+    }
+
+    function drawTopDownCabinet(c, r) {
+      const bx = c * cellW;
+      const by = r * cellH;
+      const w = cellW;
+      const h = cellH;
+      const gameType = cabinetGames[r][c];
+
+      ctx.fillStyle = '#121224';
+      ctx.fillRect(bx + 1, by + 1, w - 2, h - 2);
+
+      ctx.strokeStyle = '#ff00ff';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(bx + 1, by + 1, w - 2, h - 2);
+
+      const screenX = bx + w * 0.12;
+      const screenY = by + h * 0.12;
+      const screenW = w * 0.76;
+      const screenH = h * 0.52;
+
+      drawGameScreen(screenX, screenY, screenW, screenH, gameType);
+
+      ctx.fillStyle = '#ff00aa';
+      ctx.fillRect(bx + 4, by + 2, w - 8, 3);
+    }
+
+    // DRAW PING PONG PADDLE ITEM
+    function drawPaddleItem(x, y) {
+      ctx.save();
+      ctx.shadowColor = '#ffff00';
+      ctx.shadowBlur = 12;
+
+      ctx.fillStyle = '#ff9900';
+      ctx.fillRect(x - 2, y + 2, 4, 10);
+
+      ctx.fillStyle = '#ff0055';
+      ctx.beginPath();
+      ctx.ellipse(x, y - 2, 8, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+
+      ctx.restore();
+
+      ctx.fillStyle = '#ffff00';
+      ctx.font = 'bold 10px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText("PADDLE", x, y - 15);
+    }
+
+    // DRAW STICKMAN PLAYER & DYNAMIC WASD SHIELD TRACKING
+    function drawStickman(x, y, isSprinting, hasPaddle) {
+      if (isSprinting) {
+        ctx.strokeStyle = 'rgba(0, 255, 255, 0.45)';
+        ctx.lineWidth = 2;
+        for (let i = 1; i <= 3; i++) {
+          ctx.beginPath();
+          ctx.moveTo(x - player.facingX * (i * 8), y - player.facingY * (i * 8) - 10);
+          ctx.lineTo(x - player.facingX * (i * 8), y - player.facingY * (i * 8) + 10);
+          ctx.stroke();
+        }
+      }
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.fillStyle = '#ffffff';
+      ctx.lineWidth = 2.4;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      const headRadius = 6;
+      const bodyLength = 16;
+      const legLength = 12;
+      const neckY = y - bodyLength;
+      const headY = neckY - headRadius;
+      const shoulderY = neckY + 4;
+
+      // Head
+      ctx.beginPath();
+      ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Eye
+      ctx.beginPath();
+      ctx.arc(x + player.facingX * 2.5, headY + player.facingY * 2.5, 1, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Torso
+      ctx.beginPath();
+      ctx.moveTo(x, neckY);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+
+      // Legs
+      const legSwing = Math.sin(player.walkFrame) * 7;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - legSwing, y + legLength);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + legSwing, y + legLength);
+      ctx.stroke();
+
+      // Arms
+      const armSwing = Math.sin(player.walkFrame + Math.PI) * 5;
+
+      ctx.beginPath();
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(x - player.facingX * 5 - armSwing, shoulderY + 7);
+      ctx.stroke();
+
+      const frontHandX = x + player.facingX * 6 + armSwing;
+      const frontHandY = shoulderY + 6 + player.facingY * 4;
+      ctx.beginPath();
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(frontHandX, frontHandY);
+      ctx.stroke();
+
+      // DRAW DYNAMIC WASD PADDLE SHIELD TRACKING
+      if (hasPaddle) {
+        ctx.save();
+        ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 12;
+
+        ctx.fillStyle = '#ff0055';
+        ctx.strokeStyle = '#00ffff';
+        ctx.lineWidth = 2;
+
+        const shieldDist = 16;
+        const shieldX = x + player.facingX * shieldDist;
+        const shieldY = y - 6 + player.facingY * shieldDist;
+        const shieldAngle = Math.atan2(player.facingY, player.facingX);
+
+        ctx.translate(shieldX, shieldY);
+        ctx.rotate(shieldAngle);
+
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 4, 13, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.restore();
+      }
+    }
+
+    // DRAW CLAW ESCAPE MINIGAME UI OVERLAY
+    function drawClawEscapeMinigameUI() {
+      if (!clawMinigame.active) return;
+
+      const boxW = 320;
+      const boxH = 100;
+      const boxX = (canvas.width - boxW) / 2;
+      const boxY = canvas.height * 0.3;
+
+      ctx.fillStyle = 'rgba(15, 5, 30, 0.92)';
+      ctx.fillRect(boxX, boxY, boxW, boxH);
+
+      ctx.strokeStyle = '#ff00ff';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+      ctx.fillStyle = '#ffff00';
+      ctx.font = 'bold 16px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText("CLAW SNATCHED YOU!", canvas.width / 2, boxY + 28);
+
+      ctx.fillStyle = '#00ffff';
+      ctx.font = 'bold 13px Courier New';
+      ctx.fillText(`SPAM [WASD] TO ESCAPE! (${clawMinigame.presses}/${clawMinigame.targetPresses})`, canvas.width / 2, boxY + 52);
+
+      const barW = 240;
+      const barH = 14;
+      const barX = (canvas.width - barW) / 2;
+      const barY = boxY + 66;
+
+      ctx.strokeStyle = '#00ffff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(barX, barY, barW, barH);
+
+      const fillW = Math.min(barW, (clawMinigame.presses / clawMinigame.targetPresses) * barW);
+      ctx.fillStyle = '#ff00ff';
+      ctx.fillRect(barX, barY, fillW, barH);
+    }
+
+    // MAIN RENDER LOOP
+    function draw() {
+      drawArcadeFloor();
+      drawDoor(entranceDoor, true);
+      drawDoor(exitDoor, false);
+
+      for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          if (grid[r][c] === 1) {
+            drawTopDownCabinet(c, r);
+          }
+        }
+      }
+
+      // RENDER PADDLE ITEM ON GROUND
+      if (paddleItem.spawned && !paddleItem.pickedUp) {
+        drawPaddleItem(paddleItem.x, paddleItem.y);
+      }
+
+      // RENDER BOUNCING PING PONG BALLS
+      for (let b of pongBalls) {
+        ctx.fillStyle = '#ffff00';
+        ctx.shadowColor = '#ffff00';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+
+      // RENDER ROCKETS & EXPLOSIONS
+      for (let r of rockets) {
+        ctx.fillStyle = '#ff3300';
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      for (let ex of explosions) {
+        ctx.fillStyle = 'rgba(255, 102, 0, 0.5)';
+        ctx.beginPath();
+        ctx.arc((ex.centerC + 0.5) * cellW, (ex.centerR + 0.5) * cellH, ex.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // RENDER CEILING CLAWS
+      for (let claw of clawTraps) {
+        if (claw.state !== 'IDLE') {
+          const cx = (claw.targetGridX + 0.5) * cellW;
+          const cy = claw.clawY;
+
+          ctx.strokeStyle = '#aaaaaa';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(cx, 0);
+          ctx.lineTo(cx, cy);
+          ctx.stroke();
+
+          ctx.strokeStyle = '#ff0055';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.arc(cx - 8, cy + 8, 8, Math.PI * 0.5, Math.PI * 1.5);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(cx + 8, cy + 8, 8, -Math.PI * 0.5, Math.PI * 0.5);
+          ctx.stroke();
+        }
+      }
+
+      // RENDER NEON GHOSTS
+      for (let g of ghosts) {
+        ctx.fillStyle = g.color;
+        ctx.shadowColor = g.color;
+        ctx.shadowBlur = 10;
+
+        ctx.beginPath();
+        ctx.arc(g.x, g.y - 3, 9, Math.PI, 0, false);
+        ctx.lineTo(g.x + 9, g.y + 7);
+        ctx.lineTo(g.x + 3, g.y + 3);
+        ctx.lineTo(g.x, g.y + 7);
+        ctx.lineTo(g.x - 3, g.y + 3);
+        ctx.lineTo(g.x - 9, g.y + 7);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(g.x - 5, g.y - 5, 3, 4);
+        ctx.fillRect(g.x + 2, g.y - 5, 3, 4);
+
+        ctx.shadowBlur = 0;
+      }
+
+      // DRAW STICKMAN ALWAYS ON TOP
+      drawStickman(player.x, player.y, player.isSprinting, player.hasPaddle);
+
+      // DRAW ESCAPE MINIGAME UI OVERLAY
+      drawClawEscapeMinigameUI();
+    }
+
+    function animate() {
+      updatePhysics();
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    window.onload = function() {
+      shuffleEnemyOrder();
+      resizeCanvas();
+      animate();
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,1984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stickman Engine - Dragon's Castle & The Diamond Quest</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #0d1b2a;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      overflow: hidden;
+      padding: 10px;
+    }
+
+    /* Top Header Bar */
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 1280px;
+      margin-bottom: 6px;
+      padding-bottom: 6px;
+      border-bottom: 4px solid #ff4757;
+    }
+
+    .title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      font-size: 22px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-weight: 900;
+      color: #fffa65;
+      text-shadow: 3px 3px 0px #000;
+    }
+
+    .hud-badge {
+      background: #ff4757;
+      color: #ffffff;
+      padding: 5px 12px;
+      border-radius: 16px;
+      font-size: 13px;
+      font-weight: 900;
+      box-shadow: 0 4px 0px #b21f2d, 0 4px 8px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      text-shadow: 1px 1px 0 #000;
+    }
+
+    .gold-badge {
+      background: #ffa502;
+      box-shadow: 0 4px 0px #cc8e00;
+    }
+
+    .level-badge {
+      background: #00d2d3;
+      box-shadow: 0 4px 0px #01a3a4;
+      color: #000000;
+      text-shadow: none;
+    }
+
+    .shield-badge {
+      background: #ff9ff3;
+      box-shadow: 0 4px 0px #f368e0;
+      color: #111;
+      text-shadow: none;
+    }
+
+    .bubble-badge {
+      background: #54a0ff;
+      box-shadow: 0 4px 0px #2e86de;
+      color: #ffffff;
+    }
+
+    .btn-reset {
+      background: #2ed573;
+      color: #ffffff;
+      border: 2px solid #000;
+      border-radius: 8px;
+      padding: 8px 18px;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      box-shadow: 0 5px 0px #1e90ff;
+      transition: all 0.1s ease-in-out;
+      text-shadow: 1px 1px 0 #000;
+    }
+
+    .btn-reset:hover {
+      background: #1e90ff;
+      transform: translateY(-2px);
+    }
+
+    .btn-reset:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0px #1e90ff;
+    }
+
+    /* Radar Distance HUD Bar */
+    #hud {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      max-width: 1280px;
+      margin-bottom: 6px;
+      background: #1e272e;
+      padding: 8px 16px;
+      border-radius: 10px;
+      border: 3px solid #485460;
+      box-shadow: 0 5px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    .meter-label {
+      font-size: 14px;
+      font-weight: 900;
+      color: #70a1ff;
+      white-space: nowrap;
+      letter-spacing: 1px;
+      text-shadow: 1px 1px 0 #000;
+    }
+
+    .meter-container {
+      flex-grow: 1;
+      height: 22px;
+      background-color: #485460;
+      border: 2px solid #1e272e;
+      border-radius: 11px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .meter-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ff4757, #ffa502, #fffa65, #2ed573);
+      transition: width 0.08s ease-out;
+      border-radius: 11px;
+    }
+
+    .meter-text {
+      font-size: 14px;
+      font-weight: 900;
+      color: #ffffff;
+      min-width: 280px;
+      text-align: right;
+      text-shadow: 1px 1px 0 #000;
+    }
+
+    /* Canvas Wrapper */
+    #canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 1280px;
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    canvas {
+      background-color: #70a1ff;
+      border: 4px solid #1e272e;
+      border-radius: 12px;
+      display: block;
+      width: 100%;
+      height: 100%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+
+    .instructions {
+      margin-top: 6px;
+      font-size: 13px;
+      font-weight: 900;
+      color: #70a1ff;
+      text-align: center;
+      text-shadow: 1px 1px 0 #000;
+    }
+
+    /* Overlay Screen */
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.92);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      border-radius: 10px;
+    }
+
+    #overlay h2 {
+      font-size: 56px;
+      font-weight: 900;
+      text-shadow: 5px 5px 0 #000;
+      margin-bottom: 8px;
+    }
+
+    #overlay p {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fffa65;
+      margin-bottom: 24px;
+      text-shadow: 2px 2px 0 #000;
+      text-align: center;
+      padding: 0 20px;
+    }
+
+    #overlay button {
+      background: #fffa65;
+      color: #000;
+      font-size: 22px;
+      font-weight: 900;
+      padding: 14px 36px;
+      border: 3px solid #000;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 6px 0 #ffa502;
+      transition: transform 0.1s;
+    }
+
+    #overlay button:hover {
+      transform: scale(1.06);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Section -->
+  <div id="header">
+    <div class="title-group">
+      <h1>Stickman Engine</h1>
+      <div id="levelBadge" class="hud-badge level-badge">Level 1</div>
+      <div id="livesBadge" class="hud-badge">Lives: ❤️❤️❤️</div>
+      <div id="scoreBadge" class="hud-badge gold-badge">Gold: 0 / 10</div>
+      <div id="shieldBadge" class="hud-badge shield-badge">[E] Shield: Ready</div>
+      <div id="bubbleBadge" class="hud-badge bubble-badge">[B] Bubbles: 10/10</div>
+    </div>
+    <button class="btn-reset" onclick="resetSimulation()">Reset Game</button>
+  </div>
+
+  <!-- HUD Distance Meter Bar -->
+  <div id="hud">
+    <span class="meter-label">TREASURE RADAR:</span>
+    <div class="meter-container">
+      <div id="meterBar" class="meter-bar"></div>
+    </div>
+    <span id="meterText" class="meter-text">Distance: ---</span>
+  </div>
+
+  <!-- Canvas Container -->
+  <div id="canvas-wrapper">
+    <canvas id="simCanvas"></canvas>
+
+    <!-- Overlay Screen -->
+    <div id="overlay">
+      <h2 id="overlayTitle">WOOHOO! YOU WIN!</h2>
+      <p id="overlaySub">You claimed the legendary Castle Diamond!</p>
+      <button id="overlayBtn" onclick="nextLevelOrReset()">Next Level</button>
+    </div>
+  </div>
+
+  <div class="instructions">
+    [WASD] Exclusive Movement | [SPACEBAR] Dig / Open Chest | [E] Star Shield | [B] Bubble Blower
+  </div>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // WORLD CONFIGURATION
+    const WORLD_WIDTH = 4800;
+
+    // GAME LEVEL & PROGRESSION STATE
+    let currentLevel = 1;
+
+    // KEYBOARD INPUT STATE (STRICTLY WASD Movement - Arrow Keys Blocked)
+    const keys = {};
+
+    // CAMERA STATE
+    const camera = {
+      x: 0,
+      y: 0,
+      shake: 0
+    };
+
+    // STICKMAN PLAYER STATE
+    const player = {
+      x: 250,
+      y: 0,
+      speed: 6.0,
+      facing: 1, // 1 = Right, -1 = Left
+      walkFrame: 0,
+      isDigging: false,
+      digTimer: 0,
+      score: 0,
+      goldNeeded: 10,
+      lives: 3,
+      maxLives: 3,
+      invulnerableTimer: 0,
+      knockbackVx: 0,
+      knockbackVy: 0,
+      isDead: false,
+      
+      // SHIELD MECHANICS (10s active duration, 20s cooldown)
+      shieldActive: false,
+      shieldActiveTimer: 0,   // frames left of active shield
+      shieldCooldownTimer: 0, // frames left of cooldown
+      
+      // BUBBLE MECHANICS (10 ammo, 10s cooldown refill)
+      bubbleAmmo: 10,
+      maxBubbleAmmo: 10,
+      bubbleCooldownTimer: 0 // frames left of 10s refill cooldown
+    };
+
+    // REAL HIDDEN TREASURE STATE
+    const treasure = {
+      x: 0,
+      y: 0,
+      state: 'hidden', // 'hidden' -> 'uncovered' -> 'opened'
+      digRadius: 48,
+      totalCoins: 15
+    };
+
+    // FAKE CHESTS (Start underground with X, dug up to chase player)
+    let fakeTreasures = [];
+
+    // DRAGON ENEMY
+    const dragon = {
+      x: 0,
+      y: 0,
+      baseY: 0,
+      hoverTimer: 0,
+      fireballCooldown: 0,
+      facing: -1,
+      trappedInBubble: false,
+      bubbleY: 0
+    };
+
+    // DIAMOND ARMOR CASTLE GUARDS
+    let diamondGuards = [];
+
+    // CASTLE & DIAMOND TREASURE
+    const castle = {
+      gateX: WORLD_WIDTH - 650,
+      interiorX: WORLD_WIDTH - 300,
+      isOpen: false,
+      diamondCollected: false
+    };
+
+    // EVIL SOCCER GOAL POSTS
+    let soccerGoals = [];
+
+    // PROJECTILES, BUBBLES, COINS & PARTICLES
+    let fireballs = [];
+    let playerBubbles = [];
+    let coins = [];
+    let clouds = [];
+    let backgroundTrees = [];
+    let worldTrees = [];
+    let foregroundTrees = [];
+    let birds = [];
+    let squirrels = [];
+    let particles = [];
+    let confetti = [];
+    let rainDrops = [];
+    let floatingTexts = [];
+
+    let isLevelCleared = false;
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvas-wrapper');
+      canvas.width = wrapper.clientWidth;
+      canvas.height = wrapper.clientHeight;
+
+      if (player.y === 0) {
+        resetSimulation();
+      }
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // KEYBOARD INPUT - WASD ONLY FOR MOVEMENT (Arrow Keys Explicitly Prevented)
+    window.addEventListener('keydown', (e) => {
+      // Prevent page scrolling on game controls & ignore arrow keys
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyE', 'KeyB'].includes(e.code)) {
+        e.preventDefault();
+      }
+
+      // ONLY WASD allowed for movement
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+        keys[e.code] = true;
+      }
+
+      // Action Keys
+      if (e.code === 'Space' && !player.isDigging && !player.isDead) {
+        handleActionKey();
+      }
+
+      // Shield Toggle [E] (10s Duration, 20s Cooldown)
+      if (e.code === 'KeyE' && !player.isDead) {
+        activateShield();
+      }
+
+      // Bubble Blower [B] (10 Ammo, 10s Cooldown)
+      if (e.code === 'KeyB' && !player.isDead) {
+        shootBubble();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+        keys[e.code] = false;
+      }
+    });
+
+    function resetSimulation() {
+      document.getElementById('overlay').style.display = 'none';
+      const groundY = canvas.height * 0.72;
+
+      isLevelCleared = false;
+      player.x = 250;
+      player.y = groundY;
+      player.facing = 1;
+      player.walkFrame = 0;
+      player.isDigging = false;
+      player.digTimer = 0;
+      player.score = 0;
+      player.goldNeeded = 10 + (currentLevel - 1) * 10;
+      player.lives = 3;
+      player.invulnerableTimer = 0;
+      player.knockbackVx = 0;
+      player.knockbackVy = 0;
+      player.isDead = false;
+
+      // Reset Shield State
+      player.shieldActive = false;
+      player.shieldActiveTimer = 0;
+      player.shieldCooldownTimer = 0;
+
+      // Reset Bubble Blower State
+      player.bubbleAmmo = 10;
+      player.bubbleCooldownTimer = 0;
+
+      // Reset Castle & Diamond State
+      castle.isOpen = false;
+      castle.diamondCollected = false;
+
+      // Real Treasure Location
+      treasure.x = 1400 + Math.random() * (WORLD_WIDTH - 2500);
+      treasure.y = groundY + Math.random() * (canvas.height * 0.14);
+      treasure.state = 'hidden';
+      treasure.totalCoins = player.goldNeeded + 5;
+
+      // Dragon Guarding Real Treasure
+      dragon.x = treasure.x + 130;
+      dragon.baseY = canvas.height * 0.38;
+      dragon.y = dragon.baseY;
+      dragon.hoverTimer = 0;
+      dragon.fireballCooldown = 50;
+      dragon.trappedInBubble = false;
+
+      // Underground Fake Chests (Start hidden, dug up to reveal red X & chase)
+      fakeTreasures = [];
+      const fakeCount = 4 + currentLevel;
+      for (let i = 0; i < fakeCount; i++) {
+        let fakeX = 600 + Math.random() * (WORLD_WIDTH - 1600);
+        while (Math.abs(fakeX - treasure.x) < 300) {
+          fakeX = 600 + Math.random() * (WORLD_WIDTH - 1600);
+        }
+        fakeTreasures.push({
+          x: fakeX,
+          y: groundY + Math.random() * (canvas.height * 0.14),
+          state: 'hidden', // 'hidden' -> 'chasing' -> 'trapped'
+          speed: 2.3 + Math.random() * 0.7,
+          chaseRadius: 600,
+          mouthOpenFrame: 0,
+          bubbleY: 0
+        });
+      }
+
+      // Diamond Armor Guards Standing Right in Front of Castle Gates
+      diamondGuards = [
+        { x: castle.gateX - 50, y: groundY - 10, facing: -1 },
+        { x: castle.gateX + 50, y: groundY - 10, facing: -1 }
+      ];
+
+      // Evil Soccer Goal Posts
+      soccerGoals = [
+        { x: 900, y: groundY + 10, width: 70, height: 55, mouthOpen: 0, trappedInBubble: false, bubbleY: 0 },
+        { x: 1800, y: groundY + 10, width: 70, height: 55, mouthOpen: 0, trappedInBubble: false, bubbleY: 0 },
+        { x: 2800, y: groundY + 10, width: 70, height: 55, mouthOpen: 0, trappedInBubble: false, bubbleY: 0 }
+      ];
+
+      coins = [];
+      fireballs = [];
+      playerBubbles = [];
+      particles = [];
+      confetti = [];
+      rainDrops = [];
+      floatingTexts = [];
+
+      // Scenery Generation
+      clouds = [];
+      for (let i = 0; i < 28; i++) {
+        clouds.push({
+          x: Math.random() * WORLD_WIDTH,
+          y: 20 + Math.random() * (canvas.height * 0.22),
+          scale: 0.7 + Math.random() * 0.8,
+          speed: 0.2 + Math.random() * 0.3
+        });
+      }
+
+      backgroundTrees = [];
+      for (let x = 0; x < WORLD_WIDTH - 1000; x += 70 + Math.random() * 40) {
+        backgroundTrees.push({
+          x: x,
+          y: canvas.height * 0.58,
+          scale: 0.75 + Math.random() * 0.35
+        });
+      }
+
+      worldTrees = [];
+      for (let x = 80; x < WORLD_WIDTH - 1100; x += 110 + Math.random() * 70) {
+        worldTrees.push({
+          x: x,
+          y: groundY - 10 + Math.random() * (canvas.height * 0.18),
+          scale: 1.0 + Math.random() * 0.45
+        });
+      }
+
+      foregroundTrees = [];
+      for (let x = 150; x < WORLD_WIDTH - 1200; x += 320 + Math.random() * 220) {
+        foregroundTrees.push({
+          x: x,
+          y: canvas.height * 0.88,
+          scale: 1.9 + Math.random() * 0.5
+        });
+      }
+
+      birds = [];
+      for (let i = 0; i < 10; i++) {
+        birds.push({
+          x: Math.random() * WORLD_WIDTH,
+          y: 35 + Math.random() * (canvas.height * 0.3),
+          vx: 1.2 + Math.random() * 1.8,
+          wingPhase: Math.random() * Math.PI * 2,
+          size: 5 + Math.random() * 3.5
+        });
+      }
+
+      squirrels = [];
+      for (let i = 0; i < 12; i++) {
+        squirrels.push({
+          x: 200 + Math.random() * (WORLD_WIDTH - 1200),
+          y: groundY + Math.random() * (canvas.height * 0.15),
+          vx: (Math.random() - 0.5) * 1.6,
+          stateTimer: Math.random() * 100,
+          tailPhase: Math.random() * Math.PI
+        });
+      }
+
+      updateUI();
+    }
+
+    function activateShield() {
+      if (player.shieldActive) return;
+      if (player.shieldCooldownTimer > 0) {
+        const secs = Math.ceil(player.shieldCooldownTimer / 60);
+        addFloatingText(`⏳ Shield Cooldown: ${secs}s`, player.x, player.y - 25, '#fffa65');
+        return;
+      }
+
+      // Activate Shield for 10 seconds (600 frames at 60fps)
+      player.shieldActive = true;
+      player.shieldActiveTimer = 600; 
+      addFloatingText("🛡️ STAR SHIELD ACTIVATED! (10s)", player.x, player.y - 30, '#ff9ff3');
+      spawnSparkles(player.x, player.y, '#ff9ff3', 20);
+      updateUI();
+    }
+
+    function shootBubble() {
+      if (player.bubbleAmmo <= 0) {
+        const secs = Math.ceil(player.bubbleCooldownTimer / 60);
+        addFloatingText(`⏳ Refilling Bubbles: ${secs}s`, player.x, player.y - 25, '#fffa65');
+        return;
+      }
+
+      player.bubbleAmmo--;
+      playerBubbles.push({
+        x: player.x + player.facing * 18,
+        y: player.y - 10,
+        vx: player.facing * 8.5,
+        vy: (Math.random() - 0.5) * 1.5,
+        radius: 15,
+        life: 120
+      });
+      addFloatingText("🫧 BUBBLE!", player.x, player.y - 25, '#70a1ff');
+
+      // Trigger 10s cooldown refill when ammo reaches 0
+      if (player.bubbleAmmo === 0) {
+        player.bubbleCooldownTimer = 600; // 10 seconds (600 frames)
+        addFloatingText("⚡ BUBBLE REFILL STARTED (10s)", player.x, player.y - 45, '#ffa502');
+      }
+
+      updateUI();
+    }
+
+    function handleActionKey() {
+      if (player.isDead) return;
+
+      player.isDigging = true;
+      player.digTimer = 22;
+
+      // Dirt particle burst
+      for (let i = 0; i < 12; i++) {
+        particles.push({
+          x: player.x,
+          y: player.y + 10,
+          vx: (Math.random() - 0.5) * 5,
+          vy: -Math.random() * 4 - 2,
+          color: Math.random() > 0.5 ? '#7f5539' : '#b08968',
+          life: 25
+        });
+      }
+
+      // 1. Check Interaction with Real Hidden Treasure
+      const distToReal = Math.hypot(player.x - treasure.x, player.y - treasure.y);
+      if (treasure.state === 'hidden' && distToReal <= treasure.digRadius) {
+        treasure.state = 'uncovered';
+        spawnSparkles(treasure.x, treasure.y, '#2ed573', 25);
+        addFloatingText("✓ Real Gold Chest Uncovered!", treasure.x, treasure.y - 20, '#2ed573');
+        return;
+      } else if (treasure.state === 'uncovered' && distToReal <= treasure.digRadius + 20) {
+        treasure.state = 'opened';
+        spawnGoldFountain();
+        return;
+      }
+
+      // 2. Check Interaction with Underground Fake Chests
+      fakeTreasures.forEach(fake => {
+        const distToFake = Math.hypot(player.x - fake.x, player.y - fake.y);
+        if (fake.state === 'hidden' && distToFake <= fake.chaseRadius) {
+          fake.state = 'chasing';
+          camera.shake = 10;
+          spawnSparkles(fake.x, fake.y, '#ff4757', 20);
+          addFloatingText("❌ IT'S A FAKE CHEST! RUN!", fake.x, fake.y - 25, '#ff4757');
+        }
+      });
+    }
+
+    function damagePlayer(reasonText, knockVx, knockVy) {
+      // Inflated Star Shield protects player!
+      if (player.shieldActive) {
+        camera.shake = 6;
+        addFloatingText("🛡️ SHIELD BLOCKED ATTACK!", player.x, player.y - 30, '#ff9ff3');
+        spawnSparkles(player.x, player.y, '#ff9ff3', 15);
+        return;
+      }
+
+      if (player.invulnerableTimer > 0 || player.isDead) return;
+
+      player.lives--;
+      player.invulnerableTimer = 60;
+      player.knockbackVx = knockVx;
+      player.knockbackVy = knockVy;
+
+      camera.shake = 15;
+      addFloatingText(reasonText, player.x, player.y - 30, '#ff4757');
+      updateUI();
+
+      if (player.lives <= 0) {
+        triggerGameOver();
+      }
+    }
+
+    function triggerGameOver() {
+      player.isDead = true;
+      // Rain animation starts
+      rainDrops = [];
+      for (let i = 0; i < 160; i++) {
+        rainDrops.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          speed: 13 + Math.random() * 8,
+          length: 16 + Math.random() * 10
+        });
+      }
+
+      document.getElementById('overlayTitle').textContent = "YOU LOSE";
+      document.getElementById('overlayTitle').style.color = "#ff4757";
+      document.getElementById('overlaySub').textContent = "🌧️ Oh no! Rain falls as you ran out of lives!";
+      document.getElementById('overlayBtn').textContent = "Try Again";
+      document.getElementById('overlay').style.display = 'flex';
+    }
+
+    function triggerLevelClear() {
+      isLevelCleared = true;
+
+      // Confetti burst
+      confetti = [];
+      for (let i = 0; i < 200; i++) {
+        confetti.push({
+          x: Math.random() * canvas.width,
+          y: -20 - Math.random() * 200,
+          vx: (Math.random() - 0.5) * 6,
+          vy: 3 + Math.random() * 5,
+          color: ['#ff4757', '#ffa502', '#fffa65', '#2ed573', '#1e90ff', '#ff9ff3', '#00d2d3'][Math.floor(Math.random() * 7)],
+          size: 6 + Math.random() * 6,
+          rotation: Math.random() * Math.PI * 2
+        });
+      }
+
+      document.getElementById('overlayTitle').textContent = "WOOHOO! YOU WIN!";
+      document.getElementById('overlayTitle').style.color = "#2ed573";
+      document.getElementById('overlaySub').textContent = `🎉 Level ${currentLevel} Complete! You entered the Castle & got the Diamond!`;
+      document.getElementById('overlayBtn').textContent = "Next Level";
+      document.getElementById('overlay').style.display = 'flex';
+    }
+
+    function nextLevelOrReset() {
+      if (player.isDead) {
+        resetSimulation();
+      } else {
+        currentLevel++;
+        resetSimulation();
+      }
+    }
+
+    function spawnGoldFountain() {
+      coins = [];
+      for (let i = 0; i < treasure.totalCoins; i++) {
+        const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.3;
+        const speed = 7 + Math.random() * 7;
+        coins.push({
+          x: treasure.x,
+          y: treasure.y - 10,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          groundY: treasure.y + (Math.random() - 0.5) * 20,
+          bounceCount: 0,
+          collected: false,
+          rotation: Math.random() * Math.PI * 2,
+          rotSpeed: (Math.random() - 0.5) * 0.3
+        });
+      }
+      spawnSparkles(treasure.x, treasure.y - 10, '#ffd700', 35);
+    }
+
+    function spawnSparkles(x, y, color, count) {
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: x,
+          y: y,
+          vx: (Math.random() - 0.5) * 8,
+          vy: -Math.random() * 6 - 2,
+          color: color,
+          life: 30 + Math.random() * 20
+        });
+      }
+    }
+
+    function addFloatingText(text, x, y, color) {
+      floatingTexts.push({ text, x, y, color, life: 55, vy: -1.2 });
+    }
+
+    function updatePhysics() {
+      if (camera.shake > 0) camera.shake *= 0.88;
+
+      // Update Shield Timers
+      if (player.shieldActive) {
+        player.shieldActiveTimer--;
+        if (player.shieldActiveTimer <= 0) {
+          player.shieldActive = false;
+          player.shieldCooldownTimer = 1200; // 20 seconds cooldown (1200 frames)
+          addFloatingText("🛡️ Shield Expired! Cooldown 20s", player.x, player.y - 30, '#ffa502');
+          updateUI();
+        }
+      } else if (player.shieldCooldownTimer > 0) {
+        player.shieldCooldownTimer--;
+        if (player.shieldCooldownTimer <= 0) {
+          addFloatingText("🛡️ Shield Ready! Press [E]", player.x, player.y - 30, '#ff9ff3');
+          updateUI();
+        }
+      }
+
+      // Update Bubble Cooldown Refill Timer
+      if (player.bubbleCooldownTimer > 0) {
+        player.bubbleCooldownTimer--;
+        if (player.bubbleCooldownTimer <= 0) {
+          player.bubbleAmmo = player.maxBubbleAmmo;
+          addFloatingText("🫧 Bubbles Refilled! (10/10)", player.x, player.y - 30, '#54a0ff');
+          updateUI();
+        }
+      }
+
+      // Handle Knockback Forces
+      if (Math.abs(player.knockbackVx) > 0.2 || Math.abs(player.knockbackVy) > 0.2) {
+        player.x += player.knockbackVx;
+        player.y += player.knockbackVy;
+        player.knockbackVx *= 0.85;
+        player.knockbackVy *= 0.85;
+      } else if (!player.isDead && !isLevelCleared) {
+        // WASD Movement Processing
+        let dx = 0;
+        let dy = 0;
+
+        if (keys['KeyW']) dy -= 1;
+        if (keys['KeyS']) dy += 1;
+        if (keys['KeyA']) { dx -= 1; player.facing = -1; }
+        if (keys['KeyD']) { dx += 1; player.facing = 1; }
+
+        if (dx !== 0 && dy !== 0) {
+          dx *= 0.7071;
+          dy *= 0.7071;
+        }
+
+        player.x += dx * player.speed;
+        player.y += dy * player.speed;
+
+        if (dx !== 0 || dy !== 0) {
+          player.walkFrame += 0.28;
+        } else {
+          player.walkFrame = 0;
+        }
+      }
+
+      // World Boundary Constraints
+      const minPlayableY = canvas.height * 0.52;
+      const maxPlayableY = canvas.height * 0.92;
+      player.x = Math.max(20, Math.min(WORLD_WIDTH - 20, player.x));
+      player.y = Math.max(minPlayableY, Math.min(maxPlayableY, player.y));
+
+      if (player.invulnerableTimer > 0) player.invulnerableTimer--;
+
+      if (player.digTimer > 0) {
+        player.digTimer--;
+        if (player.digTimer === 0) player.isDigging = false;
+      }
+
+      // Camera Follow Smooth Movement
+      const targetCameraX = player.x - canvas.width / 2;
+      camera.x += (targetCameraX - camera.x) * 0.1;
+      camera.x = Math.max(0, Math.min(WORLD_WIDTH - canvas.width, camera.x));
+
+      // --- DIAMOND GUARDS & CASTLE GATE INTERACTION ---
+      diamondGuards.forEach(guard => {
+        const distToGuard = Math.abs(player.x - guard.x);
+        if (distToGuard < 60 && !castle.isOpen) {
+          if (player.score >= player.goldNeeded) {
+            // Player paid gold requirement! Open Castle Gates!
+            castle.isOpen = true;
+            addFloatingText("💎 GUARD: Gold accepted! Castle Gates Open! Enter to get the Diamond!", guard.x, guard.y - 40, '#00d2d3');
+            spawnSparkles(castle.gateX, guard.y, '#00d2d3', 30);
+          } else {
+            // Not enough gold! Guard pushes player back!
+            player.x = guard.x - 75;
+            addFloatingText(`💎 GUARD: Halt! Collect ${player.goldNeeded} Gold Coins first!`, guard.x, guard.y - 40, '#ff4757');
+          }
+        }
+      });
+
+      // --- ENTER CASTLE GATES & CLAIM DIAMOND TO WIN ---
+      if (castle.isOpen && !castle.diamondCollected) {
+        // Check if player enters inside the open Castle Gate
+        if (player.x >= castle.gateX - 30 && player.x <= castle.interiorX + 50) {
+          castle.diamondCollected = true;
+          spawnSparkles(player.x, player.y, '#00d2d3', 50);
+          addFloatingText("💎 YOU GOT THE CASTLE DIAMOND!", player.x, player.y - 40, '#00d2d3');
+          triggerLevelClear();
+        }
+      }
+
+      // --- BUBBLE PROJECTILES PHYSICS & ENEMY CAPTURE ---
+      for (let i = playerBubbles.length - 1; i >= 0; i--) {
+        const bub = playerBubbles[i];
+        bub.x += bub.vx;
+        bub.y += bub.vy;
+        bub.life--;
+
+        // Check Bubble Collision with Chasing Fake Chests
+        fakeTreasures.forEach(fake => {
+          if (fake.state === 'chasing') {
+            if (Math.hypot(bub.x - fake.x, bub.y - fake.y) < bub.radius + 20) {
+              fake.state = 'trapped';
+              fake.bubbleY = fake.y;
+              addFloatingText("🫧 TRAPPED IN BUBBLE!", fake.x, fake.y - 20, '#70a1ff');
+            }
+          }
+        });
+
+        // Check Bubble Collision with Dragon
+        if (!dragon.trappedInBubble) {
+          if (Math.hypot(bub.x - dragon.x, bub.y - dragon.y) < bub.radius + 35) {
+            dragon.trappedInBubble = true;
+            dragon.bubbleY = dragon.y;
+            addFloatingText("🫧 DRAGON TRAPPED!", dragon.x, dragon.y - 30, '#70a1ff');
+          }
+        }
+
+        // Check Bubble Collision with Soccer Goals
+        soccerGoals.forEach(goal => {
+          if (!goal.trappedInBubble) {
+            if (Math.hypot(bub.x - goal.x, bub.y - goal.y) < bub.radius + 30) {
+              goal.trappedInBubble = true;
+              goal.bubbleY = goal.y;
+              addFloatingText("🫧 GOAL POST TRAPPED!", goal.x, goal.y - 20, '#70a1ff');
+            }
+          }
+        });
+
+        if (bub.life <= 0) playerBubbles.splice(i, 1);
+      }
+
+      // --- TRAPPED ENEMIES FLOAT UP & OUT OF SCENE ---
+      fakeTreasures.forEach(fake => {
+        if (fake.state === 'chasing') {
+          const distToPlayer = Math.hypot(player.x - fake.x, player.y - fake.y);
+          if (distToPlayer < fake.chaseRadius && !player.isDead) {
+            const angle = Math.atan2(player.y - fake.y, player.x - fake.x);
+            fake.x += Math.cos(angle) * fake.speed;
+            fake.y += Math.sin(angle) * fake.speed;
+            fake.mouthOpenFrame += 0.15;
+
+            if (distToPlayer < 28) {
+              const knockDir = player.x < fake.x ? -1 : 1;
+              damagePlayer("CHOMP! Fake Chest Bit You!", knockDir * 10, -4);
+            }
+          }
+        } else if (fake.state === 'trapped') {
+          fake.y -= 3.5; // Float up out of screen
+        }
+      });
+
+      if (dragon.trappedInBubble) {
+        dragon.y -= 3.0; // Float dragon up into the sky
+      } else {
+        dragon.hoverTimer += 0.05;
+        dragon.y = dragon.baseY + Math.sin(dragon.hoverTimer) * 25;
+        dragon.facing = player.x < dragon.x ? -1 : 1;
+
+        // Shoot fireballs
+        const distToDragon = Math.hypot(player.x - dragon.x, player.y - dragon.y);
+        if (distToDragon < 950 && !player.isDead && !isLevelCleared) {
+          dragon.fireballCooldown--;
+          if (dragon.fireballCooldown <= 0) {
+            dragon.fireballCooldown = 100;
+            const angle = Math.atan2(player.y - dragon.y, player.x - dragon.x);
+            const speed = 6.8;
+            fireballs.push({
+              x: dragon.x + dragon.facing * 40,
+              y: dragon.y + 10,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed,
+              radius: 12
+            });
+            addFloatingText("🔥 ROAR!", dragon.x, dragon.y - 40, '#ff4757');
+          }
+        }
+      }
+
+      // Update Fireballs
+      for (let i = fireballs.length - 1; i >= 0; i--) {
+        const fb = fireballs[i];
+        fb.x += fb.vx;
+        fb.y += fb.vy;
+
+        particles.push({
+          x: fb.x + (Math.random() - 0.5) * 8,
+          y: fb.y + (Math.random() - 0.5) * 8,
+          vx: -fb.vx * 0.2,
+          vy: -fb.vy * 0.2,
+          color: Math.random() > 0.5 ? '#ff4757' : '#ffa502',
+          life: 15
+        });
+
+        const distToPlayer = Math.hypot(player.x - fb.x, player.y - fb.y);
+        if (distToPlayer < fb.radius + 15) {
+          damagePlayer("FIREBALL HIT!", fb.vx * 1.2, -4);
+          fireballs.splice(i, 1);
+          continue;
+        }
+
+        if (fb.x < 0 || fb.x > WORLD_WIDTH || fb.y > canvas.height) {
+          fireballs.splice(i, 1);
+        }
+      }
+
+      // --- EVIL SOCCER GOALS PHYSICS ---
+      soccerGoals.forEach(goal => {
+        if (goal.trappedInBubble) {
+          goal.y -= 3.5;
+        } else {
+          const left = goal.x - goal.width / 2;
+          const right = goal.x + goal.width / 2;
+          const top = goal.y - goal.height;
+          const bottom = goal.y;
+
+          if (player.x > left && player.x < right && player.y > top && player.y < bottom) {
+            const knockDir = player.x < goal.x ? -1 : 1;
+            damagePlayer("⚽ BOING! Knocked Back!", knockDir * 14, -5);
+            goal.mouthOpen = 20;
+          }
+          if (goal.mouthOpen > 0) goal.mouthOpen--;
+        }
+      });
+
+      // Update Scenery: Clouds, Birds, Squirrels
+      clouds.forEach(c => {
+        c.x += c.speed;
+        if (c.x > WORLD_WIDTH + 100) c.x = -100;
+      });
+
+      birds.forEach(b => {
+        b.x += b.vx;
+        b.wingPhase += 0.2;
+        if (b.x > WORLD_WIDTH + 50) {
+          b.x = -50;
+          b.y = 35 + Math.random() * (canvas.height * 0.3);
+        }
+      });
+
+      squirrels.forEach(s => {
+        s.stateTimer--;
+        if (s.stateTimer <= 0) {
+          s.vx = (Math.random() - 0.5) * 2;
+          s.stateTimer = 40 + Math.random() * 120;
+        }
+        s.x += s.vx;
+        s.tailPhase += 0.12;
+        s.x = Math.max(40, Math.min(WORLD_WIDTH - 1200, s.x));
+      });
+
+      // Update Gold Coins
+      coins.forEach(coin => {
+        if (!coin.collected) {
+          coin.x += coin.vx;
+          coin.y += coin.vy;
+          coin.vy += 0.38;
+          coin.rotation += coin.rotSpeed;
+
+          if (coin.y >= coin.groundY) {
+            coin.y = coin.groundY;
+            if (coin.bounceCount < 2) {
+              coin.vy = -coin.vy * 0.45;
+              coin.vx *= 0.6;
+              coin.bounceCount++;
+            } else {
+              coin.vy = 0;
+              coin.vx = 0;
+            }
+          }
+
+          const distToPlayer = Math.hypot(player.x - coin.x, player.y - coin.y);
+          if (distToPlayer < 28 && !player.isDead) {
+            coin.collected = true;
+            player.score++;
+            updateUI();
+            spawnSparkles(coin.x, coin.y, '#ffd700', 6);
+          }
+        }
+      });
+
+      // Update Particles & Floating Text
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.2;
+        p.life--;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+
+      for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.y += ft.vy;
+        ft.life--;
+        if (ft.life <= 0) floatingTexts.splice(i, 1);
+      }
+
+      // Update Confetti
+      confetti.forEach(c => {
+        c.x += c.vx;
+        c.y += c.vy;
+        c.rotation += 0.1;
+      });
+
+      // Update Rain
+      rainDrops.forEach(r => {
+        r.y += r.speed;
+        if (r.y > canvas.height) r.y = -20;
+      });
+
+      updateHUD();
+    }
+
+    function updateUI() {
+      document.getElementById('levelBadge').textContent = `Level ${currentLevel}`;
+      
+      let hearts = '';
+      for (let i = 0; i < player.maxLives; i++) {
+        hearts += i < player.lives ? '❤️' : '🖤';
+      }
+      document.getElementById('livesBadge').textContent = `Lives: ${hearts}`;
+      document.getElementById('scoreBadge').textContent = `Gold: ${player.score} / ${player.goldNeeded}`;
+      
+      // Update Shield UI Badge
+      const shieldBadge = document.getElementById('shieldBadge');
+      if (player.shieldActive) {
+        const secs = Math.ceil(player.shieldActiveTimer / 60);
+        shieldBadge.textContent = `[E] Shield: ACTIVE (${secs}s) 🛡️`;
+        shieldBadge.style.background = "#2ed573";
+      } else if (player.shieldCooldownTimer > 0) {
+        const secs = Math.ceil(player.shieldCooldownTimer / 60);
+        shieldBadge.textContent = `[E] Shield: CD (${secs}s)`;
+        shieldBadge.style.background = "#ffa502";
+      } else {
+        shieldBadge.textContent = "[E] Shield: Ready";
+        shieldBadge.style.background = "#ff9ff3";
+      }
+
+      // Update Bubble UI Badge
+      const bubbleBadge = document.getElementById('bubbleBadge');
+      if (player.bubbleCooldownTimer > 0) {
+        const secs = Math.ceil(player.bubbleCooldownTimer / 60);
+        bubbleBadge.textContent = `[B] Bubbles: Refill (${secs}s)`;
+        bubbleBadge.style.background = "#ffa502";
+      } else {
+        bubbleBadge.textContent = `[B] Bubbles: ${player.bubbleAmmo}/${player.maxBubbleAmmo}`;
+        bubbleBadge.style.background = "#54a0ff";
+      }
+    }
+
+    function updateHUD() {
+      const dist = Math.hypot(player.x - treasure.x, player.y - treasure.y);
+      const maxDist = WORLD_WIDTH;
+      let proximityPct = Math.max(0, Math.min(100, (1 - (dist / maxDist)) * 100));
+
+      const meterBar = document.getElementById('meterBar');
+      const meterText = document.getElementById('meterText');
+
+      meterBar.style.width = proximityPct.toFixed(1) + '%';
+
+      if (treasure.state === 'hidden') {
+        if (dist <= treasure.digRadius) {
+          meterText.textContent = "PRESS [SPACE] TO DIG TREASURE!";
+          meterText.style.color = "#fffa65";
+        } else {
+          meterText.textContent = `Distance to Real Gold: ${Math.round(dist)}m`;
+          meterText.style.color = "#ffffff";
+        }
+      } else if (treasure.state === 'uncovered') {
+        if (dist <= treasure.digRadius + 20) {
+          meterText.textContent = "PRESS [SPACE] TO OPEN CHEST!";
+          meterText.style.color = "#fffa65";
+        } else {
+          meterText.textContent = "REAL GOLD CHEST UNCOVERED!";
+          meterText.style.color = "#2ed573";
+        }
+      } else if (treasure.state === 'opened') {
+        if (player.score >= player.goldNeeded) {
+          meterText.textContent = "ENTER CASTLE GATES TO GET THE DIAMOND! 🏰";
+          meterText.style.color = "#00d2d3";
+        } else {
+          meterText.textContent = `COLLECT GOLD! (${player.score}/${player.goldNeeded})`;
+          meterText.style.color = "#ffa502";
+        }
+      }
+    }
+
+    // DRAWING FUNCTIONS
+    function drawBrightSky() {
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      skyGrad.addColorStop(0, '#1e90ff');
+      skyGrad.addColorStop(0.5, '#70a1ff');
+      skyGrad.addColorStop(1, '#eccc68');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = '#fffa65';
+      ctx.beginPath();
+      ctx.arc(canvas.width * 0.85, 75, 40, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawClouds(parallaxFactor) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      clouds.forEach(c => {
+        const renderX = c.x - camera.x * parallaxFactor;
+        if (renderX > -150 && renderX < canvas.width + 150) {
+          ctx.beginPath();
+          ctx.arc(renderX, c.y, 22 * c.scale, 0, Math.PI * 2);
+          ctx.arc(renderX + 20 * c.scale, c.y - 12 * c.scale, 28 * c.scale, 0, Math.PI * 2);
+          ctx.arc(renderX + 44 * c.scale, c.y, 22 * c.scale, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+    }
+
+    // GRAND MEDIEVAL CASTLE DRAWN DIRECTLY BEHIND THE GUARDS
+    function drawCastle() {
+      const renderX = castle.gateX - camera.x;
+      const groundY = canvas.height * 0.72;
+
+      if (renderX > -600 && renderX < canvas.width + 800) {
+        ctx.save();
+        ctx.translate(renderX, groundY);
+
+        // 1. Heavy Stone Outer Castle Walls
+        ctx.fillStyle = '#57606f';
+        ctx.strokeStyle = '#2f3542';
+        ctx.lineWidth = 4;
+        ctx.fillRect(-220, -220, 800, 220);
+        ctx.strokeRect(-220, -220, 800, 220);
+
+        // Stone Wall Texture Bricks
+        ctx.strokeStyle = '#747d8c';
+        ctx.lineWidth = 2;
+        for (let bx = -210; bx < 570; bx += 50) {
+          for (let by = -210; by < 0; by += 28) {
+            ctx.strokeRect(bx + ((Math.abs(by) / 28) % 2) * 20, by, 40, 22);
+          }
+        }
+
+        // 2. Left Tower
+        ctx.fillStyle = '#485460';
+        ctx.fillRect(-260, -320, 100, 320);
+        ctx.strokeRect(-260, -320, 100, 320);
+
+        // Left Tower Roof & Flag
+        ctx.fillStyle = '#ff4757';
+        ctx.beginPath();
+        ctx.moveTo(-275, -320);
+        ctx.lineTo(-210, -420);
+        ctx.lineTo(-145, -320);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.strokeStyle = '#ffa502';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(-210, -420); ctx.lineTo(-210, -450); ctx.stroke();
+        ctx.fillStyle = '#fffa65';
+        ctx.beginPath(); ctx.moveTo(-210, -450); ctx.lineTo(-180, -438); ctx.lineTo(-210, -426); ctx.fill();
+
+        // 3. Right Tower
+        ctx.fillStyle = '#485460';
+        ctx.fillRect(520, -320, 100, 320);
+        ctx.strokeRect(520, -320, 100, 320);
+
+        // Right Tower Roof & Flag
+        ctx.fillStyle = '#ff4757';
+        ctx.beginPath();
+        ctx.moveTo(505, -320);
+        ctx.lineTo(570, -420);
+        ctx.lineTo(635, -320);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.strokeStyle = '#ffa502';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(570, -420); ctx.lineTo(570, -450); ctx.stroke();
+        ctx.fillStyle = '#fffa65';
+        ctx.beginPath(); ctx.moveTo(570, -450); ctx.lineTo(600, -438); ctx.lineTo(570, -426); ctx.fill();
+
+        // 4. Central Castle Keep Arch
+        ctx.fillStyle = '#2f3542';
+        ctx.fillRect(-80, -280, 160, 60);
+        ctx.strokeRect(-80, -280, 160, 60);
+
+        // Central Roof & Flag
+        ctx.fillStyle = '#3742fa';
+        ctx.beginPath();
+        ctx.moveTo(-90, -280);
+        ctx.lineTo(0, -360);
+        ctx.lineTo(90, -280);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // 5. Grand Archway Castle Gate
+        if (castle.isOpen) {
+          // Open Entrance Hallway
+          ctx.fillStyle = '#fffa65'; // Bright glowing golden entryway
+          ctx.beginPath();
+          ctx.arc(0, -40, 55, Math.PI, 0);
+          ctx.fill();
+          ctx.fillRect(-55, -40, 110, 40);
+
+          // Red Royal Carpet leading into castle
+          ctx.fillStyle = '#ff4757';
+          ctx.fillRect(-28, -8, 350, 12);
+        } else {
+          // Closed Iron Portcullis Wooden Gate
+          ctx.fillStyle = '#1e272e';
+          ctx.beginPath();
+          ctx.arc(0, -40, 52, Math.PI, 0);
+          ctx.fill();
+          ctx.fillRect(-52, -40, 104, 40);
+
+          // Wooden Planks Texture on Gate
+          ctx.strokeStyle = '#8b5a2b';
+          ctx.lineWidth = 4;
+          for (let gx = -44; gx <= 44; gx += 14) {
+            ctx.beginPath(); ctx.moveTo(gx, -70); ctx.lineTo(gx, 0); ctx.stroke();
+          }
+
+          // Iron Arch Frame
+          ctx.strokeStyle = '#ffa502';
+          ctx.lineWidth = 6;
+          ctx.beginPath();
+          ctx.arc(0, -40, 52, Math.PI, 0);
+          ctx.stroke();
+          ctx.strokeRect(-52, -40, 104, 40);
+        }
+
+        ctx.restore();
+
+        // 6. Draw Legendary Diamond inside Castle Hallway when open
+        if (castle.isOpen && !castle.diamondCollected) {
+          const diamondRenderX = castle.interiorX - camera.x;
+          const diamondY = canvas.height * 0.70;
+
+          ctx.save();
+          ctx.translate(diamondRenderX, diamondY);
+
+          // Golden Pedestal
+          ctx.fillStyle = '#ffa502';
+          ctx.fillRect(-18, -10, 36, 12);
+          ctx.fillStyle = '#fffa65';
+          ctx.fillRect(-22, 2, 44, 8);
+
+          // Sparkling Floating Diamond
+          const pulse = Math.sin(Date.now() * 0.008) * 4;
+          ctx.fillStyle = '#00d2d3';
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2.5;
+
+          ctx.beginPath();
+          ctx.moveTo(0, -38 - pulse);
+          ctx.lineTo(18, -20 - pulse);
+          ctx.lineTo(0, 2 - pulse);
+          ctx.lineTo(-18, -20 - pulse);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          // Diamond Shine Highlight
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.moveTo(0, -38 - pulse);
+          ctx.lineTo(8, -20 - pulse);
+          ctx.lineTo(0, -10 - pulse);
+          ctx.lineTo(-8, -20 - pulse);
+          ctx.fill();
+
+          ctx.restore();
+        }
+      }
+    }
+
+    // DRAW DIAMOND ARMOR GUARDS
+    function drawDiamondGuards(parallaxFactor) {
+      diamondGuards.forEach(guard => {
+        const renderX = guard.x - camera.x * parallaxFactor;
+        if (renderX > -100 && renderX < canvas.width + 100) {
+          ctx.save();
+          ctx.translate(renderX, guard.y);
+
+          // Shiny Diamond Blue Armor Body
+          ctx.fillStyle = '#00d2d3';
+          ctx.strokeStyle = '#54a0ff';
+          ctx.lineWidth = 2;
+          ctx.fillRect(-10, -32, 20, 24);
+          ctx.strokeRect(-10, -32, 20, 24);
+
+          // Diamond Helmet
+          ctx.beginPath();
+          ctx.arc(0, -38, 10, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          // Helmet Visor Slit
+          ctx.fillStyle = '#1e272e';
+          ctx.fillRect(-6, -40, 12, 4);
+
+          // Spear
+          ctx.strokeStyle = '#c8d6e5';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(12, -52); ctx.lineTo(12, 0); ctx.stroke();
+          ctx.fillStyle = '#00d2d3';
+          ctx.beginPath();
+          ctx.moveTo(12, -62); ctx.lineTo(8, -52); ctx.lineTo(16, -52); ctx.fill();
+
+          ctx.restore();
+        }
+      });
+    }
+
+    function drawPineTree(x, y, scale, trunkColor, needleColor) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.fillStyle = trunkColor;
+      ctx.fillRect(-4 * scale, -12 * scale, 8 * scale, 18 * scale);
+
+      ctx.fillStyle = needleColor;
+      for (let i = 0; i < 3; i++) {
+        const layerY = -12 * scale - i * 16 * scale;
+        const width = (26 - i * 5) * scale;
+        ctx.beginPath();
+        ctx.moveTo(0, layerY - 22 * scale);
+        ctx.lineTo(-width, layerY);
+        ctx.lineTo(width, layerY);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawBackgroundTrees(parallaxFactor) {
+      backgroundTrees.forEach(t => {
+        const renderX = t.x - camera.x * parallaxFactor;
+        if (renderX > -100 && renderX < canvas.width + 100) {
+          drawPineTree(renderX, t.y, t.scale, '#5c3d2e', '#2ed573');
+        }
+      });
+    }
+
+    function drawGround() {
+      const groundY = canvas.height * 0.52;
+      const grassGrad = ctx.createLinearGradient(0, groundY, 0, canvas.height);
+      grassGrad.addColorStop(0, '#2ed573');
+      grassGrad.addColorStop(0.2, '#26af5f');
+      grassGrad.addColorStop(1, '#105c30');
+
+      ctx.fillStyle = grassGrad;
+      ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+
+      ctx.fillStyle = '#7bed9f';
+      ctx.fillRect(0, groundY, canvas.width, 6);
+
+      // Underground Dirt Marks ("X" Marks for Hidden Chest Locations)
+      // 1. Underground "X" for Hidden Real Treasure
+      if (treasure.state === 'hidden') {
+        const rx = treasure.x - camera.x;
+        if (rx > -50 && rx < canvas.width + 50) {
+          ctx.strokeStyle = '#ff4757';
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(rx - 12, treasure.y - 12); ctx.lineTo(rx + 12, treasure.y + 12);
+          ctx.moveTo(rx + 12, treasure.y - 12); ctx.lineTo(rx - 12, treasure.y + 12);
+          ctx.stroke();
+
+          // DIRT Mound
+          ctx.fillStyle = '#7f5539';
+          ctx.beginPath();
+          ctx.arc(rx, treasure.y + 14, 18, Math.PI, 0);
+          ctx.fill();
+        }
+      }
+
+      // 2. Underground "X" Marks for Hidden Fake Chests
+      fakeTreasures.forEach(fake => {
+        if (fake.state === 'hidden') {
+          const fx = fake.x - camera.x;
+          if (fx > -50 && fx < canvas.width + 50) {
+            ctx.strokeStyle = '#ff4757';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(fx - 12, fake.y - 12); ctx.lineTo(fx + 12, fake.y + 12);
+            ctx.moveTo(fx + 12, fake.y - 12); ctx.lineTo(fx - 12, fake.y + 12);
+            ctx.stroke();
+
+            // DIRT Mound
+            ctx.fillStyle = '#7f5539';
+            ctx.beginPath();
+            ctx.arc(fx, fake.y + 14, 18, Math.PI, 0);
+            ctx.fill();
+          }
+        }
+      });
+    }
+
+    function drawEvilSoccerGoals(parallaxFactor) {
+      soccerGoals.forEach(goal => {
+        const renderX = goal.x - camera.x * parallaxFactor;
+        if (renderX > -100 && renderX < canvas.width + 100) {
+          ctx.save();
+          ctx.translate(renderX, goal.y);
+
+          if (goal.trappedInBubble) {
+            ctx.fillStyle = 'rgba(112, 161, 255, 0.4)';
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, -goal.height / 2, 45, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+          }
+
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+          ctx.fillRect(-goal.width / 2, -goal.height, goal.width, goal.height);
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1;
+          for (let nx = -goal.width / 2; nx <= goal.width / 2; nx += 10) {
+            ctx.beginPath();
+            ctx.moveTo(nx, -goal.height); ctx.lineTo(nx, 0); ctx.stroke();
+          }
+          for (let ny = -goal.height; ny <= 0; ny += 10) {
+            ctx.beginPath();
+            ctx.moveTo(-goal.width / 2, ny); ctx.lineTo(goal.width / 2, ny); ctx.stroke();
+          }
+
+          ctx.strokeStyle = '#ff4757';
+          ctx.lineWidth = 5;
+          ctx.strokeRect(-goal.width / 2, -goal.height, goal.width, goal.height);
+
+          // Evil Face
+          ctx.fillStyle = '#ff4757';
+          ctx.beginPath();
+          ctx.arc(-15, -goal.height + 18, 6, 0, Math.PI * 2);
+          ctx.arc(15, -goal.height + 18, 6, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#fffa65';
+          ctx.beginPath();
+          ctx.arc(-15, -goal.height + 18, 2.5, 0, Math.PI * 2);
+          ctx.arc(15, -goal.height + 18, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#000000';
+          const mouthH = goal.mouthOpen > 0 ? 16 : 8;
+          ctx.fillRect(-20, -goal.height + 28, 40, mouthH);
+
+          ctx.fillStyle = '#ffffff';
+          for (let tx = -18; tx <= 14; tx += 8) {
+            ctx.beginPath();
+            ctx.moveTo(tx, -goal.height + 28);
+            ctx.lineTo(tx + 4, -goal.height + 34);
+            ctx.lineTo(tx + 8, -goal.height + 28);
+            ctx.fill();
+          }
+
+          ctx.restore();
+        }
+      });
+    }
+
+    function drawFakeChests(parallaxFactor) {
+      fakeTreasures.forEach(fake => {
+        const renderX = fake.x - camera.x * parallaxFactor;
+        if (renderX > -100 && renderX < canvas.width + 100) {
+          if (fake.state === 'chasing' || fake.state === 'trapped') {
+            ctx.save();
+            ctx.translate(renderX, fake.y);
+
+            if (fake.state === 'trapped') {
+              ctx.fillStyle = 'rgba(112, 161, 255, 0.4)';
+              ctx.strokeStyle = '#ffffff';
+              ctx.lineWidth = 3;
+              ctx.beginPath();
+              ctx.arc(0, -5, 30, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.stroke();
+            }
+
+            // Chest Body
+            ctx.fillStyle = '#8b5a2b';
+            ctx.fillRect(-16, -12, 32, 18);
+
+            ctx.fillStyle = '#212529';
+            ctx.fillRect(-16, -12, 4, 18);
+            ctx.fillRect(12, -12, 4, 18);
+
+            // Biting Mouth Lid
+            const mouthOffset = Math.sin(fake.mouthOpenFrame) * 6;
+            ctx.fillStyle = '#a0522d';
+            ctx.fillRect(-16, -18 - mouthOffset, 32, 7);
+
+            // Red X Mark on Fake Chest
+            ctx.strokeStyle = '#ff4757';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(-8, -8); ctx.lineTo(8, 2);
+            ctx.moveTo(8, -8); ctx.lineTo(-8, 2);
+            ctx.stroke();
+
+            ctx.restore();
+          }
+        }
+      });
+    }
+
+    function drawDragon(parallaxFactor) {
+      const renderX = dragon.x - camera.x * parallaxFactor;
+      if (renderX > -200 && renderX < canvas.width + 200) {
+        ctx.save();
+        ctx.translate(renderX, dragon.y);
+        ctx.scale(dragon.facing, 1);
+
+        if (dragon.trappedInBubble) {
+          ctx.fillStyle = 'rgba(112, 161, 255, 0.4)';
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(0, 0, 55, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = '#ff4757';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 42, 26, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        const wingSway = Math.sin(dragon.hoverTimer * 3) * 20;
+        ctx.fillStyle = '#ffa502';
+        ctx.beginPath();
+        ctx.moveTo(-10, -10);
+        ctx.lineTo(-45, -50 + wingSway);
+        ctx.lineTo(20, -15);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#ff4757';
+        ctx.beginPath();
+        ctx.arc(-40, -15, 18, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fffa65';
+        ctx.beginPath();
+        ctx.moveTo(-35, -28); ctx.lineTo(-25, -45); ctx.lineTo(-20, -28); ctx.fill();
+
+        ctx.fillStyle = '#fffa65';
+        ctx.beginPath();
+        ctx.arc(-46, -18, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(-48, -20, 2, 5);
+
+        ctx.fillStyle = '#ffa502';
+        ctx.fillRect(-58, -12, 16, 12);
+
+        ctx.restore();
+      }
+    }
+
+    function drawFireballs(parallaxFactor) {
+      fireballs.forEach(fb => {
+        const renderX = fb.x - camera.x * parallaxFactor;
+        ctx.fillStyle = '#ffa502';
+        ctx.beginPath();
+        ctx.arc(renderX, fb.y, fb.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fffa65';
+        ctx.beginPath();
+        ctx.arc(renderX, fb.y, fb.radius * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function drawPlayerBubbles(parallaxFactor) {
+      playerBubbles.forEach(bub => {
+        const renderX = bub.x - camera.x * parallaxFactor;
+        ctx.fillStyle = 'rgba(112, 161, 255, 0.45)';
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(renderX, bub.y, bub.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(renderX - 4, bub.y - 4, 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function drawTreasureChest(parallaxFactor) {
+      const renderX = treasure.x - camera.x * parallaxFactor;
+      if (renderX < -100 || renderX > canvas.width + 100) return;
+
+      if (treasure.state === 'uncovered' || treasure.state === 'opened') {
+        ctx.fillStyle = '#3a2312';
+        ctx.beginPath();
+        ctx.ellipse(renderX, treasure.y + 6, 18, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffb703';
+        ctx.fillRect(renderX - 14, treasure.y - 10, 28, 16);
+
+        ctx.fillStyle = '#212529';
+        ctx.fillRect(renderX - 14, treasure.y - 10, 4, 16);
+        ctx.fillRect(renderX + 10, treasure.y - 10, 4, 16);
+
+        if (treasure.state === 'uncovered') {
+          ctx.fillStyle = '#fb8500';
+          ctx.fillRect(renderX - 14, treasure.y - 15, 28, 6);
+          ctx.fillStyle = '#fffa65';
+          ctx.fillRect(renderX - 3, treasure.y - 8, 6, 6);
+        } else {
+          ctx.fillStyle = '#fb8500';
+          ctx.fillRect(renderX - 14, treasure.y - 20, 28, 5);
+          ctx.fillStyle = '#fffa65';
+          ctx.fillRect(renderX - 10, treasure.y - 10, 20, 6);
+        }
+
+        // Green Checkmark (✓) on Real Treasure Chest
+        ctx.strokeStyle = '#2ed573';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(renderX - 6, treasure.y - 2);
+        ctx.lineTo(renderX - 1, treasure.y + 3);
+        ctx.lineTo(renderX + 7, treasure.y - 6);
+        ctx.stroke();
+      }
+    }
+
+    function drawCoins(parallaxFactor) {
+      coins.forEach(coin => {
+        if (!coin.collected) {
+          const renderX = coin.x - camera.x * parallaxFactor;
+          if (renderX > -30 && renderX < canvas.width + 30) {
+            ctx.save();
+            ctx.translate(renderX, coin.y);
+            ctx.rotate(coin.rotation);
+
+            ctx.fillStyle = '#fffa65';
+            ctx.strokeStyle = '#ffa502';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 6, 6, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.restore();
+          }
+        }
+      });
+    }
+
+    function drawParticles(parallaxFactor) {
+      particles.forEach(p => {
+        const renderX = p.x - camera.x * parallaxFactor;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(renderX, p.y, 3.5, 3.5);
+      });
+    }
+
+    function drawFloatingTexts(parallaxFactor) {
+      floatingTexts.forEach(ft => {
+        const renderX = ft.x - camera.x * parallaxFactor;
+        ctx.font = '900 15px "Segoe UI", sans-serif';
+        ctx.fillStyle = ft.color;
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 3;
+        ctx.strokeText(ft.text, renderX, ft.y);
+        ctx.fillText(ft.text, renderX, ft.y);
+      });
+    }
+
+    function drawStickman(x, y, facing, walkFrame, isDigging, parallaxFactor) {
+      const renderX = x - camera.x * parallaxFactor;
+
+      if (player.invulnerableTimer > 0 && Math.floor(player.invulnerableTimer / 4) % 2 === 0) {
+        return;
+      }
+
+      // DRAW INFLATED SHIELD WITH STAR IN CENTER
+      if (player.shieldActive) {
+        ctx.save();
+        ctx.translate(renderX + facing * 8, y - 8);
+
+        // Inflated Bubble Shield
+        ctx.fillStyle = 'rgba(255, 159, 243, 0.50)';
+        ctx.strokeStyle = '#f368e0';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, 26, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Shiny Highlight Rim
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.beginPath();
+        ctx.arc(-8, -8, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Bright Yellow Star in Center
+        ctx.fillStyle = '#fffa65';
+        ctx.strokeStyle = '#ffa502';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        const numPoints = 5;
+        for (let i = 0; i < numPoints * 2; i++) {
+          const r = (i % 2 === 0) ? 11 : 5;
+          const a = (i * Math.PI) / numPoints;
+          const sx = Math.cos(a) * r;
+          const sy = Math.sin(a) * r;
+          if (i === 0) ctx.moveTo(sx, sy);
+          else ctx.lineTo(sx, sy);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      ctx.strokeStyle = '#000000';
+      ctx.fillStyle = '#000000';
+      ctx.lineWidth = 2.6;
+      ctx.lineCap = 'round';
+
+      const headRadius = 6;
+      const bodyLength = 17;
+      const legLength = 13;
+      const neckY = y - bodyLength;
+      const headY = neckY - headRadius;
+      const shoulderY = neckY + 4;
+
+      // Head
+      ctx.beginPath();
+      ctx.arc(renderX, headY, headRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Eye
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(renderX + facing * 2.5, headY - 1, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Torso
+      ctx.strokeStyle = '#000000';
+      ctx.beginPath();
+      ctx.moveTo(renderX, neckY);
+      ctx.lineTo(renderX, y);
+      ctx.stroke();
+
+      // Legs
+      const legSwing = Math.sin(walkFrame) * 7;
+      ctx.beginPath(); ctx.moveTo(renderX, y); ctx.lineTo(renderX - legSwing, y + legLength); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(renderX, y); ctx.lineTo(renderX + legSwing, y + legLength); ctx.stroke();
+
+      // Arms / Shovel / Bubble Blower
+      if (isDigging) {
+        ctx.beginPath(); ctx.moveTo(renderX, shoulderY); ctx.lineTo(renderX + facing * 9, shoulderY + 9); ctx.stroke();
+        ctx.strokeStyle = '#7f5539';
+        ctx.beginPath(); ctx.moveTo(renderX + facing * 4, shoulderY + 3); ctx.lineTo(renderX + facing * 14, y + legLength); ctx.stroke();
+        ctx.fillStyle = '#a4b0be';
+        ctx.fillRect(renderX + facing * 12, y + legLength - 2, 6, 6);
+      } else {
+        const armSwing = Math.sin(walkFrame + Math.PI) * 5;
+        ctx.beginPath(); ctx.moveTo(renderX, shoulderY); ctx.lineTo(renderX - facing * 5 - armSwing, shoulderY + 7); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(renderX, shoulderY); ctx.lineTo(renderX + facing * 5 + armSwing, shoulderY + 7); ctx.stroke();
+      }
+    }
+
+    function drawWorldTrees(parallaxFactor) {
+      const sortedTrees = [...worldTrees].sort((a, b) => a.y - b.y);
+      sortedTrees.forEach(t => {
+        const renderX = t.x - camera.x * parallaxFactor;
+        if (renderX > -120 && renderX < canvas.width + 120) {
+          drawPineTree(renderX, t.y, t.scale, '#4a2e1b', '#26af5f');
+        }
+      });
+    }
+
+    function drawForegroundTrees(parallaxFactor) {
+      foregroundTrees.forEach(t => {
+        const renderX = t.x - camera.x * parallaxFactor;
+        if (renderX > -200 && renderX < canvas.width + 200) {
+          drawPineTree(renderX, t.y, t.scale, '#2d1810', '#105c30');
+        }
+      });
+    }
+
+    function drawConfetti() {
+      confetti.forEach(c => {
+        ctx.save();
+        ctx.translate(c.x, c.y);
+        ctx.rotate(c.rotation);
+        ctx.fillStyle = c.color;
+        ctx.fillRect(-c.size / 2, -c.size / 2, c.size, c.size);
+        ctx.restore();
+      });
+    }
+
+    function drawRain() {
+      ctx.strokeStyle = 'rgba(116, 185, 255, 0.75)';
+      ctx.lineWidth = 2;
+      rainDrops.forEach(r => {
+        ctx.beginPath();
+        ctx.moveTo(r.x, r.y);
+        ctx.lineTo(r.x - 2, r.y + r.length);
+        ctx.stroke();
+      });
+    }
+
+    function draw() {
+      ctx.save();
+      if (camera.shake > 0.5) {
+        ctx.translate((Math.random() - 0.5) * camera.shake, (Math.random() - 0.5) * camera.shake);
+      }
+
+      drawBrightSky();
+      drawClouds(0.15);
+      drawBackgroundTrees(0.45);
+      drawGround();
+
+      // Render Medieval Castle Anchored behind Guards
+      drawCastle();
+
+      drawEvilSoccerGoals(1.0);
+      drawFakeChests(1.0);
+      drawTreasureChest(1.0);
+      drawCoins(1.0);
+      drawDragon(1.0);
+      drawFireballs(1.0);
+      drawPlayerBubbles(1.0);
+      drawDiamondGuards(1.0);
+
+      drawStickman(player.x, player.y, player.facing, player.walkFrame, player.isDigging, 1.0);
+
+      drawWorldTrees(1.0);
+      drawParticles(1.0);
+      drawFloatingTexts(1.0);
+      drawForegroundTrees(1.35);
+
+      if (isLevelCleared) {
+        drawConfetti();
+      }
+
+      if (player.isDead) {
+        drawRain();
+      }
+
+      ctx.restore();
+    }
+
+    function animate() {
+      updatePhysics();
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    window.onload = function() {
+      resizeCanvas();
+      animate();
+    };
+  </script>
+</body>
+</html>

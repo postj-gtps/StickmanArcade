@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stickman Stadium - Capture The Flag</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      font-family: 'Fredoka', 'Comic Sans MS', 'Arial Rounded MT Bold', sans-serif;
+    }
+
+    body {
+      background-color: #0a0d1a;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      overflow: hidden;
+      padding: 10px;
+    }
+
+    /* Top Header Bar */
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 1100px;
+      margin-bottom: 8px;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, #1e2440 0%, #111528 100%);
+      border: 4px solid #ffcc00;
+      border-radius: 16px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.6), 0 0 12px rgba(255,204,0,0.3);
+    }
+
+    .score-board {
+      display: flex;
+      gap: 24px;
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+
+    .score-red { color: #ff4d4d; text-shadow: 0 0 10px rgba(255,77,77,0.8); }
+    .score-blue { color: #3399ff; text-shadow: 0 0 10px rgba(51,153,255,0.8); }
+
+    .status-display {
+      font-size: 16px;
+      font-weight: 800;
+      color: #ffdd57;
+      text-align: center;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    }
+
+    .btn-reset {
+      background: linear-gradient(180deg, #ffee55 0%, #ffcc00 100%);
+      color: #000000;
+      border: 2px solid #ffffff;
+      padding: 8px 20px;
+      font-size: 14px;
+      font-weight: 900;
+      border-radius: 10px;
+      cursor: pointer;
+      text-transform: uppercase;
+      box-shadow: 0 4px 0 #cca300;
+      transition: transform 0.1s, filter 0.15s;
+    }
+
+    .btn-reset:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    .btn-reset:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #cca300;
+    }
+
+    /* Main Canvas Container */
+    #canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 1100px;
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    canvas {
+      background-color: #111;
+      border: 5px solid #ffffff;
+      border-radius: 16px;
+      display: block;
+      width: 100%;
+      height: 100%;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    }
+
+    .instructions {
+      margin-top: 6px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #00e5ff;
+      text-shadow: 0 0 6px rgba(0,229,255,0.5);
+      text-align: center;
+    }
+
+    /* Setup Modal Overlay */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(8, 10, 20, 0.92);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      border-radius: 16px;
+    }
+
+    .modal-card {
+      background: linear-gradient(180deg, #232a48 0%, #151a30 100%);
+      border: 4px solid #ffcc00;
+      border-radius: 20px;
+      padding: 24px;
+      width: 92%;
+      max-width: 640px;
+      text-align: center;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.9);
+    }
+
+    .modal-card h2 {
+      font-size: 26px;
+      color: #ffcc00;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      text-shadow: 0 3px 6px rgba(0,0,0,0.6);
+    }
+
+    .setup-section {
+      margin-bottom: 14px;
+      text-align: left;
+      background: #121628;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 2px solid #2d365c;
+    }
+
+    .setup-section h3 {
+      font-size: 14px;
+      color: #00e5ff;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .char-select-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .char-option {
+      background: #1d233f;
+      border: 3px solid #3d4775;
+      border-radius: 10px;
+      padding: 10px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+
+    .char-option:hover {
+      border-color: #ffcc00;
+      background: #2a3259;
+      transform: translateY(-2px);
+    }
+
+    .char-option.selected {
+      border-color: #ff3344;
+      background: #4a1924;
+      box-shadow: 0 0 14px rgba(255,51,68,0.7);
+    }
+
+    .char-option h4 {
+      font-size: 15px;
+      color: #ffffff;
+    }
+
+    .char-option p {
+      font-size: 11px;
+      color: #cccccc;
+      margin-top: 4px;
+    }
+
+    .role-select-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    select, input[type="number"] {
+      background: #1e2544;
+      color: #fff;
+      border: 2px solid #ffcc00;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      outline: none;
+    }
+
+    .btn-start {
+      background: linear-gradient(180deg, #2ecc71 0%, #27ae60 100%);
+      color: #fff;
+      border: 2px solid #ffffff;
+      padding: 14px 32px;
+      font-size: 20px;
+      font-weight: 900;
+      border-radius: 12px;
+      cursor: pointer;
+      text-transform: uppercase;
+      box-shadow: 0 6px 0 #1e8449;
+      margin-top: 10px;
+      width: 100%;
+      transition: filter 0.15s, transform 0.1s;
+    }
+
+    .btn-start:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    .btn-start:active {
+      transform: translateY(3px);
+      box-shadow: 0 3px 0 #1e8449;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Section -->
+  <div id="header">
+    <div class="score-board">
+      <span class="score-red">RED: <span id="score-red-text">0</span></span>
+      <span style="color:#555;">|</span>
+      <span class="score-blue">BLUE: <span id="score-blue-text">0</span></span>
+    </div>
+    <div id="status" class="status-display">Configure match settings to start!</div>
+    <button class="btn-reset" onclick="openSetupModal()">Setup / Reset</button>
+  </div>
+
+  <!-- Canvas Container -->
+  <div id="canvas-wrapper">
+    <canvas id="simCanvas" tabindex="0"></canvas>
+
+    <!-- Setup Modal -->
+    <div id="modal-setup" class="modal-overlay">
+      <div class="modal-card">
+        <h2>Capture The Flag Setup</h2>
+
+        <!-- Character Selection -->
+        <div class="setup-section">
+          <h3>1. Choose Your Stickman</h3>
+          <div class="char-select-grid">
+            <div class="char-option" id="opt-big" onclick="selectPlayerChar('BIG')">
+              <h4>BIG</h4>
+              <p>Slow (0.9x)</p>
+              <p><strong style="color:#ffcc00;">BOUNCE</strong></p>
+            </div>
+            <div class="char-option selected" id="opt-med" onclick="selectPlayerChar('MED')">
+              <h4>MEDIUM</h4>
+              <p>Normal (1.0x)</p>
+              <p><strong style="color:#2ecc71;">SNEAK</strong></p>
+            </div>
+            <div class="char-option" id="opt-small" onclick="selectPlayerChar('SMALL')">
+              <h4>SMALL</h4>
+              <p>Fast (1.1x)</p>
+              <p><strong style="color:#00e5ff;">TRIP</strong></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Role Assignment -->
+        <div class="setup-section">
+          <h3>2. Assign Teammate Roles</h3>
+          <div class="role-select-row">
+            <span id="label-team-1">Teammate 1:</span>
+            <select id="role-team-1"></select>
+          </div>
+          <div class="role-select-row" style="margin-top: 8px;">
+            <span id="label-team-2">Teammate 2:</span>
+            <select id="role-team-2"></select>
+          </div>
+        </div>
+
+        <!-- Winning Score -->
+        <div class="setup-section">
+          <div class="role-select-row">
+            <label for="target-score" style="font-weight: bold; color:#ffcc00;">Target Winning Score:</label>
+            <input type="number" id="target-score" value="3" min="1" max="10" style="width: 70px;">
+          </div>
+        </div>
+
+        <button class="btn-start" onclick="startGameFromModal()">START MATCH!</button>
+      </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="modal-gameover" class="modal-overlay" style="display: none;">
+      <div class="modal-card">
+        <h2 id="winner-title">VICTORY!</h2>
+        <p id="winner-desc" style="font-size: 16px; margin: 16px 0; color:#fff;"></p>
+        <button class="btn-start" onclick="openSetupModal()">PLAY AGAIN</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="instructions">
+    [WASD] Move Stickman | [SPACEBAR] Activate SNEAK Power (Medium Stickman)
+  </div>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const scoreRedEl = document.getElementById('score-red-text');
+    const scoreBlueEl = document.getElementById('score-blue-text');
+    const statusEl = document.getElementById('status');
+
+    const modalSetup = document.getElementById('modal-setup');
+    const modalGameOver = document.getElementById('modal-gameover');
+
+    // KEYBOARD INPUT STATE
+    const keys = {};
+
+    // HALVED MOVEMENT SPEED (Baseline = 2.1)
+    const BASE_SPEED = 2.1;
+
+    const CHAR_SPECS = {
+      BIG: { name: 'Big Stickman', scale: 1.5, speedMult: 0.9, power: 'BOUNCE' },
+      MED: { name: 'Medium Stickman', scale: 1.0, speedMult: 1.0, power: 'SNEAK' },
+      SMALL: { name: 'Small Stickman', scale: 0.5, speedMult: 1.1, power: 'TRIP' }
+    };
+
+    const SKIN_TONES = ['#f1c27d', '#ffd1aa', '#e0ac69', '#c68642', '#8d5524', '#523318'];
+    const ALL_ROLES = ['Defense', 'Offense', 'Pursuit'];
+
+    // GAME STATE VARIABLES
+    let selectedPlayerType = 'MED';
+    let targetScore = 3;
+    let scoreRed = 0;
+    let scoreBlue = 0;
+    let isGameRunning = false;
+    let animFrameCount = 0;
+
+    let redTeam = [];
+    let blueTeam = [];
+
+    let redFlag = { x: 0, y: 0, homeX: 0, homeY: 0, carrier: null, isDropped: false };
+    let blueFlag = { x: 0, y: 0, homeX: 0, homeY: 0, carrier: null, isDropped: false };
+
+    // SNEAK POWER GHOST COORDINATES (LAST KNOWN POSITION)
+    let lastKnownPlayerX = null;
+    let lastKnownPlayerY = null;
+
+    // CROWD PATTERN BACKGROUND CACHE
+    let crowdCanvas = null;
+
+    function generateCrowdPattern(width, height) {
+      const pCanvas = document.createElement('canvas');
+      pCanvas.width = width;
+      pCanvas.height = height;
+      const pCtx = pCanvas.getContext('2d');
+
+      const colors = ['#e74c3c', '#3498db', '#f1c40f', '#2ecc71', '#9b59b6', '#ffffff', '#e67e22'];
+      const tileSize = 6;
+
+      for (let x = 0; x < width; x += tileSize) {
+        for (let y = 0; y < height; y += tileSize) {
+          pCtx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+          pCtx.fillRect(x + 1, y + 1, tileSize - 2, tileSize - 2);
+        }
+      }
+      return pCanvas;
+    }
+
+    function createStickman(team, type, role, isPC) {
+      const spec = CHAR_SPECS[type];
+      const randomSkin = SKIN_TONES[Math.floor(Math.random() * SKIN_TONES.length)];
+      return {
+        team: team,
+        type: type,
+        role: role,
+        isPC: isPC,
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0,
+        speed: BASE_SPEED * spec.speedMult,
+        scale: spec.scale,
+        skinColor: randomSkin,
+        facing: team === 'red' ? 1 : -1,
+        walkFrame: 0,
+        hasFlag: false,
+        proneTimer: 0,
+        tripImmunityTimer: 0,   // 2-second post-trip immunity timer
+        bounceImmunityTimer: 0, // 1-second post-bounce immunity timer
+        bounceVx: 0,
+        bounceVy: 0,
+        bounceTimer: 0,
+        sneakActiveTimer: 0,
+        sneakCooldownTimer: 0,
+        searchTimer: 0          // AI ghost searching timer
+      };
+    }
+
+    function initDefaultTeams() {
+      if (redTeam.length === 0) {
+        redTeam = [
+          createStickman('red', 'MED', 'PLAYER', true),
+          createStickman('red', 'BIG', 'Defense', false),
+          createStickman('red', 'SMALL', 'Offense', false)
+        ];
+      }
+      if (blueTeam.length === 0) {
+        blueTeam = [
+          createStickman('blue', 'BIG', 'Defense', false),
+          createStickman('blue', 'MED', 'Offense', false),
+          createStickman('blue', 'SMALL', 'Pursuit', false)
+        ];
+      }
+    }
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvas-wrapper');
+      canvas.width = wrapper.clientWidth;
+      canvas.height = wrapper.clientHeight;
+      crowdCanvas = generateCrowdPattern(canvas.width, canvas.height);
+
+      initDefaultTeams();
+      updateBaseLocations();
+      resetRoundPositions();
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // MULTI-REGISTER CONTROLS HANDLERS - EXCLUSIVE WASD & SPACEBAR ONLY
+    window.addEventListener('keydown', (e) => {
+      const kCode = e.code;
+      const kKey = e.key;
+
+      // Block Arrow Keys explicitly to reinforce WASD movement habits
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(kCode) ||
+          ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(kKey)) {
+        e.preventDefault();
+        return;
+      }
+
+      keys[kCode] = true;
+      keys[kKey] = true;
+      keys[kKey.toLowerCase()] = true;
+      keys[kKey.toUpperCase()] = true;
+
+      if (['w', 'a', 's', 'd', 'W', 'A', 'S', 'D', ' '].includes(kKey) || 
+          ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space'].includes(kCode)) {
+        e.preventDefault();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      const kCode = e.code;
+      const kKey = e.key;
+
+      keys[kCode] = false;
+      keys[kKey] = false;
+      keys[kKey.toLowerCase()] = false;
+      keys[kKey.toUpperCase()] = false;
+    });
+
+    function getFieldDimensions() {
+      const marginX = Math.max(45, canvas.width * 0.07);
+      const marginY = Math.max(35, canvas.height * 0.07);
+      const fieldX = marginX;
+      const fieldY = marginY;
+      const fieldW = canvas.width - (marginX * 2);
+      const fieldH = canvas.height - (marginY * 2);
+      return { fieldX, fieldY, fieldW, fieldH };
+    }
+
+    function selectPlayerChar(type) {
+      selectedPlayerType = type;
+      document.querySelectorAll('.char-option').forEach(el => el.classList.remove('selected'));
+      document.getElementById('opt-' + type.toLowerCase()).classList.add('selected');
+      updateTeammateRoleDropdowns();
+    }
+
+    function updateTeammateRoleDropdowns() {
+      const unusedTypes = ['BIG', 'MED', 'SMALL'].filter(t => t !== selectedPlayerType);
+      
+      document.getElementById('label-team-1').textContent = CHAR_SPECS[unusedTypes[0]].name + ':';
+      document.getElementById('label-team-2').textContent = CHAR_SPECS[unusedTypes[1]].name + ':';
+
+      const select1 = document.getElementById('role-team-1');
+      const select2 = document.getElementById('role-team-2');
+
+      select1.innerHTML = '';
+      select2.innerHTML = '';
+
+      ALL_ROLES.forEach((role, idx) => {
+        select1.options.add(new Option(role, role, false, idx === 0));
+        select2.options.add(new Option(role, role, false, idx === 1));
+      });
+    }
+
+    function openSetupModal() {
+      isGameRunning = false;
+      modalGameOver.style.display = 'none';
+      modalSetup.style.display = 'flex';
+      selectPlayerChar(selectedPlayerType);
+    }
+
+    function startGameFromModal() {
+      targetScore = parseInt(document.getElementById('target-score').value) || 3;
+
+      const unusedTypes = ['BIG', 'MED', 'SMALL'].filter(t => t !== selectedPlayerType);
+      const role1 = document.getElementById('role-team-1').value;
+      const role2 = document.getElementById('role-team-2').value;
+
+      // Construct Player Team (Red)
+      redTeam = [
+        createStickman('red', selectedPlayerType, 'PLAYER', true),
+        createStickman('red', unusedTypes[0], role1, false),
+        createStickman('red', unusedTypes[1], role2, false)
+      ];
+
+      // Shuffle Roles for Opponent Team (Blue)
+      const blueRoles = [...ALL_ROLES].sort(() => Math.random() - 0.5);
+      blueTeam = [
+        createStickman('blue', 'BIG', blueRoles[0], false),
+        createStickman('blue', 'MED', blueRoles[1], false),
+        createStickman('blue', 'SMALL', blueRoles[2], false)
+      ];
+
+      scoreRed = 0;
+      scoreBlue = 0;
+      scoreRedEl.textContent = '0';
+      scoreBlueEl.textContent = '0';
+
+      modalSetup.style.display = 'none';
+      isGameRunning = true;
+      resetRoundPositions();
+
+      window.focus();
+      document.body.focus();
+      canvas.focus();
+    }
+
+    function updateBaseLocations() {
+      const { fieldX, fieldY, fieldW, fieldH } = getFieldDimensions();
+
+      redFlag.homeX = fieldX + fieldW * 0.08;
+      redFlag.homeY = fieldY + fieldH / 2;
+
+      blueFlag.homeX = fieldX + fieldW * 0.92;
+      blueFlag.homeY = fieldY + fieldH / 2;
+
+      if (!redFlag.carrier && !redFlag.isDropped) {
+        redFlag.x = redFlag.homeX;
+        redFlag.y = redFlag.homeY;
+      }
+
+      if (!blueFlag.carrier && !blueFlag.isDropped) {
+        blueFlag.x = blueFlag.homeX;
+        blueFlag.y = blueFlag.homeY;
+      }
+    }
+
+    function resetRoundPositions() {
+      const { fieldX, fieldY, fieldW, fieldH } = getFieldDimensions();
+      updateBaseLocations();
+
+      // Reset Flags
+      redFlag.x = redFlag.homeX;
+      redFlag.y = redFlag.homeY;
+      redFlag.carrier = null;
+      redFlag.isDropped = false;
+
+      lastKnownPlayerX = null;
+      lastKnownPlayerY = null;
+
+      blueFlag.x = blueFlag.homeX;
+      blueFlag.y = blueFlag.homeY;
+      blueFlag.carrier = null;
+      blueFlag.isDropped = false;
+
+      // Position Red Team
+      redTeam.forEach((p, i) => {
+        p.x = fieldX + fieldW * 0.1;
+        p.y = fieldY + fieldH * (0.25 + i * 0.25);
+        p.facing = 1;
+        p.hasFlag = false;
+        p.proneTimer = 0;
+        p.tripImmunityTimer = 0;
+        p.bounceImmunityTimer = 0;
+        p.bounceTimer = 0;
+        p.sneakActiveTimer = 0;
+        p.sneakCooldownTimer = 0;
+        p.searchTimer = 0;
+      });
+
+      // Position Blue Team
+      blueTeam.forEach((p, i) => {
+        p.x = fieldX + fieldW * 0.9;
+        p.y = fieldY + fieldH * (0.25 + i * 0.25);
+        p.facing = -1;
+        p.hasFlag = false;
+        p.proneTimer = 0;
+        p.tripImmunityTimer = 0;
+        p.bounceImmunityTimer = 0;
+        p.bounceTimer = 0;
+        p.sneakActiveTimer = 0;
+        p.sneakCooldownTimer = 0;
+        p.searchTimer = 0;
+      });
+
+      statusEl.textContent = `Steal the Blue Flag and return to Red Zone! First to ${targetScore}!`;
+      statusEl.style.color = '#ffdd57';
+    }
+
+    function updatePhysics() {
+      if (!isGameRunning) return;
+
+      animFrameCount++;
+      const { fieldX, fieldY, fieldW, fieldH } = getFieldDimensions();
+      const halfX = fieldX + fieldW / 2;
+      const allPlayers = [...redTeam, ...blueTeam];
+
+      // UPDATE EACH STICKMAN
+      allPlayers.forEach(p => {
+        // Prone recovery & 2-Second Trip Immunity logic
+        if (p.proneTimer > 0) {
+          p.proneTimer--;
+          if (p.proneTimer === 0) {
+            p.tripImmunityTimer = 120; // 2 seconds post-trip immunity
+          }
+        } else if (p.tripImmunityTimer > 0) {
+          p.tripImmunityTimer--;
+        }
+
+        // 1-Second Post-Bounce Immunity logic
+        if (p.bounceImmunityTimer > 0) {
+          p.bounceImmunityTimer--;
+        }
+
+        if (p.bounceTimer > 0) p.bounceTimer--;
+        if (p.sneakActiveTimer > 0) p.sneakActiveTimer--;
+        if (p.sneakCooldownTimer > 0) p.sneakCooldownTimer--;
+
+        let dx = 0;
+        let dy = 0;
+
+        if (p.bounceTimer > 0) {
+          p.x += p.bounceVx;
+          p.y += p.bounceVy;
+        } else if (p.proneTimer === 0) {
+          if (p.isPC) {
+            const moveUp = keys['KeyW'] || keys['w'] || keys['W'];
+            const moveDown = keys['KeyS'] || keys['s'] || keys['S'];
+            const moveLeft = keys['KeyA'] || keys['a'] || keys['A'];
+            const moveRight = keys['KeyD'] || keys['d'] || keys['D'];
+            const triggerSneak = keys['Space'] || keys[' '];
+
+            if (moveUp) dy -= 1;
+            if (moveDown) dy += 1;
+            if (moveLeft) { dx -= 1; p.facing = -1; }
+            if (moveRight) { dx += 1; p.facing = 1; }
+
+            // Trigger SNEAK power & SNAPSHOT LAST KNOWN POSITION
+            if (triggerSneak && p.type === 'MED' && p.sneakCooldownTimer === 0) {
+              p.sneakActiveTimer = 180;
+              p.sneakCooldownTimer = 600;
+              lastKnownPlayerX = p.x;
+              lastKnownPlayerY = p.y;
+              statusEl.textContent = "⚡ SNEAK ACTIVATED! Opponents chasing last known position!";
+              statusEl.style.color = "#2ecc71";
+            }
+
+            if (dx !== 0 && dy !== 0) {
+              dx *= 0.7071;
+              dy *= 0.7071;
+            }
+
+            p.x += dx * p.speed;
+            p.y += dy * p.speed;
+          } else {
+            const aiMove = computeAIMovement(p, halfX, fieldX, fieldY, fieldW, fieldH);
+            dx = aiMove.dx;
+            dy = aiMove.dy;
+
+            if (dx !== 0) p.facing = dx > 0 ? 1 : -1;
+
+            p.x += dx * p.speed;
+            p.y += dy * p.speed;
+          }
+        }
+
+        const margin = 12 * p.scale;
+        p.x = Math.max(fieldX + margin, Math.min(fieldX + fieldW - margin, p.x));
+        p.y = Math.max(fieldY + margin + 10, Math.min(fieldY + fieldH - margin, p.y));
+
+        if ((dx !== 0 || dy !== 0) && p.proneTimer === 0) {
+          p.walkFrame += 0.25;
+        } else {
+          p.walkFrame = 0;
+        }
+      });
+
+      // FLAG CARRIER POSITIONING
+      if (blueFlag.carrier) {
+        blueFlag.x = blueFlag.carrier.x + (blueFlag.carrier.facing * 10);
+        blueFlag.y = blueFlag.carrier.y - 10;
+      }
+      if (redFlag.carrier) {
+        redFlag.x = redFlag.carrier.x + (redFlag.carrier.facing * 10);
+        redFlag.y = redFlag.carrier.y - 10;
+      }
+
+      checkFlagPickups();
+      checkTagCollisions();
+      checkScoring(fieldX, fieldW);
+    }
+
+    function computeAIMovement(p, halfX, fieldX, fieldY, fieldW, fieldH) {
+      let targetX = p.x;
+      let targetY = p.y;
+
+      const isRed = p.team === 'red';
+      const enemyFlag = isRed ? blueFlag : redFlag;
+      const ownFlag = isRed ? redFlag : blueFlag;
+      const enemyTeam = isRed ? blueTeam : redTeam;
+
+      // Check if player character is currently sneaking
+      const pcEnemy = enemyTeam.find(e => e.isPC);
+      const isPlayerSneaking = pcEnemy && pcEnemy.sneakActiveTimer > 0;
+
+      if (p.role === 'Offense') {
+        if (p.hasFlag) {
+          targetX = isRed ? fieldX + 30 : fieldX + fieldW - 30;
+          targetY = fieldY + fieldH / 2;
+        } else {
+          targetX = enemyFlag.x;
+          targetY = enemyFlag.y + Math.sin(animFrameCount * 0.05 + (isRed ? 0 : 2)) * 60;
+        }
+      } else if (p.role === 'Defense') {
+        let intruder = null;
+        let minDist = Infinity;
+
+        enemyTeam.forEach(e => {
+          // FIX: Ignore downed/tripped enemies so Defense AI doesn't camp on top of prone targets
+          if (e.proneTimer > 0) return;
+
+          const inOurSide = isRed ? (e.x < halfX) : (e.x > halfX);
+          if (inOurSide || e.hasFlag) {
+            const dist = Math.hypot(e.x - p.x, e.y - p.y);
+            if (dist < minDist) {
+              minDist = dist;
+              intruder = e;
+            }
+          }
+        });
+
+        if (intruder) {
+          if (intruder.isPC && isPlayerSneaking && lastKnownPlayerX !== null) {
+            // LAST KNOWN POSITION & SEARCH EASTER EGG MECHANIC
+            const distToGhost = Math.hypot(lastKnownPlayerX - p.x, lastKnownPlayerY - p.y);
+            if (distToGhost < 20) {
+              p.searchTimer++;
+              // Search Wiggle at phantom location
+              targetX = lastKnownPlayerX + Math.sin(p.searchTimer * 0.15) * 18;
+              targetY = lastKnownPlayerY + Math.cos(p.searchTimer * 0.15) * 18;
+            } else {
+              targetX = lastKnownPlayerX;
+              targetY = lastKnownPlayerY;
+            }
+          } else {
+            p.searchTimer = 0;
+            targetX = intruder.x;
+            targetY = intruder.y;
+          }
+        } else {
+          p.searchTimer = 0;
+          targetX = isRed ? halfX - 120 : halfX + 120;
+          targetY = (fieldY + fieldH / 2) + Math.sin(animFrameCount * 0.03 + (isRed ? 1 : 3)) * (fieldH * 0.35);
+        }
+
+        if (isRed) {
+          targetX = Math.min(halfX - 20, targetX);
+        } else {
+          targetX = Math.max(halfX + 20, targetX);
+        }
+      } else if (p.role === 'Pursuit') {
+        if (ownFlag.carrier) {
+          if (ownFlag.carrier.isPC && isPlayerSneaking && lastKnownPlayerX !== null) {
+            // Pursue phantom last known location
+            const distToGhost = Math.hypot(lastKnownPlayerX - p.x, lastKnownPlayerY - p.y);
+            if (distToGhost < 20) {
+              p.searchTimer++;
+              targetX = lastKnownPlayerX + Math.sin(p.searchTimer * 0.15) * 18;
+              targetY = lastKnownPlayerY + Math.cos(p.searchTimer * 0.15) * 18;
+            } else {
+              targetX = lastKnownPlayerX;
+              targetY = lastKnownPlayerY;
+            }
+          } else {
+            p.searchTimer = 0;
+            targetX = ownFlag.carrier.x;
+            targetY = ownFlag.carrier.y;
+          }
+        } else if (ownFlag.isDropped) {
+          p.searchTimer = 0;
+          targetX = ownFlag.x;
+          targetY = ownFlag.y;
+        } else {
+          p.searchTimer = 0;
+          targetX = isRed ? halfX - 50 : halfX + 50;
+          targetY = (fieldY + fieldH / 2) + Math.cos(animFrameCount * 0.04) * (fieldH * 0.35);
+        }
+      }
+
+      const angle = Math.atan2(targetY - p.y, targetX - p.x);
+      const dist = Math.hypot(targetX - p.x, targetY - p.y);
+
+      if (dist < 4) return { dx: 0, dy: 0 };
+      return { dx: Math.cos(angle), dy: Math.sin(angle) };
+    }
+
+    function checkFlagPickups() {
+      const allPlayers = [...redTeam, ...blueTeam];
+
+      allPlayers.forEach(p => {
+        if (p.proneTimer > 0) return;
+
+        // BLUE FLAG PICKUP
+        if (!blueFlag.carrier) {
+          const dist = Math.hypot(p.x - blueFlag.x, p.y - blueFlag.y);
+          if (dist < 22 * p.scale) {
+            if (p.team === 'red') {
+              blueFlag.carrier = p;
+              blueFlag.isDropped = false;
+              p.hasFlag = true;
+              statusEl.textContent = `🚩 ${p.type} STOLE THE BLUE FLAG!`;
+              statusEl.style.color = '#ffcc00';
+            } else if (blueFlag.isDropped) {
+              blueFlag.x = blueFlag.homeX;
+              blueFlag.y = blueFlag.homeY;
+              blueFlag.isDropped = false;
+              statusEl.textContent = `🛡️ BLUE RETURNED THEIR FLAG!`;
+              statusEl.style.color = '#3399ff';
+            }
+          }
+        }
+
+        // RED FLAG PICKUP
+        if (!redFlag.carrier) {
+          const dist = Math.hypot(p.x - redFlag.x, p.y - redFlag.y);
+          if (dist < 22 * p.scale) {
+            if (p.team === 'blue') {
+              redFlag.carrier = p;
+              redFlag.isDropped = false;
+              p.hasFlag = true;
+              statusEl.textContent = `🚩 BLUE STOLE THE RED FLAG!`;
+              statusEl.style.color = '#ff3333';
+            } else if (redFlag.isDropped) {
+              redFlag.x = redFlag.homeX;
+              redFlag.y = redFlag.homeY;
+              redFlag.isDropped = false;
+              statusEl.textContent = `🛡️ RED RETURNED THEIR FLAG!`;
+              statusEl.style.color = '#ffcc00';
+            }
+          }
+        }
+      });
+    }
+
+    function checkTagCollisions() {
+      redTeam.forEach(redP => {
+        blueTeam.forEach(blueP => {
+          if (redP.sneakActiveTimer > 0 || blueP.sneakActiveTimer > 0) return;
+          if (redP.proneTimer > 0 || blueP.proneTimer > 0) return;
+
+          const dist = Math.hypot(redP.x - blueP.x, redP.y - blueP.y);
+          const hitDist = 20 * Math.max(redP.scale, blueP.scale);
+
+          if (dist < hitDist) {
+            const redCanTag = redP.role !== 'Offense';
+            const blueCanTag = blueP.role !== 'Offense';
+
+            if (redCanTag) applyTagPenalty(redP, blueP);
+            if (blueCanTag) applyTagPenalty(blueP, redP);
+          }
+        });
+      });
+    }
+
+    function applyTagPenalty(tagger, victim) {
+      if (victim.hasFlag) {
+        victim.hasFlag = false;
+        if (blueFlag.carrier === victim) {
+          blueFlag.carrier = null;
+          blueFlag.isDropped = true;
+        }
+        if (redFlag.carrier === victim) {
+          redFlag.carrier = null;
+          redFlag.isDropped = true;
+        }
+        statusEl.textContent = `💥 ${victim.team.toUpperCase()} DROPPED THE FLAG!`;
+        statusEl.style.color = '#ff3333';
+      }
+
+      if (tagger.type === 'BIG') {
+        // BOUNCE POWER: Only apply if victim is not bounce-immune
+        if (victim.bounceImmunityTimer === 0) {
+          const angle = Math.atan2(victim.y - tagger.y, victim.x - tagger.x);
+          victim.bounceVx = Math.cos(angle) * 14;
+          victim.bounceVy = Math.sin(angle) * 14;
+          victim.bounceTimer = 25;
+          victim.bounceImmunityTimer = 60; // 1 second bounce immunity
+        }
+      } else if (tagger.type === 'SMALL') {
+        // TRIP POWER: Only apply if victim is not prone and not trip-immune
+        if (victim.proneTimer === 0 && victim.tripImmunityTimer === 0) {
+          victim.proneTimer = 180; // 3 seconds prone
+          // FIX: Recoil tagger back 18px so characters don't stay glued together
+          const recoilAngle = Math.atan2(tagger.y - victim.y, tagger.x - victim.x);
+          tagger.x += Math.cos(recoilAngle) * 18;
+          tagger.y += Math.sin(recoilAngle) * 18;
+        }
+      } else {
+        const { fieldX, fieldY, fieldW, fieldH } = getFieldDimensions();
+        victim.x = victim.team === 'red' ? fieldX + fieldW * 0.08 : fieldX + fieldW * 0.92;
+        victim.y = fieldY + fieldH / 2;
+      }
+    }
+
+    function checkScoring(fieldX, fieldW) {
+      const leftEndZone = fieldX + fieldW * 0.18;
+      const rightEndZone = fieldX + fieldW * 0.82;
+
+      if (blueFlag.carrier && blueFlag.carrier.team === 'red' && blueFlag.carrier.x <= leftEndZone) {
+        scoreRed++;
+        scoreRedEl.textContent = scoreRed;
+        if (scoreRed >= targetScore) {
+          triggerGameOver('RED TEAM WINS!', 'Congratulations! Red Team captured enough flags to win!');
+        } else {
+          statusEl.textContent = '🎉 RED SCORED A POINT!';
+          statusEl.style.color = '#2ecc71';
+          resetRoundPositions();
+        }
+      }
+
+      if (redFlag.carrier && redFlag.carrier.team === 'blue' && redFlag.carrier.x >= rightEndZone) {
+        scoreBlue++;
+        scoreBlueEl.textContent = scoreBlue;
+        if (scoreBlue >= targetScore) {
+          triggerGameOver('BLUE TEAM WINS!', 'Blue Team captured enough flags to win the match!');
+        } else {
+          statusEl.textContent = '🎉 BLUE SCORED A POINT!';
+          statusEl.style.color = '#3399ff';
+          resetRoundPositions();
+        }
+      }
+    }
+
+    function triggerGameOver(title, desc) {
+      isGameRunning = false;
+      document.getElementById('winner-title').textContent = title;
+      document.getElementById('winner-desc').textContent = desc;
+      modalGameOver.style.display = 'flex';
+    }
+
+    // DRAWING RENDER FUNCTIONS
+    function drawStadiumAndField() {
+      const { fieldX, fieldY, fieldW, fieldH } = getFieldDimensions();
+
+      if (crowdCanvas) {
+        ctx.drawImage(crowdCanvas, 0, 0);
+      }
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Checkered Vibrant Pitch
+      const tileSize = fieldW / 12;
+      for (let i = 0; i < 12; i++) {
+        ctx.fillStyle = (i % 2 === 0) ? '#27ae60' : '#2ecc71';
+        ctx.fillRect(fieldX + i * tileSize, fieldY, tileSize, fieldH);
+      }
+
+      // Outer Boundary
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 5;
+      ctx.strokeRect(fieldX, fieldY, fieldW, fieldH);
+
+      // Center Line & Circle
+      const halfX = fieldX + fieldW / 2;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(halfX, fieldY);
+      ctx.lineTo(halfX, fieldY + fieldH);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(halfX, fieldY + fieldH / 2, Math.min(fieldW, fieldH) * 0.16, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // End Zones
+      const leftBaseX = fieldX + fieldW * 0.18;
+      const rightBaseX = fieldX + fieldW * 0.82;
+
+      // Red Base (Left)
+      ctx.fillStyle = 'rgba(231, 76, 60, 0.35)';
+      ctx.fillRect(fieldX, fieldY, fieldW * 0.18, fieldH);
+      ctx.strokeStyle = '#ff3344';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(leftBaseX, fieldY);
+      ctx.lineTo(leftBaseX, fieldY + fieldH);
+      ctx.stroke();
+
+      // Blue Base (Right)
+      ctx.fillStyle = 'rgba(52, 152, 219, 0.35)';
+      ctx.fillRect(rightBaseX, fieldY, fieldW * 0.18, fieldH);
+      ctx.strokeStyle = '#3399ff';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(rightBaseX, fieldY);
+      ctx.lineTo(rightBaseX, fieldY + fieldH);
+      ctx.stroke();
+
+      // End Zone Turf Text Labels
+      ctx.save();
+      ctx.font = '900 16px sans-serif';
+      ctx.textAlign = 'center';
+      
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.fillText('RED ZONE', fieldX + fieldW * 0.09, fieldY + 25);
+      ctx.fillText('BLUE ZONE', fieldX + fieldW * 0.91, fieldY + 25);
+      ctx.restore();
+    }
+
+    function drawFlag(flagObj, color, label) {
+      ctx.save();
+
+      const x = flagObj.x;
+      const y = flagObj.y;
+
+      // Fade carried flag if carrier is sneaking
+      if (flagObj.carrier && flagObj.carrier.sneakActiveTimer > 0) {
+        ctx.globalAlpha = 0.35;
+      }
+
+      if (flagObj.isDropped) {
+        ctx.beginPath();
+        ctx.arc(x, y, 18, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';
+        ctx.fill();
+        ctx.strokeStyle = '#ffcc00';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      // Flagpole
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y - 34);
+      ctx.stroke();
+
+      // Animated Triangular Flag Wave
+      const waveOffset = Math.sin(animFrameCount * 0.1) * 3;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(x, y - 34);
+      ctx.lineTo(x + 24 + waveOffset, y - 24);
+      ctx.lineTo(x, y - 14);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Flag Base Stand
+      ctx.beginPath();
+      ctx.ellipse(x, y, 9, 4.5, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#222222';
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawStickman(p) {
+      ctx.save();
+
+      const x = p.x;
+      const y = p.y;
+      const scale = p.scale;
+      const facing = p.facing;
+      const isRed = p.team === 'red';
+
+      // Sneak active transparency
+      if (p.sneakActiveTimer > 0) {
+        ctx.globalAlpha = 0.35;
+      }
+
+      // Standard Flashing Character Signal for active immunities
+      const isImmune = p.tripImmunityTimer > 0 || p.bounceImmunityTimer > 0;
+      if (isImmune && p.sneakActiveTimer === 0) {
+        if (Math.floor(animFrameCount / 6) % 2 === 0) {
+          ctx.globalAlpha = 0.25;
+        }
+      }
+
+      const teamShirtColor = isRed ? '#ff3344' : '#3399ff';
+      const pantsColor = '#111111';
+      const skinColor = p.skinColor;
+
+      // Handle Prone / Tripped rendering state with DIZZY SPINNING STARS
+      if (p.proneTimer > 0) {
+        ctx.strokeStyle = pantsColor;
+        ctx.lineWidth = 3.5 * scale;
+        ctx.beginPath();
+        ctx.ellipse(x, y + 4, 16 * scale, 6 * scale, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Dizzy Spinning Stars above Tripped character
+        const starCount = 3;
+        const spinRadius = 12 * scale;
+        const spinAngle = animFrameCount * 0.12;
+        for (let i = 0; i < starCount; i++) {
+          const angle = spinAngle + (i * (Math.PI * 2 / starCount));
+          const sx = x + Math.cos(angle) * spinRadius;
+          const sy = y - 14 * scale + Math.sin(angle) * (spinRadius * 0.35);
+
+          ctx.fillStyle = '#ffdd57';
+          ctx.beginPath();
+          ctx.arc(sx, sy, 2.5 * scale, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.font = '900 11px sans-serif';
+        ctx.fillStyle = '#ffdd57';
+        ctx.textAlign = 'center';
+        ctx.fillText('TRIPPED!', x, y - 22 * scale);
+        ctx.restore();
+        return;
+      }
+
+      const headRadius = 6.5 * scale;
+      const bodyLength = 18 * scale;
+      const legLength = 14 * scale;
+      const neckY = y - bodyLength;
+      const headY = neckY - headRadius;
+      const shoulderY = neckY + 4 * scale;
+
+      // 1. Black Pants (Legs)
+      ctx.strokeStyle = pantsColor;
+      ctx.lineWidth = 3.8 * scale;
+      ctx.lineCap = 'round';
+
+      const legSwing = Math.sin(p.walkFrame) * 6 * scale;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - legSwing, y + legLength);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + legSwing, y + legLength);
+      ctx.stroke();
+
+      // 2. Team-Colored Shirt (Torso)
+      ctx.strokeStyle = teamShirtColor;
+      ctx.lineWidth = 6 * scale;
+      ctx.beginPath();
+      ctx.moveTo(x, neckY);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+
+      // 3. Team Shirt Sleeves & Arms
+      const armSwing = Math.sin(p.walkFrame + Math.PI) * 5 * scale;
+      ctx.strokeStyle = teamShirtColor;
+      ctx.lineWidth = 3.5 * scale;
+
+      // Back Arm
+      ctx.beginPath();
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(x - facing * 5 * scale - armSwing, shoulderY + 7 * scale);
+      ctx.stroke();
+
+      // Front Arm
+      ctx.beginPath();
+      ctx.moveTo(x, shoulderY);
+      ctx.lineTo(x + facing * 5 * scale + armSwing, shoulderY + 7 * scale);
+      ctx.stroke();
+
+      // 4. Flesh-Tone Head
+      ctx.fillStyle = skinColor;
+      ctx.strokeStyle = '#222222';
+      ctx.lineWidth = 1.2 * scale;
+      ctx.beginPath();
+      ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Eye Direction
+      ctx.fillStyle = '#000000';
+      ctx.beginPath();
+      ctx.arc(x + facing * 2.5 * scale, headY - 0.5, 1 * scale, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 5. Role Badge & Immunity Label
+      ctx.font = '900 10px sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      const roleTag = p.isPC ? 'YOU' : p.role.substring(0, 3).toUpperCase();
+      const labelText = isImmune ? `${p.type[0]}-IMMUNE` : `${p.type[0]}-${roleTag}`;
+      ctx.fillText(labelText, x, headY - 10);
+
+      ctx.restore();
+    }
+
+    function drawHUD() {
+      const pc = redTeam.find(p => p.isPC);
+      if (pc && pc.type === 'MED') {
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 12px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('SNEAK COOLDOWN:', 20, canvas.height - 15);
+
+        const barW = 110;
+        const barH = 12;
+        const barX = 155;
+        const barY = canvas.height - 26;
+
+        ctx.fillStyle = '#1c2238';
+        ctx.fillRect(barX, barY, barW, barH);
+
+        const pct = 1 - (pc.sneakCooldownTimer / 600);
+        ctx.fillStyle = pct >= 1 ? '#2ecc71' : '#ff9900';
+        ctx.fillRect(barX, barY, barW * pct, barH);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(barX, barY, barW, barH);
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawStadiumAndField();
+      drawFlag(redFlag, '#ff3344', 'RED');
+      drawFlag(blueFlag, '#3399ff', 'BLUE');
+
+      redTeam.forEach(p => drawStickman(p));
+      blueTeam.forEach(p => drawStickman(p));
+
+      drawHUD();
+    }
+
+    function animate() {
+      updatePhysics();
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    window.onload = function() {
+      resizeCanvas();
+      openSetupModal();
+      animate();
+    };
+  </script>
+</body>
+</html>

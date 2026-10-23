@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stickman Rainforest Rescue: Golden Parrot & Enemies</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+      font-family: 'Fredoka', 'Comic Sans MS', 'Trebuchet MS', cursive, sans-serif;
+    }
+
+    body {
+      background-color: #081409;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      overflow: hidden;
+      padding: 10px;
+    }
+
+    /* Header & HUD Bar */
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 1100px;
+      margin-bottom: 6px;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, #1b4313, #2e7d32, #113813);
+      border: 3px solid #ffd700;
+      border-radius: 14px;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.6);
+    }
+
+    .title-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h1 {
+      font-size: 19px;
+      color: #ffd700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-shadow: 2px 2px #000, 0 0 10px rgba(255,215,0,0.5);
+    }
+
+    #level-display {
+      background: #ff9800;
+      color: #000000;
+      font-weight: 900;
+      padding: 4px 12px;
+      border-radius: 16px;
+      font-size: 14px;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 8px #ff9800;
+    }
+
+    /* Lives & Inventory Badges */
+    #hud-status {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    #lives-bar {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 18px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 2px solid #ff5252;
+      box-shadow: 0 0 8px rgba(255,82,82,0.4);
+    }
+
+    #hud-inventory {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .hud-badge {
+      background: rgba(0, 0, 0, 0.45);
+      border: 2px solid #558b2f;
+      padding: 4px 9px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: bold;
+      color: #aed581;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.3s ease;
+    }
+
+    .hud-badge.collected {
+      background: #ffb300;
+      color: #000000;
+      border-color: #ffffff;
+      box-shadow: 0 0 10px #ffd700;
+      transform: scale(1.05);
+    }
+
+    .btn-reset {
+      background: linear-gradient(180deg, #ff5722, #d84315);
+      color: #ffffff;
+      border: 2px solid #ffffff;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: bold;
+      border-radius: 10px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 0 #8d2600;
+      transition: all 0.1s ease-in-out;
+    }
+
+    .btn-reset:hover {
+      background: #f4511e;
+      transform: translateY(-2px);
+    }
+
+    .btn-reset:active {
+      transform: translateY(2px);
+      box-shadow: none;
+    }
+
+    /* Main Canvas Container */
+    #canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 1100px;
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 4px solid #4caf50;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.8);
+      background-color: #0f2711;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .instructions-bar {
+      margin-top: 6px;
+      font-size: 13px;
+      font-weight: bold;
+      color: #e8f5e9;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 6px 22px;
+      border-radius: 20px;
+      text-align: center;
+      border: 2px solid #4caf50;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+    }
+
+    .instructions-bar span {
+      color: #ffd700;
+      background: #2e7d32;
+      padding: 2px 7px;
+      border-radius: 6px;
+      margin: 0 3px;
+      border: 1px solid #81c784;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header & HUD Bar -->
+  <div id="header">
+    <div class="title-box">
+      <h1>Rainforest Rescue</h1>
+      <div id="level-display">Level 1</div>
+    </div>
+    
+    <div id="hud-status">
+      <!-- 7 Lives Counter -->
+      <div id="lives-bar" title="7 Lives Remaining">
+        <span id="hearts-container">❤️❤️❤️❤️❤️❤️❤️</span>
+      </div>
+
+      <!-- Inventory Badges -->
+      <div id="hud-inventory">
+        <div id="badge-engine" class="hud-badge">🔧 Engine</div>
+        <div id="badge-wing" class="hud-badge">🛩️ Wing</div>
+        <div id="badge-prop" class="hud-badge">⚙️ Propeller</div>
+        <div id="badge-fuel" class="hud-badge">⛽ Fuel</div>
+        <div id="badge-parrot" class="hud-badge">🦜 Parrot</div>
+      </div>
+    </div>
+
+    <button class="btn-reset" onclick="resetGame()">New Game</button>
+  </div>
+
+  <!-- Canvas Wrapper -->
+  <div id="canvas-wrapper">
+    <canvas id="simCanvas"></canvas>
+  </div>
+
+  <!-- Movement Controls Prompt -->
+  <div class="instructions-bar">
+    Controls: Use <span>W</span> <span>A</span> <span>S</span> <span>D</span> to Move | <span>SPACE</span> Throw Hat in Aimed Direction! | Arrow Keys Disabled
+  </div>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // SOUND SYNTHESIZER (Web Audio API)
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) audioCtx = new AudioContext();
+    }
+
+    function playSound(type) {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      const now = audioCtx.currentTime;
+      if (type === 'pickup') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.2);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.25);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      } else if (type === 'attack') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.15);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.15);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } else if (type === 'hitEnemy') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(100, now + 0.15);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.15);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } else if (type === 'hurt') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.linearRampToValueAtTime(110, now + 0.2);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.2);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      } else if (type === 'crash') {
+        // FIXED: Quieter and shorter explosion sound!
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(110, now);
+        osc.frequency.exponentialRampToValueAtTime(25, now + 0.25);
+        gain.gain.setValueAtTime(0.12, now); // Quieter gain
+        gain.gain.linearRampToValueAtTime(0, now + 0.25); // Shortened duration
+        osc.start(now);
+        osc.stop(now + 0.25);
+      } else if (type === 'win') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.setValueAtTime(554.37, now + 0.15);
+        osc.frequency.setValueAtTime(659.25, now + 0.3);
+        osc.frequency.setValueAtTime(880, now + 0.45);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.8);
+        osc.start(now);
+        osc.stop(now + 0.8);
+      }
+    }
+
+    // GAME STATES: 'INTRO', 'PLAYING', 'GAMEOVER', 'WIN'
+    let gameState = 'INTRO';
+    let currentLevel = 1;
+
+    // KEYBOARD INPUT STATE (STRICT WASD ONLY FOR MOVEMENT)
+    const keys = {};
+
+    window.addEventListener('keydown', (e) => {
+      initAudio();
+      // Explicitly block arrow keys from movement
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+        e.preventDefault();
+        return;
+      }
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+        e.preventDefault();
+        keys[e.code] = true;
+      }
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (gameState === 'PLAYING') {
+          throwHatAttack();
+        } else if (gameState === 'GAMEOVER') {
+          startCurrentLevel();
+        } else if (gameState === 'WIN') {
+          currentLevel++;
+          startCurrentLevel();
+        } else if (gameState === 'INTRO') {
+          startGameplay();
+        }
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+        keys[e.code] = false;
+      }
+    });
+
+    // RAINFOREST MAZE GENERATOR (Depth-First Search)
+    const COLS = 21;
+    const ROWS = 13;
+    let tileSize = 40;
+    let MAZE_GRID = [];
+
+    function generateRandomMaze() {
+      MAZE_GRID = Array.from({ length: ROWS }, () => Array(COLS).fill(1));
+      const stack = [[1, 1]];
+      MAZE_GRID[1][1] = 0;
+
+      while (stack.length > 0) {
+        const [cx, cy] = stack[stack.length - 1];
+        const neighbors = [];
+        const directions = [[-2, 0], [2, 0], [0, -2], [0, 2]];
+        for (const [dx, dy] of directions) {
+          const nx = cx + dx;
+          const ny = cy + dy;
+          if (nx > 0 && nx < COLS - 1 && ny > 0 && ny < ROWS - 1 && MAZE_GRID[ny][nx] === 1) {
+            neighbors.push([nx, ny, dx, dy]);
+          }
+        }
+
+        if (neighbors.length > 0) {
+          const [nx, ny, dx, dy] = neighbors[Math.floor(Math.random() * neighbors.length)];
+          MAZE_GRID[cy + dy / 2][cx + dx / 2] = 0;
+          MAZE_GRID[ny][nx] = 0;
+          stack.push([nx, ny]);
+        } else {
+          stack.pop();
+        }
+      }
+
+      const emptyCells = [];
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (MAZE_GRID[r][c] === 0 && !(r <= 2 && c <= 2)) {
+            emptyCells.push({ r, c });
+          }
+        }
+      }
+
+      for (let i = emptyCells.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [emptyCells[i], emptyCells[j]] = [emptyCells[j], emptyCells[i]];
+      }
+
+      MAZE_GRID[1][1] = 7; // Crash Site / Spawn Point
+
+      const items = [2, 3, 4, 5, 6]; // Propeller, Engine, Wing, Fuel, Temple/Parrot
+      for (const itemId of items) {
+        if (emptyCells.length > 0) {
+          const { r, c } = emptyCells.pop();
+          MAZE_GRID[r][c] = itemId;
+        }
+      }
+    }
+
+    // INVENTORY DATA
+    const inventory = {
+      engine: false,
+      wing: false,
+      propeller: false,
+      fuel: false,
+      parrot: false
+    };
+
+    // ITEM PICKUP NOTIFICATION POPUP
+    let popUpMessage = "";
+    let popUpTimer = 0;
+
+    function showPopup(msg) {
+      popUpMessage = msg;
+      popUpTimer = 120;
+    }
+
+    // PLAYER STATE (+10% Speed: 3.85, 8-Way Aim Tracking)
+    const player = {
+      x: 0,
+      y: 0,
+      radius: 12,
+      speed: 3.85, // +10% speed boost over baseline
+      facing: 1,
+      lastDx: 1,  // Tracking 8-way aim direction for hat throw
+      lastDy: 0,
+      walkFrame: 0,
+      lives: 7,
+      invulnerableTimer: 0,
+      frozenTimer: 0,
+      // HAT ATTACK STATE
+      hatAttacking: false,
+      hatX: 0,
+      hatY: 0,
+      hatVx: 0,
+      hatVy: 0,
+      hatDist: 0,
+      hatMaxDist: 95,
+      hatReturning: false
+    };
+
+    // FIXED: Throw hat in the direction of the last WASD keypress (8-way direction!)
+    function throwHatAttack() {
+      if (player.hatAttacking || player.frozenTimer > 0) return;
+      
+      let aimX = player.lastDx;
+      let aimY = player.lastDy;
+      if (aimX === 0 && aimY === 0) aimX = player.facing; // Fallback to facing
+
+      const magnitude = Math.hypot(aimX, aimY) || 1;
+      const speed = 8.5;
+
+      player.hatAttacking = true;
+      player.hatX = player.x;
+      player.hatY = player.y - 10;
+      player.hatDist = 0;
+      player.hatReturning = false;
+      player.hatVx = (aimX / magnitude) * speed;
+      player.hatVy = (aimY / magnitude) * speed;
+      playSound('attack');
+    }
+
+    // ENEMIES, PROJECTILES & PARTICLES STATE
+    let enemies = [];
+    let enemyProjectiles = [];
+    let particles = [];
+
+    function addHitParticles(x, y, color = '#ffd700') {
+      for (let i = 0; i < 8; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 1 + Math.random() * 3;
+        particles.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          radius: 2 + Math.random() * 3,
+          color,
+          life: 20
+        });
+      }
+    }
+
+    // SAFE ENEMY SPAWN GENERATOR (Strictly avoids Spawn & Exit Points!)
+    function getSafePathPosition() {
+      const openCells = [];
+      for (let r = 1; r < ROWS - 1; r++) {
+        for (let c = 1; c < COLS - 1; c++) {
+          // Strictly exclude starting 3x3 grid area (r<=3 && c<=3) to prevent instant spawn deaths
+          if (MAZE_GRID[r][c] === 0 && !(r <= 3 && c <= 3)) {
+            openCells.push({ x: (c + 0.5) * tileSize, y: (r + 0.5) * tileSize });
+          }
+        }
+      }
+      if (openCells.length === 0) return { x: 6 * tileSize, y: 6 * tileSize };
+      return openCells[Math.floor(Math.random() * openCells.length)];
+    }
+
+    function spawnEnemiesForLevel(level) {
+      enemies = [];
+      enemyProjectiles = [];
+      particles = [];
+
+      // 1. Giant Beetles (2 on Level 1, 3 on Level 2, +1 per level)
+      const beetleCount = level + 1;
+      for (let i = 0; i < beetleCount; i++) {
+        const pos = getSafePathPosition();
+        enemies.push({
+          type: 'beetle',
+          x: pos.x,
+          y: pos.y,
+          radius: 14,
+          vx: (Math.random() < 0.5 ? 1 : -1) * 1.5,
+          vy: (Math.random() < 0.5 ? 1 : -1) * 1.5,
+          legFrame: 0
+        });
+      }
+
+      // 2. Evil Vines (1 on round 1, +1 each round; thorns = 2 * level)
+      const vineCount = level;
+      for (let i = 0; i < vineCount; i++) {
+        const pos = getSafePathPosition();
+        enemies.push({
+          type: 'vine',
+          x: pos.x,
+          y: pos.y,
+          radius: 15,
+          thorns: 2 * level,
+          shootTimer: 180,
+          weakenedTimer: 0,
+          wiggle: 0
+        });
+      }
+
+      // 3. Poisonous Snakes (2 in level 1, +2 each level)
+      const snakeCount = 2 * level;
+      for (let i = 0; i < snakeCount; i++) {
+        const pos = getSafePathPosition();
+        enemies.push({
+          type: 'snake',
+          x: pos.x,
+          y: pos.y,
+          radius: 13,
+          speed: 2.2,
+          wiggle: 0
+        });
+      }
+
+      // 4. Huge Mosquitos (2 in level 1, +2 each level) - Spawn safely away from start
+      const mosquitoCount = 2 * level;
+      for (let i = 0; i < mosquitoCount; i++) {
+        enemies.push({
+          type: 'mosquito',
+          x: Math.random() * (canvas.width - 300) + 250,
+          y: Math.random() * (canvas.height - 200) + 150,
+          radius: 12,
+          attackTimer: 180,
+          swooping: false,
+          swoopTargetX: 0,
+          swoopTargetY: 0
+        });
+      }
+
+      // 5. Evil Bananas (Fixed count: 1 per maze)
+      const bananaCount = 1;
+      for (let i = 0; i < bananaCount; i++) {
+        const pos = getSafePathPosition();
+        enemies.push({
+          type: 'banana',
+          x: pos.x,
+          y: pos.y,
+          radius: 14,
+          hopOffset: 0,
+          hopTimer: Math.random() * 60,
+          shootTimer: 150
+        });
+      }
+
+      // 6. Enemy Parrots (1 on round 1, +1 each round)
+      const parrotCount = level;
+      for (let i = 0; i < parrotCount; i++) {
+        enemies.push({
+          type: 'parrot',
+          x: 250 + Math.random() * (canvas.width - 300),
+          y: 40 + i * 25,
+          vx: 2 + Math.random(),
+          radius: 15,
+          featherTimer: 120 + Math.random() * 60
+        });
+      }
+    }
+
+    // INTRO & WIN CUTSCENE STATES
+    const introPlane = { x: -100, y: 120, speed: 3.5, smoking: false, crashing: false, angle: 0, timer: 0, explosionFrames: 0 };
+    const winPlane = { x: 0, y: 0, angle: 0, scale: 1, timer: 0 };
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('canvas-wrapper');
+      canvas.width = wrapper.clientWidth;
+      canvas.height = wrapper.clientHeight;
+      tileSize = Math.min(canvas.width / COLS, canvas.height / ROWS);
+
+      if (gameState === 'PLAYING' && player.x === 0 && player.y === 0) {
+        resetPlayerToStart();
+      }
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    function resetPlayerToStart() {
+      player.x = 1.5 * tileSize;
+      player.y = 1.5 * tileSize;
+      player.facing = 1;
+      player.lastDx = 1;
+      player.lastDy = 0;
+      player.walkFrame = 0;
+      player.lives = 7;
+      player.invulnerableTimer = 0;
+      player.frozenTimer = 0;
+      player.hatAttacking = false;
+    }
+
+    function resetGame() {
+      currentLevel = 1;
+      startCurrentLevel();
+      gameState = 'INTRO';
+      introPlane.x = -100;
+      introPlane.y = canvas.height * 0.25;
+      introPlane.smoking = false;
+      introPlane.crashing = false;
+      introPlane.angle = 0;
+      introPlane.timer = 0;
+      introPlane.explosionFrames = 0;
+    }
+
+    function startCurrentLevel() {
+      generateRandomMaze();
+      resetPlayerToStart();
+      spawnEnemiesForLevel(currentLevel);
+
+      inventory.engine = false;
+      inventory.wing = false;
+      inventory.propeller = false;
+      inventory.fuel = false;
+      inventory.parrot = false;
+
+      updateHUD();
+      document.getElementById('level-display').innerText = `Level ${currentLevel}`;
+      gameState = 'PLAYING';
+    }
+
+    function startGameplay() {
+      gameState = 'PLAYING';
+      resetPlayerToStart();
+    }
+
+    function updateHUD() {
+      document.getElementById('badge-engine').classList.toggle('collected', inventory.engine);
+      document.getElementById('badge-wing').classList.toggle('collected', inventory.wing);
+      document.getElementById('badge-prop').classList.toggle('collected', inventory.propeller);
+      document.getElementById('badge-fuel').classList.toggle('collected', inventory.fuel);
+      document.getElementById('badge-parrot').classList.toggle('collected', inventory.parrot);
+
+      // Render 7 Hearts
+      let heartsHtml = '';
+      for (let i = 0; i < 7; i++) {
+        if (i < player.lives) {
+          heartsHtml += '❤️';
+        } else {
+          heartsHtml += '🖤';
+        }
+      }
+      document.getElementById('hearts-container').innerHTML = heartsHtml;
+    }
+
+    function allItemsCollected() {
+      return inventory.engine && inventory.wing && inventory.propeller && inventory.fuel && inventory.parrot;
+    }
+
+    function takeDamage(freeze = false) {
+      if (player.invulnerableTimer > 0) return;
+
+      player.lives--;
+      playSound('hurt');
+
+      if (freeze) {
+        // FIXED: Banana stun lasts 2s (120 frames), AND grants full damage immunity during the stun (+30 frames grace) so enemies can't combo death-loop you!
+        player.frozenTimer = 120;
+        player.invulnerableTimer = 150; 
+        showPopup("🍌 STUCK! Banana Peel on Face! Stunned for 2s (Protected!)");
+      } else {
+        player.invulnerableTimer = 90; // 1.5 seconds invulnerability
+        showPopup(`💥 Ouch! Hit by enemy! (${player.lives} Lives Left)`);
+      }
+
+      if (player.lives <= 0) {
+        gameState = 'GAMEOVER';
+        playSound('crash');
+      }
+
+      updateHUD();
+    }
+
+    // MAZE WALL COLLISION CHECK
+    function checkWallCollision(px, py) {
+      const r = player.radius;
+      const minCol = Math.floor((px - r) / tileSize);
+      const maxCol = Math.floor((px + r) / tileSize);
+      const minRow = Math.floor((py - r) / tileSize);
+      const maxRow = Math.floor((py + r) / tileSize);
+
+      for (let row = minRow; row <= maxRow; row++) {
+        for (let col = minCol; col <= maxCol; col++) {
+          if (row >= 0 && row < ROWS && col >= 0 && col < COLS) {
+            if (MAZE_GRID[row][col] === 1) {
+              const wx1 = col * tileSize;
+              const wy1 = row * tileSize;
+              const wx2 = wx1 + tileSize;
+              const wy2 = wy1 + tileSize;
+
+              const closestX = Math.max(wx1, Math.min(px, wx2));
+              const closestY = Math.max(wy1, Math.min(py, wy2));
+
+              const dx = px - closestX;
+              const dy = py - closestY;
+              if ((dx * dx + dy * dy) < (r * r)) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+      return false;
+    }
+
+    // UPDATE PHYSICS, HAT ATTACK & ENEMY AI
+    function updatePhysics() {
+      if (gameState !== 'PLAYING') return;
+
+      // Invulnerability & Freeze Timers
+      if (player.invulnerableTimer > 0) player.invulnerableTimer--;
+      if (player.frozenTimer > 0) player.frozenTimer--;
+
+      // UPDATE HAT ATTACK FLYING TRAJECTORY (8-Way Directional Movement!)
+      if (player.hatAttacking) {
+        if (!player.hatReturning) {
+          player.hatX += player.hatVx;
+          player.hatY += player.hatVy;
+          player.hatDist += Math.hypot(player.hatVx, player.hatVy);
+          if (player.hatDist >= player.hatMaxDist) {
+            player.hatReturning = true;
+          }
+        } else {
+          // Return back to Stickman's head
+          const dx = player.x - player.hatX;
+          const dy = (player.y - 10) - player.hatY;
+          const dist = Math.hypot(dx, dy);
+          if (dist < 12) {
+            player.hatAttacking = false;
+          } else {
+            player.hatX += (dx / dist) * 9;
+            player.hatY += (dy / dist) * 9;
+          }
+        }
+
+        // HAT INTERSECTION WITH ENEMIES
+        for (let i = enemies.length - 1; i >= 0; i--) {
+          const e = enemies[i];
+          const dist = Math.hypot(player.hatX - e.x, player.hatY - e.y);
+          if (dist < e.radius + 14) {
+            playSound('hitEnemy');
+            addHitParticles(e.x, e.y, '#ffd700');
+
+            if (e.type === 'vine') {
+              e.thorns--;
+              if (e.thorns <= 0) {
+                showPopup("🤠 Hat Throw Defeated the Evil Vine!");
+                enemies.splice(i, 1);
+              } else {
+                showPopup(`🤠 Hat Knocked a Thorn Off Vine! (${e.thorns} Thorns Left)`);
+              }
+            } else {
+              showPopup(`🤠 Hat Attack Defeated the ${e.type.toUpperCase()}!`);
+              enemies.splice(i, 1);
+            }
+            player.hatReturning = true;
+            break;
+          }
+        }
+      }
+
+      // WASD Movement (Locked if frozen by Banana Peel)
+      if (player.frozenTimer <= 0) {
+        let dx = 0;
+        let dy = 0;
+
+        if (keys['KeyW']) dy -= 1;
+        if (keys['KeyS']) dy += 1;
+        if (keys['KeyA']) { dx -= 1; player.facing = -1; }
+        if (keys['KeyD']) { dx += 1; player.facing = 1; }
+
+        // Track last non-zero direction for 8-way hat aiming!
+        if (dx !== 0 || dy !== 0) {
+          player.lastDx = dx;
+          player.lastDy = dy;
+        }
+
+        if (dx !== 0 && dy !== 0) {
+          dx *= 0.7071;
+          dy *= 0.7071;
+        }
+
+        const nextX = player.x + dx * player.speed;
+        if (!checkWallCollision(nextX, player.y)) player.x = nextX;
+
+        const nextY = player.y + dy * player.speed;
+        if (!checkWallCollision(player.x, nextY)) player.y = nextY;
+
+        if (dx !== 0 || dy !== 0) player.walkFrame += 0.25;
+        else player.walkFrame = 0;
+      }
+
+      // Check Collectibles
+      const playerCol = Math.floor(player.x / tileSize);
+      const playerRow = Math.floor(player.y / tileSize);
+
+      if (playerRow >= 0 && playerRow < ROWS && playerCol >= 0 && playerCol < COLS) {
+        const tileVal = MAZE_GRID[playerRow][playerCol];
+        if (tileVal === 2 && !inventory.propeller) {
+          inventory.propeller = true; playSound('pickup'); showPopup("⚙️ Found Propeller!");
+        } else if (tileVal === 3 && !inventory.engine) {
+          inventory.engine = true; playSound('pickup'); showPopup("🔧 Found Engine!");
+        } else if (tileVal === 4 && !inventory.wing) {
+          inventory.wing = true; playSound('pickup'); showPopup("🛩️ Found Wing!");
+        } else if (tileVal === 5 && !inventory.fuel) {
+          inventory.fuel = true; playSound('pickup'); showPopup("⛽ Found Fuel Tank!");
+        } else if (tileVal === 6 && !inventory.parrot) {
+          inventory.parrot = true; playSound('pickup'); showPopup("🦜 Rescued Golden Parrot!");
+        } else if (tileVal === 7 && allItemsCollected()) {
+          gameState = 'WIN';
+          winPlane.x = 1.5 * tileSize;
+          winPlane.y = 1.5 * tileSize;
+          winPlane.timer = 0;
+          playSound('win');
+        }
+      }
+
+      // UPDATE ENEMIES
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const enemy = enemies[i];
+
+        // 1. Giant Beetle Logic
+        if (enemy.type === 'beetle') {
+          enemy.legFrame += 0.1;
+          const nextEX = enemy.x + enemy.vx;
+          const nextEY = enemy.y + enemy.vy;
+          if (checkWallCollision(nextEX, enemy.y)) enemy.vx *= -1; else enemy.x = nextEX;
+          if (checkWallCollision(enemy.x, nextEY)) enemy.vy *= -1; else enemy.y = nextEY;
+
+          const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+          if (dist < player.radius + enemy.radius) takeDamage();
+        }
+
+        // 2. Evil Vine Logic (Loses thorns when shooting, defeated when thorns = 0)
+        else if (enemy.type === 'vine') {
+          enemy.wiggle += 0.1;
+          if (enemy.weakenedTimer > 0) {
+            enemy.weakenedTimer--;
+          } else {
+            enemy.shootTimer--;
+            if (enemy.shootTimer <= 0) {
+              enemy.shootTimer = 200;
+              enemy.weakenedTimer = 80;
+              enemy.thorns--;
+              for (let a = 0; a < Math.PI * 2; a += Math.PI / 2) {
+                enemyProjectiles.push({
+                  x: enemy.x, y: enemy.y,
+                  vx: Math.cos(a) * 3, vy: Math.sin(a) * 3,
+                  radius: 5, type: 'thorn'
+                });
+              }
+              if (enemy.thorns <= 0) {
+                showPopup("🌿 Evil Vine ran out of thorns and withered away!");
+                addHitParticles(enemy.x, enemy.y, '#2e7d32');
+                enemies.splice(i, 1);
+                continue;
+              }
+            }
+          }
+          const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+          if (dist < player.radius + enemy.radius) takeDamage();
+        }
+
+        // 3. Poisonous Snake Logic
+        else if (enemy.type === 'snake') {
+          enemy.wiggle += 0.15;
+          const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+          const nextSX = enemy.x + Math.cos(angle) * enemy.speed;
+          const nextSY = enemy.y + Math.sin(angle) * enemy.speed;
+          if (!checkWallCollision(nextSX, nextSY)) {
+            enemy.x = nextSX; enemy.y = nextSY;
+          }
+          const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+          if (dist < player.radius + enemy.radius) takeDamage();
+        }
+
+        // 4. Huge Mosquito Logic (FIXED: Hits once then despawns!)
+        else if (enemy.type === 'mosquito') {
+          enemy.attackTimer--;
+          if (enemy.attackTimer <= 0) {
+            enemy.swooping = true;
+            enemy.swoopTargetX = player.x;
+            enemy.swoopTargetY = player.y;
+            enemy.attackTimer = 180;
+          }
+
+          if (enemy.swooping) {
+            const angle = Math.atan2(enemy.swoopTargetY - enemy.y, enemy.swoopTargetX - enemy.x);
+            enemy.x += Math.cos(angle) * 5;
+            enemy.y += Math.sin(angle) * 5;
+            if (Math.hypot(enemy.swoopTargetX - enemy.x, enemy.swoopTargetY - enemy.y) < 10) {
+              enemy.swooping = false;
+            }
+          } else {
+            enemy.x += (Math.random() - 0.5) * 3;
+            enemy.y += (Math.random() - 0.5) * 3;
+          }
+
+          const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+          if (dist < player.radius + enemy.radius) {
+            takeDamage();
+            showPopup("🦟 Mosquito bit you and buzzed away!");
+            addHitParticles(enemy.x, enemy.y, '#9c27b0');
+            enemies.splice(i, 1);
+            continue;
+          }
+        }
+
+        // 5. Evil Banana Logic
+        else if (enemy.type === 'banana') {
+          enemy.hopTimer++;
+          enemy.hopOffset = Math.abs(Math.sin(enemy.hopTimer * 0.1)) * 12;
+          enemy.shootTimer--;
+          if (enemy.shootTimer <= 0) {
+            enemy.shootTimer = 180;
+            const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+            enemyProjectiles.push({
+              x: enemy.x, y: enemy.y - enemy.hopOffset,
+              vx: Math.cos(angle) * 3.5, vy: Math.sin(angle) * 3.5,
+              radius: 6, type: 'banana'
+            });
+          }
+          const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+          if (dist < player.radius + enemy.radius) takeDamage(true);
+        }
+
+        // 6. Enemy Parrot Logic
+        else if (enemy.type === 'parrot') {
+          enemy.x += enemy.vx;
+          if (enemy.x < 30 || enemy.x > canvas.width - 30) enemy.vx *= -1;
+          enemy.featherTimer--;
+          if (enemy.featherTimer <= 0) {
+            enemy.featherTimer = 140;
+            enemyProjectiles.push({
+              x: enemy.x, y: enemy.y,
+              vx: (Math.random() - 0.5) * 1, vy: 2.5,
+              radius: 6, type: 'feather'
+            });
+          }
+        }
+      }
+
+      // UPDATE PROJECTILES
+      for (let i = enemyProjectiles.length - 1; i >= 0; i--) {
+        const p = enemyProjectiles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+
+        const dist = Math.hypot(player.x - p.x, player.y - p.y);
+        if (dist < player.radius + p.radius) {
+          takeDamage(p.type === 'banana');
+          enemyProjectiles.splice(i, 1);
+          continue;
+        }
+
+        if (p.x < 0 || p.x > canvas.width || p.y < 0 || p.y > canvas.height) {
+          enemyProjectiles.splice(i, 1);
+        }
+      }
+
+      // UPDATE PARTICLES
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const pt = particles[i];
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+        pt.life--;
+        if (pt.life <= 0) particles.splice(i, 1);
+      }
+
+      updateHUD();
+    }
+
+    // DRAW STICKMAN WITH SAFARI HAT & ATTACK ANIMATION
+    function drawStickman(x, y, facing, walkFrame) {
+      ctx.save();
+      if (player.invulnerableTimer % 6 > 3) ctx.globalAlpha = 0.4;
+
+      ctx.strokeStyle = '#ffd700';
+      ctx.fillStyle = '#ff5722';
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+
+      const headRadius = 6;
+      const bodyLength = 16;
+      const legLength = 12;
+      const neckY = y - bodyLength;
+      const headY = neckY - headRadius;
+      const shoulderY = neckY + 4;
+
+      // Draw Safari Hat on head IF not throwing hat
+      if (!player.hatAttacking) {
+        ctx.fillStyle = '#8d6e63';
+        ctx.beginPath(); ctx.ellipse(x, headY - 4, 12, 4, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x, headY - 4, 6, Math.PI, 0); ctx.fill();
+      }
+
+      // Head
+      ctx.strokeStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(x, headY, headRadius, 0, Math.PI * 2); ctx.stroke();
+
+      // Eye
+      ctx.fillStyle = '#29b6f6';
+      ctx.beginPath(); ctx.arc(x + facing * 2, headY - 1, 1.2, 0, Math.PI * 2); ctx.fill();
+
+      // Torso
+      ctx.strokeStyle = '#ff9800';
+      ctx.beginPath(); ctx.moveTo(x, neckY); ctx.lineTo(x, y); ctx.stroke();
+
+      // Legs
+      const legSwing = Math.sin(walkFrame) * 7;
+      ctx.strokeStyle = '#ffffff';
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - legSwing, y + legLength); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + legSwing, y + legLength); ctx.stroke();
+
+      // Arms
+      const armSwing = Math.sin(walkFrame + Math.PI) * 6;
+      ctx.beginPath(); ctx.moveTo(x, shoulderY); ctx.lineTo(x - facing * 5 - armSwing, shoulderY + 7); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, shoulderY); ctx.lineTo(x + facing * 5 + armSwing, shoulderY + 7); ctx.stroke();
+
+      // Banana Peel Stuck on Face if Stunned!
+      if (player.frozenTimer > 0) {
+        ctx.font = '18px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🍌', x, headY - 2);
+      }
+
+      ctx.restore();
+
+      // DRAW FLYING HAT ATTACK (Spinning Hat Boomerang)
+      if (player.hatAttacking) {
+        ctx.save();
+        ctx.translate(player.hatX, player.hatY);
+        ctx.rotate(Date.now() * 0.025);
+        ctx.fillStyle = '#8d6e63';
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(0, 0, 14, 5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, 7, Math.PI, 0); ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // DRAW AIRPLANE (Used in Intro and Win Cutscenes)
+    function drawAirplane(x, y, scale = 1, angle = 0, showParrot = false) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.scale(scale, scale);
+
+      // Body / Fuselage
+      ctx.fillStyle = '#e53935';
+      ctx.beginPath(); ctx.ellipse(0, 0, 30, 10, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
+
+      // Wings
+      ctx.fillStyle = '#fbc02d';
+      ctx.fillRect(-8, -22, 16, 44);
+      ctx.strokeRect(-8, -22, 16, 44);
+
+      // Tail
+      ctx.fillStyle = '#1976d2';
+      ctx.beginPath(); ctx.moveTo(-25, 0); ctx.lineTo(-35, -14); ctx.lineTo(-20, 0); ctx.closePath(); ctx.fill();
+
+      // Propeller Spinner
+      ctx.fillStyle = '#757575';
+      ctx.beginPath(); ctx.arc(30, 0, 5, 0, Math.PI * 2); ctx.fill();
+
+      // Propeller Blades
+      ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(30, -12); ctx.lineTo(30, 12); ctx.stroke();
+
+      if (showParrot) {
+        ctx.fillStyle = '#ffd700'; ctx.beginPath(); ctx.arc(5, -12, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ff3d00'; ctx.beginPath(); ctx.moveTo(8, -12); ctx.lineTo(12, -10); ctx.lineTo(8, -8); ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    // DRAW ENEMIES, PROJECTILES & PARTICLES
+    function drawEnemies() {
+      for (const e of enemies) {
+        ctx.save();
+        if (e.type === 'beetle') {
+          ctx.fillStyle = '#9c27b0';
+          ctx.beginPath(); ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath(); ctx.moveTo(e.x - 6, e.y - 12); ctx.lineTo(e.x - 2, e.y - 4); ctx.lineTo(e.x - 10, e.y - 4); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(e.x + 6, e.y - 12); ctx.lineTo(e.x + 2, e.y - 4); ctx.lineTo(e.x + 10, e.y - 4); ctx.fill();
+        } else if (e.type === 'vine') {
+          ctx.fillStyle = e.weakenedTimer > 0 ? '#a5d6a7' : '#2e7d32';
+          ctx.beginPath(); ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#ff1744';
+          for (let i = 0; i < e.thorns; i++) {
+            const angle = (i / e.thorns) * Math.PI * 2 + e.wiggle;
+            const tx = e.x + Math.cos(angle) * (e.radius + 4);
+            const ty = e.y + Math.sin(angle) * (e.radius + 4);
+            ctx.beginPath(); ctx.arc(tx, ty, 3.5, 0, Math.PI * 2); ctx.fill();
+          }
+        } else if (e.type === 'snake') {
+          ctx.fillStyle = '#d500f9';
+          ctx.beginPath(); ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#00e676';
+          ctx.beginPath(); ctx.arc(e.x + 3, e.y - 2, 3, 0, Math.PI * 2); ctx.fill();
+        } else if (e.type === 'mosquito') {
+          ctx.font = '22px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('🦟', e.x, e.y);
+        } else if (e.type === 'banana') {
+          ctx.font = '22px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText('🍌', e.x, e.y - e.hopOffset);
+        } else if (e.type === 'parrot') {
+          ctx.font = '24px sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText('🦜', e.x, e.y);
+        }
+        ctx.restore();
+      }
+
+      for (const p of enemyProjectiles) {
+        ctx.save();
+        if (p.type === 'thorn') {
+          ctx.fillStyle = '#ff1744';
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill();
+        } else if (p.type === 'banana') {
+          ctx.font = '14px sans-serif'; ctx.fillText('🍌', p.x, p.y);
+        } else if (p.type === 'feather') {
+          ctx.font = '16px sans-serif'; ctx.fillText('🪶', p.x, p.y);
+        }
+        ctx.restore();
+      }
+
+      for (const pt of particles) {
+        ctx.save();
+        ctx.fillStyle = pt.color;
+        ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // DRAW MAP & COLLECTIBLES
+    function drawMap() {
+      ctx.fillStyle = '#1b381e';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const x = c * tileSize;
+          const y = r * tileSize;
+          const type = MAZE_GRID[r][c];
+
+          if (type === 1) {
+            ctx.fillStyle = '#2e7d32';
+            ctx.fillRect(x, y, tileSize, tileSize);
+            ctx.fillStyle = '#1b5e20';
+            ctx.beginPath(); ctx.arc(x + tileSize / 2, y + tileSize / 2, tileSize * 0.45, 0, Math.PI * 2); ctx.fill();
+          } else {
+            ctx.strokeStyle = '#224726';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x, y, tileSize, tileSize);
+          }
+
+          if (type === 2 && !inventory.propeller) drawItem(x + tileSize / 2, y + tileSize / 2, '⚙️', '#ffb300');
+          else if (type === 3 && !inventory.engine) drawItem(x + tileSize / 2, y + tileSize / 2, '🔧', '#29b6f6');
+          else if (type === 4 && !inventory.wing) drawItem(x + tileSize / 2, y + tileSize / 2, '🛩️', '#ab47bc');
+          else if (type === 5 && !inventory.fuel) drawItem(x + tileSize / 2, y + tileSize / 2, '⛽', '#ef5350');
+          else if (type === 6) {
+            ctx.fillStyle = '#ffa000'; ctx.fillRect(x + 4, y + 4, tileSize - 8, tileSize - 8);
+            if (!inventory.parrot) drawItem(x + tileSize / 2, y + tileSize / 2, '🦜', '#ffd700');
+          } else if (type === 7) {
+            ctx.fillStyle = 'rgba(255, 215, 0, 0.2)'; ctx.fillRect(x, y, tileSize, tileSize);
+            if (!allItemsCollected()) {
+              ctx.font = `${tileSize * 0.5}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+              ctx.fillText('🛩️💥', x + tileSize / 2, y + tileSize / 2);
+            }
+          }
+        }
+      }
+    }
+
+    function drawItem(cx, cy, symbol, glowColor) {
+      const pulse = Math.sin(Date.now() * 0.008) * 3;
+      ctx.save();
+      ctx.shadowColor = glowColor; ctx.shadowBlur = 12 + pulse;
+      ctx.font = `${tileSize * 0.55}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(symbol, cx, cy);
+      ctx.restore();
+    }
+
+    // DRAW INTRO CUTSCENE (FIXED: Properly renders jungle backdrop, sky, plane, and quiet crash)
+    function drawIntro() {
+      // Sky & Background Gradient
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      gradient.addColorStop(0, '#29b6f6');
+      gradient.addColorStop(0.5, '#81c784');
+      gradient.addColorStop(1, '#1b5e20');
+      ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Render Floating Clouds in Sky
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.beginPath(); ctx.arc(120, 60, 25, 0, Math.PI * 2); ctx.arc(145, 50, 30, 0, Math.PI * 2); ctx.arc(170, 60, 25, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(canvas.width - 200, 80, 20, 0, Math.PI * 2); ctx.arc(canvas.width - 180, 70, 28, 0, Math.PI * 2); ctx.arc(canvas.width - 150, 80, 22, 0, Math.PI * 2); ctx.fill();
+
+      // Render Jungle Canopy at Bottom
+      for (let x = 0; x < canvas.width + 40; x += 40) {
+        ctx.fillStyle = '#1b5e20';
+        ctx.beginPath(); ctx.arc(x, canvas.height - 20, 35, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#2e7d32';
+        ctx.beginPath(); ctx.arc(x + 20, canvas.height - 10, 25, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // Title Box Header
+      ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(canvas.width * 0.1, 20, canvas.width * 0.8, 85);
+      ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 3; ctx.strokeRect(canvas.width * 0.1, 20, canvas.width * 0.8, 85);
+
+      ctx.fillStyle = '#ffd700'; ctx.font = 'bold 22px Fredoka, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('CRASH IN THE RAINFOREST!', canvas.width / 2, 50);
+      ctx.fillStyle = '#ffffff'; ctx.font = '14px Fredoka, sans-serif';
+      ctx.fillText('Stickman is searching for the GOLDEN PARROT when his plane develops trouble!', canvas.width / 2, 80);
+
+      // Animate Plane Trajectory
+      introPlane.timer++;
+      if (introPlane.x < canvas.width * 0.5) {
+        introPlane.x += introPlane.speed;
+      } else {
+        introPlane.smoking = true;
+        introPlane.x += introPlane.speed * 0.8;
+        introPlane.y += 2.5;
+        introPlane.angle += 0.03;
+      }
+
+      // Render Smoke Trail
+      if (introPlane.smoking) {
+        ctx.fillStyle = 'rgba(220, 220, 220, 0.6)';
+        for (let i = 0; i < 5; i++) {
+          ctx.beginPath();
+          ctx.arc(introPlane.x - 30 - (i * 15), introPlane.y + (Math.random() * 10 - 5), 8 + i * 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Draw Plane
+      drawAirplane(introPlane.x, introPlane.y, 1.2, introPlane.angle);
+
+      // Trigger Crash
+      if (introPlane.y > canvas.height * 0.7) {
+        if (introPlane.explosionFrames === 0) {
+          playSound('crash'); // Quieter, shorter crash sound!
+        }
+        introPlane.explosionFrames++;
+
+        // Shorter, controlled explosion effect
+        if (introPlane.explosionFrames < 35) {
+          ctx.fillStyle = '#ff5722'; ctx.beginPath(); ctx.arc(introPlane.x, introPlane.y, 45, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#ffeb3b'; ctx.beginPath(); ctx.arc(introPlane.x, introPlane.y, 25, 0, Math.PI * 2); ctx.fill();
+        }
+
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 24px Fredoka, sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('MAYDAY! MAYDAY! CRASH LANDING!', canvas.width / 2, canvas.height * 0.48);
+
+        ctx.fillStyle = '#ffd700'; ctx.fillRect(canvas.width / 2 - 150, canvas.height * 0.8, 300, 48);
+        ctx.fillStyle = '#000000'; ctx.font = 'bold 16px Fredoka, sans-serif';
+        ctx.fillText('PRESS [SPACE] OR CLICK TO PLAY', canvas.width / 2, canvas.height * 0.8 + 30);
+      }
+    }
+
+    // DRAW GAME OVER SCREEN
+    function drawGameOver() {
+      drawMap();
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      ctx.fillRect(canvas.width * 0.15, canvas.height * 0.25, canvas.width * 0.7, 200);
+      ctx.strokeStyle = '#ef5350'; ctx.lineWidth = 4;
+      ctx.strokeRect(canvas.width * 0.15, canvas.height * 0.25, canvas.width * 0.7, 200);
+
+      ctx.fillStyle = '#ef5350'; ctx.font = 'bold 32px Fredoka, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('☠️ GAME OVER ☠️', canvas.width / 2, canvas.height * 0.25 + 60);
+
+      ctx.fillStyle = '#ffffff'; ctx.font = '16px Fredoka, sans-serif';
+      ctx.fillText('You ran out of lives! The rainforest enemies got you.', canvas.width / 2, canvas.height * 0.25 + 100);
+
+      ctx.fillStyle = '#ffd700'; ctx.fillRect(canvas.width / 2 - 140, canvas.height * 0.25 + 130, 280, 45);
+      ctx.fillStyle = '#000000'; ctx.font = 'bold 16px Fredoka, sans-serif';
+      ctx.fillText('PRESS [SPACE] TO RETRY LEVEL', canvas.width / 2, canvas.height * 0.25 + 158);
+    }
+
+    // DRAW WIN CUTSCENE
+    function drawWin() {
+      drawMap();
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      ctx.fillRect(canvas.width * 0.15, canvas.height * 0.25, canvas.width * 0.7, 220);
+      ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 4;
+      ctx.strokeRect(canvas.width * 0.15, canvas.height * 0.25, canvas.width * 0.7, 220);
+
+      ctx.fillStyle = '#ffd700'; ctx.font = 'bold 28px Fredoka, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(`🎉 LEVEL ${currentLevel} COMPLETED! 🎉`, canvas.width / 2, canvas.height * 0.25 + 50);
+
+      ctx.fillStyle = '#ffffff'; ctx.font = '16px Fredoka, sans-serif';
+      ctx.fillText('You rebuilt the plane and rescued the Golden Parrot!', canvas.width / 2, canvas.height * 0.25 + 90);
+
+      ctx.fillStyle = '#4caf50'; ctx.fillRect(canvas.width / 2 - 140, canvas.height * 0.25 + 135, 280, 50);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 16px Fredoka, sans-serif';
+      ctx.fillText(`PRESS [SPACE] FOR LEVEL ${currentLevel + 1}`, canvas.width / 2, canvas.height * 0.25 + 165);
+    }
+
+    function drawPopup() {
+      if (popUpTimer > 0) {
+        popUpTimer--;
+        ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.fillRect(canvas.width / 2 - 240, canvas.height - 60, 480, 40);
+        ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2; ctx.strokeRect(canvas.width / 2 - 240, canvas.height - 60, 480, 40);
+
+        ctx.fillStyle = '#ffd700'; ctx.font = 'bold 14px Fredoka, sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(popUpMessage, canvas.width / 2, canvas.height - 35);
+      }
+    }
+
+    // MAIN ANIMATION LOOP
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (gameState === 'INTRO') {
+        drawIntro();
+      } else if (gameState === 'PLAYING') {
+        drawMap();
+        drawEnemies();
+        drawStickman(player.x, player.y, player.facing, player.walkFrame);
+        drawPopup();
+      } else if (gameState === 'GAMEOVER') {
+        drawGameOver();
+      } else if (gameState === 'WIN') {
+        drawWin();
+      }
+    }
+
+    function animate() {
+      updatePhysics();
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    canvas.addEventListener('click', () => {
+      initAudio();
+      if (gameState === 'INTRO') startGameplay();
+      else if (gameState === 'GAMEOVER') startCurrentLevel();
+      else if (gameState === 'WIN') { currentLevel++; startCurrentLevel(); }
+    });
+
+    window.onload = function() {
+      resizeCanvas();
+      resetGame();
+      animate();
+    };
+  </script>
+</body>
+</html>

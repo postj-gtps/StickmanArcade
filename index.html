@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>5th Grade Arcade Showcase</title>
   <style>
-    /* Global Styling */
     :root {
       --bg-color: #0f1026;
       --card-bg: #1c1d3a;
@@ -42,7 +41,6 @@
       font-size: 1.1rem;
     }
 
-    /* Accordion / Teacher Sections */
     .teacher-section {
       background: var(--card-bg);
       border: 2px solid #2d2f5a;
@@ -93,7 +91,6 @@
       display: grid;
     }
 
-    /* Arcade Cabinet Container */
     .arcade-cabinet {
       background: #111;
       border: 4px solid #333;
@@ -106,7 +103,6 @@
       position: relative;
     }
 
-    /* Cabinet Marquee Header */
     .marquee {
       width: 100%;
       background: linear-gradient(180deg, #333 0%, #111 100%);
@@ -126,7 +122,6 @@
       letter-spacing: 1px;
     }
 
-    /* Screen Area */
     .screen-frame {
       width: 100%;
       height: 180px;
@@ -144,10 +139,10 @@
     .screen-frame img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
+      background: #1a1a2e;
     }
 
-    /* Control Deck Area */
     .control-deck {
       width: 100%;
       height: 45px;
@@ -195,7 +190,6 @@
       box-shadow: 0 2px 0 #b38f00;
     }
 
-    /* Coin Door / Action Buttons Area */
     .coin-door {
       width: 100%;
       display: flex;
@@ -217,7 +211,7 @@
       color: #fff;
       text-decoration: none;
       font-weight: bold;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       transition: all 0.2s ease;
       box-shadow: inset 0 0 5px rgba(0,0,0,0.8);
     }
@@ -249,54 +243,55 @@
 
   <header>
     <h1>🕹️ Student Arcade Showcase 🕹️</h1>
-    <p>Click a teacher's classroom to reveal their video game cabinets!</p>
+    <p>Click a classroom section below to reveal the arcade games!</p>
   </header>
 
   <main id="arcade-container"></main>
 
   <script>
-    // Data Structure: Update game titles, image paths, and Google Form links here!
+    const BASE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeOxp2dwQPxkdTcw7abk7mbZ2LxwkZQFjqpnfffwlSWMrgMiA/viewform?usp=pp_url";
+    const GAME_TITLE_ENTRY_ID = "entry.264700236";
+
     const arcadeData = [
       {
         teacher: "Kasunich / Derasmo",
         games: [
-          { title: "Fast Food Quest", image: "images/fast_food_quest.jpg", playUrl: "#", evalUrl: "#" },
-          { title: "Space Crash!", image: "images/space_crash.jpg", playUrl: "#", evalUrl: "#" },
-          { title: "Abyss Diver", image: "images/abyss_diver.jpg", playUrl: "#", evalUrl: "#" },
-          { title: "Beast Run", image: "images/beast_run.jpg", playUrl: "#", evalUrl: "#" }
+          { title: "Fast Food Quest", image: "images/Fast Food Quest.png", playUrl: "games/Kasunich Derasmo/01 Fast Food Quest.html" },
+          { title: "Space Crash!", image: "images/Space Crash.png", playUrl: "games/Kasunich Derasmo/02 Space Crash.html" },
+          { title: "Abyss Diver", image: "images/Abyss Diver.png", playUrl: "games/Kasunich Derasmo/03 Abyss Diver.html" },
+          { title: "Beast Run", image: "images/Beast Run.png", playUrl: "games/Kasunich Derasmo/04 Beast Run.html" }
         ]
       },
       {
         teacher: "Adams / Scully",
         games: [
-          { title: "Aztec Treasure Hunt", image: "images/aztec_treasure.jpg", playUrl: "#", evalUrl: "#" },
-          { title: "Stickman CTF!", image: "images/stickman_ctf.jpg", playUrl: "#", evalUrl: "#" },
-          { title: "Treasure Diver", image: "images/treasure_diver.jpg", playUrl: "#", evalUrl: "#" },
-          { title: "Survive the Birthday!", image: "images/survive_birthday.jpg", playUrl: "#", evalUrl: "#" },
-          { title: "Castle Quest", image: "images/castle_quest.jpg", playUrl: "#", evalUrl: "#" }
+          { title: "Aztec Treasure Hunt", image: "images/Aztec Treasure Hunt.png", playUrl: "games/Adams Scully/01 Aztec Treasure Hunt.html" },
+          { title: "Stickman CTF!", image: "images/Stickman CTF.png", playUrl: "games/Adams Scully/02 Stickman CTF.html" },
+          { title: "Treasure Diver", image: "images/Treasure Diver.png", playUrl: "games/Adams Scully/03 Treasure Diver.html" },
+          { title: "Survive the Birthday!", image: "images/Survive the Birthday.png", playUrl: "games/Adams Scully/04 Survive the Birthday.html" },
+          { title: "Castle Quest", image: "images/Castle Quest.png", playUrl: "games/Adams Scully/05 Castle Quest.html" }
         ]
       },
       {
         teacher: "Bisignaro",
         games: [
-          { title: "Cabin Chaos!", image: "images/cabin_chaos.jpg", playUrl: "#", evalUrl: "#" },
-          { title: "Evil School Supplies", image: "images/evil_supplies.jpg", playUrl: "#", evalUrl: "#" },
-          { title: "Moon Mission", image: "images/moon_mission.jpg", playUrl: "#", evalUrl: "#" },
-          { title: "Rainforest Rescue", image: "images/rainforest_rescue.jpg", playUrl: "#", evalUrl: "#" }
+          { title: "Cabin Chaos!", image: "images/Cabin Chaos.png", playUrl: "games/Bisignaro/01 Cabin Chaos.html" },
+          { title: "Evil School Supplies", image: "images/Evil School Supplies.png", playUrl: "games/Bisignaro/02 Evil School Supplies.html" },
+          { title: "Moon Mission", image: "images/Moon Mission.png", playUrl: "games/Bisignaro/03 Moon Mission.html" },
+          { title: "Rainforest Rescue", image: "images/Rainforest Rescue.png", playUrl: "games/Bisignaro/04 Rainforest Rescue.html" }
         ]
       },
       {
         teacher: "Seddon",
         games: [
-          { title: "Moon Rescue", image: "images/moon_rescue.jpg", playUrl: "#", evalUrl: "#" },
-          { title: "Arcade Invasion", image: "images/arcade_invasion.jpg", playUrl: "#", evalUrl: "#" },
-          { title: "Cinema Candy Clash", image: "images/cinema_candy.jpg", playUrl: "#", evalUrl: "#" },
-          { title: "CandyMaze Rescue", image: "images/candymaze_rescue.jpg", playUrl: "#", evalUrl: "#" }
+          { title: "Moon Rescue", image: "images/Moon Rescue.png", playUrl: "games/Seddon/01 Moon Rescue.html" },
+          { title: "Arcade Invasion", image: "images/Arcade Invasion.png", playUrl: "games/Seddon/02 Arcade Invasion.html" },
+          { title: "Cinema Candy Clash", image: "images/Cinema Candy Clash.png", playUrl: "games/Seddon/03 Cinema Candy Clash.html" },
+          { title: "CandyMaze Rescue", image: "images/Candy Maze Rescue.png", playUrl: "games/Seddon/04 CandyMaze Rescue.html" }
         ]
       }
     ];
 
-    // Render Function
     function renderArcade() {
       const container = document.getElementById("arcade-container");
 
@@ -304,10 +299,8 @@
         const sectionDiv = document.createElement("div");
         sectionDiv.className = "teacher-section";
         
-        // Open the first teacher section by default
         if (index === 0) sectionDiv.classList.add("open");
 
-        // Teacher Header Toggle
         const headerBtn = document.createElement("button");
         headerBtn.className = "teacher-header";
         headerBtn.textContent = `Classroom: ${section.teacher}`;
@@ -315,11 +308,12 @@
           sectionDiv.classList.toggle("open");
         });
 
-        // Cabinet Grid
         const gridDiv = document.createElement("div");
         gridDiv.className = "cabinet-grid";
 
         section.games.forEach(game => {
+          const evalUrl = `${BASE_FORM_URL}&${GAME_TITLE_ENTRY_ID}=${encodeURIComponent(game.title)}`;
+
           const cabinet = document.createElement("div");
           cabinet.className = "arcade-cabinet";
 
@@ -328,7 +322,7 @@
               <h3>${game.title}</h3>
             </div>
             <div class="screen-frame">
-              <img src="${game.image}" alt="${game.title} Screenshot" onerror="this.src='https://via.placeholder.com/280x180?text=${encodeURIComponent(game.title)}'">
+              <img src="${encodeURI(game.image)}" alt="${game.title} Logo" onerror="this.src='https://via.placeholder.com/280x180?text=${encodeURIComponent(game.title)}'">
             </div>
             <div class="control-deck">
               <div class="joystick"></div>
@@ -339,8 +333,8 @@
               </div>
             </div>
             <div class="coin-door">
-              <a href="${game.playUrl}" target="_blank" class="coin-btn play-btn">▶ PLAY</a>
-              <a href="${game.evalUrl}" target="_blank" class="coin-btn eval-btn">📝 EVALUATE</a>
+              <a href="${encodeURI(game.playUrl)}" target="_blank" class="coin-btn play-btn">▶ PLAY</a>
+              <a href="${evalUrl}" target="_blank" class="coin-btn eval-btn">📝 EVALUATE</a>
             </div>
           `;
           gridDiv.appendChild(cabinet);

@@ -1,0 +1,1801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Stickman City Navigator - Kasunich Team 1</title>
+ <style>
+ * {
+ box-sizing: border-box;
+ user-select: none;
+ margin: 0;
+ padding: 0;
+ font-family: 'Fredoka', 'Chalkboard SE', 'Comic Sans MS', 'Trebuchet MS', sans-serif;
+ }
+
+ body {
+ background-color: #0d0d0d;
+ color: #ffffff;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ justify-content: flex-start;
+ height: 100vh;
+ overflow: hidden;
+ padding: 10px;
+ }
+
+ #header {
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ width: 100%;
+ max-width: 1100px;
+ margin-bottom: 8px;
+ padding: 8px 14px;
+ background: #181824;
+ border: 2px solid #ffcc00;
+ border-radius: 10px;
+ box-shadow: 0 4px 15px rgba(255, 204, 0, 0.2);
+ }
+
+ .title-group {
+ display: flex;
+ flex-direction: column;
+ }
+
+ h1 {
+ font-size: 20px;
+ letter-spacing: 1.5px;
+ text-transform: uppercase;
+ font-weight: 900;
+ color: #ffcc00;
+ text-shadow: 2px 2px #ff3366;
+ }
+
+ #location-info {
+ font-size: 13px;
+ color: #00ffcc;
+ margin-top: 2px;
+ font-weight: bold;
+ text-shadow: 1px 1px #000000;
+ }
+
+ .hud-right {
+ display: flex;
+ align-items: center;
+ gap: 12px;
+ }
+
+ #hp-bar-container {
+ display: flex;
+ align-items: center;
+ gap: 6px;
+ background: #222233;
+ padding: 5px 10px;
+ border-radius: 20px;
+ border: 2px solid #ff4444;
+ font-size: 12px;
+ font-weight: bold;
+ color: #ff5555;
+ }
+
+ #hp-bar-outer {
+ width: 90px;
+ height: 12px;
+ background: #441111;
+ border-radius: 6px;
+ overflow: hidden;
+ border: 1px solid #ff6666;
+ }
+
+ #hp-bar-inner {
+ width: 100%;
+ height: 100%;
+ background: linear-gradient(90deg, #ff3333, #ff8800);
+ border-radius: 6px;
+ transition: width 0.15s ease;
+ }
+
+ #key-inventory {
+ display: flex;
+ align-items: center;
+ gap: 6px;
+ background: #222233;
+ padding: 5px 12px;
+ border-radius: 20px;
+ border: 2px solid #00d2ff;
+ }
+
+ .key-label {
+ font-size: 12px;
+ font-weight: bold;
+ color: #00d2ff;
+ text-transform: uppercase;
+ margin-right: 2px;
+ }
+
+ .key-badge {
+ font-size: 10px;
+ font-weight: 800;
+ padding: 4px 9px;
+ border-radius: 12px;
+ text-transform: uppercase;
+ transition: all 0.2s ease;
+ opacity: 0.35;
+ border: 2px solid transparent;
+ color: #aaaaaa;
+ background: #11111a;
+ }
+
+ .key-badge.active.red { opacity: 1; color: #ffffff; background: #c0392b; border-color: #ff5555; box-shadow: 0 0 10px #ff5555; }
+ .key-badge.active.blue { opacity: 1; color: #ffffff; background: #2980b9; border-color: #33ffff; box-shadow: 0 0 10px #33ffff; }
+ .key-badge.active.green { opacity: 1; color: #ffffff; background: #27ae60; border-color: #55ff55; box-shadow: 0 0 10px #55ff55; }
+ .key-badge.active.yellow { opacity: 1; color: #000000; background: #f1c40f; border-color: #ffff55; box-shadow: 0 0 10px #ffff55; }
+
+ .key-badge.unlocked { opacity: 0.5; text-decoration: line-through; background: #111111; border-color: #666666; color: #888888; box-shadow: none; }
+
+ .btn-reset {
+ background: #ffcc00;
+ color: #000000;
+ border: 2px solid #ffffff;
+ padding: 6px 16px;
+ font-size: 13px;
+ font-weight: 900;
+ border-radius: 20px;
+ cursor: pointer;
+ text-transform: uppercase;
+ letter-spacing: 1px;
+ transition: all 0.15s ease-in-out;
+ box-shadow: 0 3px 0 #cc9900;
+ }
+
+ .btn-reset:hover {
+ background: #ffffff;
+ color: #000000;
+ transform: translateY(-2px);
+ box-shadow: 0 5px 0 #cccccc;
+ }
+
+ #canvas-wrapper {
+ position: relative;
+ width: 100%;
+ max-width: 1100px;
+ flex-grow: 1;
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ }
+
+ canvas {
+ background-color: #000000;
+ border: 3px solid #ffcc00;
+ border-radius: 12px;
+ display: block;
+ width: 100%;
+ height: 100%;
+ box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+ }
+
+ .instructions {
+ margin-top: 6px;
+ font-size: 12px;
+ color: #ffcc00;
+ font-weight: bold;
+ text-align: center;
+ background: #181824;
+ padding: 6px 16px;
+ border-radius: 20px;
+ border: 1px solid #444466;
+ }
+
+ #victory-modal {
+ display: none;
+ position: absolute;
+ top: 50%;
+ left: 50%;
+ transform: translate(-50%, -50%);
+ background: rgba(15, 10, 25, 0.96);
+ border: 4px solid #a855f7;
+ padding: 28px 36px;
+ text-align: center;
+ border-radius: 16px;
+ box-shadow: 0 0 35px rgba(168, 85, 247, 0.8);
+ z-index: 10;
+ }
+
+ #victory-modal h2 {
+ color: #ffcc00;
+ font-size: 26px;
+ margin-bottom: 10px;
+ text-transform: uppercase;
+ text-shadow: 2px 2px #a855f7;
+ }
+
+ #victory-modal p {
+ font-size: 14px;
+ color: #ffffff;
+ margin-bottom: 20px;
+ font-weight: bold;
+ }
+ </style>
+</head>
+<body>
+
+ <div id="header">
+ <div class="title-group">
+ <h1>Stickman City Navigator</h1>
+ <div id="location-info">Sector: Stadium</div>
+ </div>
+
+ <div class="hud-right">
+ <div id="hp-bar-container">
+ <span>❤️ HP</span>
+ <div id="hp-bar-outer"><div id="hp-bar-inner"></div></div>
+ </div>
+
+ <div id="key-inventory">
+ <span class="key-label">Keys:</span>
+ <span id="badge-red" class="key-badge red">Red</span>
+ <span id="badge-blue" class="key-badge blue">Blue</span>
+ <span id="badge-green" class="key-badge green">Green</span>
+ <span id="badge-yellow" class="key-badge yellow">Yellow</span>
+ </div>
+
+ <button class="btn-reset" onclick="resetGame()">Reset Game</button>
+ </div>
+ </div>
+
+ <div id="canvas-wrapper">
+ <canvas id="simCanvas"></canvas>
+ 
+ <div id="victory-modal">
+ <h2 id="modal-title">Goal Reached!</h2>
+ <p id="modal-desc">Stickman defeated the Purple Building Boss and unlocked RYFFR!</p>
+ <button class="btn-reset" onclick="resetGame()">Play Again</button>
+ </div>
+ </div>
+
+ <div class="instructions">
+ 🎮 Controls: [WASD] Walk | [ENTER] Shoot Ketchup Gun 🍅 | Defeat Cheeseburgers 🍔 to collect Keys 🔑 | Touch RYFFR Walls 🏰 to unlock them!
+ </div>
+
+ <script>
+ const canvas = document.getElementById('simCanvas');
+ const ctx = canvas.getContext('2d');
+
+ const keys = {};
+
+ const GRID_SIZE = 5;
+ const CENTER = 2;
+
+ const TILE_TYPES = {
+ STADIUM: 'Stadium (Center Field)',
+ DENSE_CITY: 'Dense City',
+ PARK: 'Park',
+ RESIDENTIAL: 'Residential District',
+ INDUSTRIAL: 'Industrial Zone',
+ RYFFR: 'Red & Yellow Fast Food Restaurant',
+ PURPLE_BOSS: 'Purple Building Boss Arena'
+ };
+
+ const KEY_COLORS = {
+ red: { hex: '#e74c3c', name: 'Red Key' },
+ blue: { hex: '#2980b9', name: 'Blue Key' },
+ green: { hex: '#2ecc71', name: 'Green Key' },
+ yellow: { hex: '#f1c40f', name: 'Yellow Key' }
+ };
+
+ let cityGrid = [];
+ let currentGridX = CENTER;
+ let currentGridY = CENTER;
+ let ryffrX = 0;
+ let ryffrY = 0;
+ let bossX = 1;
+ let bossY = 1;
+ let hasWon = false;
+
+ // RYFFR Wall & Key State
+ let wallOrder = ['red', 'blue', 'green', 'yellow'];
+ let hasKey = { red: false, blue: false, green: false, yellow: false };
+ let unlockedWalls = { red: false, blue: false, green: false, yellow: false };
+
+ // Projectiles, Particles, Popups
+ let ketchupProjectiles = [];
+ let pickleProjectiles = [];
+ let particles = [];
+ let popups = [];
+
+ // Boss State
+ let purpleBoss = null;
+
+ // Player
+ const player = {
+ x: 0,
+ y: 0,
+ speed: 4.0,
+ facing: 1,
+ walkFrame: 0,
+ hp: 100,
+ maxHp: 100,
+ shootCooldown: 0,
+ isLifted: false,
+ liftTimer: 0,
+ liftSource: null
+ };
+
+ function seededRandom(seed) {
+ const x = Math.sin(seed++) * 10000;
+ return x - Math.floor(x);
+ }
+
+ function shuffleArray(arr) {
+ for (let i = arr.length - 1; i > 0; i--) {
+ const j = Math.floor(Math.random() * (i + 1));
+ [arr[i], arr[j]] = [arr[j], arr[i]];
+ }
+ return arr;
+ }
+
+ function spawnPopup(x, y, text, color = '#ffffff') {
+ popups.push({ x, y, text, color, opacity: 1.0, vy: -1.2, life: 40 });
+ }
+
+ function spawnSplatParticles(x, y, color, count = 8) {
+ for (let i = 0; i < count; i++) {
+ const angle = Math.random() * Math.PI * 2;
+ const spd = 1 + Math.random() * 4;
+ particles.push({
+ x, y,
+ vx: Math.cos(angle) * spd,
+ vy: Math.sin(angle) * spd,
+ color,
+ radius: 2 + Math.random() * 3,
+ opacity: 1.0,
+ life: 25
+ });
+ }
+ }
+
+ function generateCityMap() {
+ hasKey = { red: false, blue: false, green: false, yellow: false };
+ unlockedWalls = { red: false, blue: false, green: false, yellow: false };
+ wallOrder = shuffleArray(['red', 'blue', 'green', 'yellow']);
+ updateKeyInventoryUI();
+
+ ketchupProjectiles = [];
+ pickleProjectiles = [];
+ particles = [];
+ popups = [];
+
+ cityGrid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null));
+
+ cityGrid[CENTER][CENTER] = { type: TILE_TYPES.STADIUM, seed: Math.random() * 1000, key: null, cheeseburger: null };
+
+ const outerCoords = [];
+ for (let x = 0; x < GRID_SIZE; x++) {
+ for (let y = 0; y < GRID_SIZE; y++) {
+ if ((x === 0 || x === GRID_SIZE - 1 || y === 0 || y === GRID_SIZE - 1) && !(x === CENTER && y === CENTER)) {
+ outerCoords.push({ x, y });
+ }
+ }
+ }
+ const randomOuterIndex = Math.floor(Math.random() * outerCoords.length);
+ ryffrX = outerCoords[randomOuterIndex].x;
+ ryffrY = outerCoords[randomOuterIndex].y;
+ cityGrid[ryffrX][ryffrY] = { type: TILE_TYPES.RYFFR, seed: Math.random() * 1000, key: null, cheeseburger: null };
+
+ const bossCoords = outerCoords.filter(c => c.x !== ryffrX || c.y !== ryffrY);
+ const randomBossIndex = Math.floor(Math.random() * bossCoords.length);
+ bossX = bossCoords[randomBossIndex].x;
+ bossY = bossCoords[randomBossIndex].y;
+ cityGrid[bossX][bossY] = { type: TILE_TYPES.PURPLE_BOSS, seed: Math.random() * 1000, key: null, cheeseburger: null };
+
+ const interveningTypes = [
+ TILE_TYPES.DENSE_CITY,
+ TILE_TYPES.PARK,
+ TILE_TYPES.RESIDENTIAL,
+ TILE_TYPES.INDUSTRIAL
+ ];
+
+ const availableKeyTiles = [];
+
+ for (let x = 0; x < GRID_SIZE; x++) {
+ for (let y = 0; y < GRID_SIZE; y++) {
+ if (!cityGrid[x][y]) {
+ const randomType = interveningTypes[Math.floor(Math.random() * interveningTypes.length)];
+ cityGrid[x][y] = { type: randomType, seed: Math.floor(Math.random() * 10000), key: null, cheeseburger: null };
+ availableKeyTiles.push({ x, y });
+ }
+ }
+ }
+
+ shuffleArray(availableKeyTiles);
+ const colorKeys = ['red', 'blue', 'green', 'yellow'];
+
+ // Helper function to generate valid road coordinates for cheeseburgers (Bug 5 fix)
+ function getRandomRoadRatios() {
+ const onHorizontalRoad = Math.random() < 0.5;
+ if (onHorizontalRoad) {
+ return { xRatio: 0.20 + Math.random() * 0.60, yRatio: 0.50 };
+ } else {
+ return { xRatio: 0.50, yRatio: 0.20 + Math.random() * 0.60 };
+ }
+ }
+
+ // 1. Assign 4 Key Cheeseburgers to distinct sectors on road lanes
+ for (let i = 0; i < 4 && i < availableKeyTiles.length; i++) {
+ const pos = availableKeyTiles[i];
+ const posRatios = getRandomRoadRatios();
+ cityGrid[pos.x][pos.y].key = colorKeys[i];
+ cityGrid[pos.x][pos.y].cheeseburger = {
+ colorKey: colorKeys[i],
+ xRatio: posRatios.xRatio,
+ yRatio: posRatios.yRatio,
+ hp: 4,
+ maxHp: 4,
+ isDefeated: false,
+ shootTimer: 0,
+ liftTimer: 0,
+ liftCooldown: 300 + Math.random() * 200,
+ floatOffset: Math.random() * Math.PI * 2
+ };
+ }
+
+ // 2. Assign Patrolling Mini-Cheeseburgers to ALL other non-special sectors on roads
+ for (let x = 0; x < GRID_SIZE; x++) {
+ for (let y = 0; y < GRID_SIZE; y++) {
+ const cell = cityGrid[x][y];
+ if (cell.type !== TILE_TYPES.STADIUM && cell.type !== TILE_TYPES.RYFFR && cell.type !== TILE_TYPES.PURPLE_BOSS && !cell.cheeseburger) {
+ const posRatios = getRandomRoadRatios();
+ cell.cheeseburger = {
+ colorKey: null,
+ xRatio: posRatios.xRatio,
+ yRatio: posRatios.yRatio,
+ hp: 3,
+ maxHp: 3,
+ isDefeated: false,
+ shootTimer: 0,
+ liftTimer: 0,
+ liftCooldown: 400 + Math.random() * 200,
+ floatOffset: Math.random() * Math.PI * 2
+ };
+ }
+ }
+ }
+
+ purpleBoss = {
+ hp: 25,
+ maxHp: 25,
+ isDefeated: false,
+ shootTimer: 0,
+ liftTimer: 0,
+ liftCooldown: 200,
+ floatOffset: 0,
+ moveTimer: 0
+ };
+
+ player.hp = player.maxHp;
+ updateHpUI();
+ }
+
+ function updateKeyInventoryUI() {
+ Object.keys(KEY_COLORS).forEach(color => {
+ const badge = document.getElementById(`badge-${color}`);
+ if (badge) {
+ if (unlockedWalls[color]) {
+ badge.className = `key-badge unlocked ${color}`;
+ badge.innerText = `${color.toUpperCase()} (UNLOCKED)`;
+ } else if (hasKey[color]) {
+ badge.className = `key-badge active ${color}`;
+ badge.innerText = `${color.toUpperCase()} (HELD)`;
+ } else {
+ badge.className = `key-badge ${color}`;
+ badge.innerText = color.toUpperCase();
+ }
+ }
+ });
+ }
+
+ function updateHpUI() {
+ const inner = document.getElementById('hp-bar-inner');
+ const pct = Math.max(0, (player.hp / player.maxHp) * 100);
+ inner.style.width = pct + '%';
+ }
+
+ function resizeCanvas() {
+ const wrapper = document.getElementById('canvas-wrapper');
+ canvas.width = wrapper.clientWidth;
+ canvas.height = wrapper.clientHeight;
+ 
+ if (player.x === 0 && player.y === 0) {
+ resetPlayerToCenter();
+ }
+ }
+
+ window.addEventListener('resize', resizeCanvas);
+
+ window.addEventListener('keydown', (e) => {
+ if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+ e.preventDefault();
+ return;
+ }
+
+ if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+ e.preventDefault();
+ keys[e.code] = true;
+ }
+
+ if (e.code === 'Enter') {
+ e.preventDefault();
+ shootKetchup();
+ }
+ });
+
+ window.addEventListener('keyup', (e) => {
+ if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+ keys[e.code] = false;
+ }
+ });
+
+ function shootKetchup() {
+ if (hasWon || player.shootCooldown > 0) return;
+ 
+ // Fire Rate Cooldown (Bug 4 Fix)
+ player.shootCooldown = 12; // 12 frames ~ 5 shots per second max
+
+ ketchupProjectiles.push({
+ x: player.x + player.facing * 14,
+ y: player.y - 14,
+ vx: player.facing * 12.0, // Speed balanced (Bug 9 Fix)
+ vy: (Math.random() - 0.5) * 1.5,
+ radius: 6,
+ life: 50
+ });
+ spawnPopup(player.x, player.y - 30, 'SQUIRT!', '#ff3366');
+ }
+
+ function resetPlayerToCenter() {
+ player.x = canvas.width / 2;
+ player.y = canvas.height / 2;
+ player.facing = 1;
+ player.walkFrame = 0;
+ player.hp = player.maxHp;
+ player.isLifted = false;
+ player.liftTimer = 0;
+ updateHpUI();
+ }
+
+ function respawnAtStadium() {
+ player.hp = player.maxHp;
+ player.isLifted = false;
+ player.liftTimer = 0;
+ currentGridX = CENTER;
+ currentGridY = CENTER;
+ resetPlayerToCenter();
+ updateHpUI();
+ updateLocationUI();
+ spawnPopup(player.x, player.y - 40, 'RESPAWNED AT STADIUM! 🏟️', '#ffcc00');
+ }
+
+ function resetGame() {
+ currentGridX = CENTER;
+ currentGridY = CENTER;
+ generateCityMap();
+ resetPlayerToCenter();
+ hasWon = false;
+ document.getElementById('victory-modal').style.display = 'none';
+ updateLocationUI();
+ }
+
+ function updateLocationUI() {
+ const currentTile = cityGrid[currentGridX][currentGridY];
+ document.getElementById('location-info').innerText = 
+ `Sector [${currentGridX + 1},${currentGridY + 1}]: ${currentTile.type}`;
+ }
+
+ function getRoadBounds() {
+ const w = canvas.width;
+ const h = canvas.height;
+ const roadW = w * 0.25;
+ const roadH = h * 0.25;
+ return {
+ minX: (w - roadW) / 2,
+ maxX: (w + roadW) / 2,
+ minY: (h - roadH) / 2,
+ maxY: (h + roadH) / 2,
+ roadW,
+ roadH
+ };
+ }
+
+ function isWalkable(px, py) {
+ const b = getRoadBounds();
+ const currentTile = cityGrid[currentGridX][currentGridY];
+
+ if (currentTile.type === TILE_TYPES.STADIUM) {
+ const rx = canvas.width * 0.38;
+ const ry = canvas.height * 0.38;
+ const cx = canvas.width / 2;
+ const cy = canvas.height / 2;
+ const inStadiumField = (Math.pow(px - cx, 2) / Math.pow(rx, 2) + Math.pow(py - cy, 2) / Math.pow(ry, 2)) <= 1;
+
+ const inNorthExit = (px >= b.minX && px <= b.maxX && py <= b.minY);
+ const inSouthExit = (px >= b.minX && px <= b.maxX && py >= b.maxY);
+ const inWestExit = (py >= b.minY && py <= b.maxY && px <= b.minX);
+ const inEastExit = (py >= b.minY && py <= b.maxX && px >= b.maxX);
+
+ return inStadiumField || inNorthExit || inSouthExit || inWestExit || inEastExit;
+ } 
+ else if (currentTile.type === TILE_TYPES.RYFFR) {
+ const inHorizontalRoad = (py >= b.minY && py <= b.maxY);
+ const inVerticalRoad = (px >= b.minX && px <= b.maxX);
+ if (!inHorizontalRoad && !inVerticalRoad) return false;
+
+ const cx = canvas.width / 2;
+ const cy = canvas.height / 2;
+ const distFromCenter = Math.hypot(px - cx, py - cy);
+
+ const bw = b.roadW * 0.85;
+ const bh = b.roadH * 0.85;
+ const baseBuildingRadius = Math.max(bw, bh) / 2;
+
+ for (let i = 0; i < 4; i++) {
+ const colorKey = wallOrder[i];
+ const pad = (4 - i) * 16;
+ const wallRadius = baseBuildingRadius + pad;
+
+ if (!unlockedWalls[colorKey] && distFromCenter < wallRadius + 4) {
+ return false;
+ }
+ }
+ return true;
+ } 
+ else {
+ const inHorizontalRoad = (py >= b.minY && py <= b.maxY);
+ const inVerticalRoad = (px >= b.minX && px <= b.maxX);
+ return inHorizontalRoad || inVerticalRoad;
+ }
+ }
+
+ function getQuadrants() {
+ const b = getRoadBounds();
+ return [
+ { x: 0, y: 0, w: b.minX, h: b.minY, id: 'TL' },
+ { x: b.maxX, y: 0, w: b.minX, h: b.minY, id: 'TR' },
+ { x: 0, y: b.maxY, w: b.minX, h: b.minY, id: 'BL' },
+ { x: b.maxX, y: b.maxY, w: b.minX, h: b.minY, id: 'BR' }
+ ];
+ }
+
+ function updatePhysics() {
+ if (hasWon) return;
+
+ if (player.shootCooldown > 0) player.shootCooldown--;
+
+ const w = canvas.width;
+ const h = canvas.height;
+ const currentTile = cityGrid[currentGridX][currentGridY];
+
+ // Player Movement
+ let dx = 0;
+ let dy = 0;
+
+ if (keys['KeyW']) dy -= 1;
+ if (keys['KeyS']) dy += 1;
+ if (keys['KeyA']) { dx -= 1; player.facing = -1; }
+ if (keys['KeyD']) { dx += 1; player.facing = 1; }
+
+ if (dx !== 0 && dy !== 0) {
+ dx *= 0.7071;
+ dy *= 0.7071;
+ }
+
+ const moveSpeed = player.isLifted ? player.speed * 0.35 : player.speed;
+ const nextX = player.x + dx * moveSpeed;
+ const nextY = player.y + dy * moveSpeed;
+
+ if (isWalkable(nextX, player.y)) player.x = nextX;
+ if (isWalkable(player.x, nextY)) player.y = nextY;
+
+ if (dx !== 0 || dy !== 0) player.walkFrame += 0.25;
+ else player.walkFrame = 0;
+
+ if (player.isLifted) {
+ player.liftTimer--;
+ if (player.liftTimer <= 0) {
+ player.isLifted = false;
+ player.liftSource = null;
+ }
+ }
+
+ // Popups & Particles
+ for (let i = popups.length - 1; i >= 0; i--) {
+ const p = popups[i];
+ p.y += p.vy;
+ p.life--;
+ p.opacity = p.life / 40;
+ if (p.life <= 0) popups.splice(i, 1);
+ }
+
+ for (let i = particles.length - 1; i >= 0; i--) {
+ const pt = particles[i];
+ pt.x += pt.vx;
+ pt.y += pt.vy;
+ pt.life--;
+ pt.opacity = pt.life / 25;
+ if (pt.life <= 0) particles.splice(i, 1);
+ }
+
+ // Ketchup Projectiles
+ for (let i = ketchupProjectiles.length - 1; i >= 0; i--) {
+ const kp = ketchupProjectiles[i];
+ kp.x += kp.vx;
+ kp.y += kp.vy;
+ kp.life--;
+
+ if (kp.life <= 0) {
+ ketchupProjectiles.splice(i, 1);
+ continue;
+ }
+
+ if (currentTile.cheeseburger && !currentTile.cheeseburger.isDefeated) {
+ const cb = currentTile.cheeseburger;
+ const cbX = cb.xRatio * w;
+ const cbY = cb.yRatio * h + Math.sin(cb.floatOffset) * 8;
+ const dist = Math.hypot(kp.x - cbX, kp.y - cbY);
+
+ if (dist < 30) {
+ cb.hp--;
+ spawnSplatParticles(kp.x, kp.y, '#ff0033', 10);
+ spawnPopup(cbX, cbY - 20, 'CRUNCH! -1 HP', '#ffcc00');
+ ketchupProjectiles.splice(i, 1);
+
+ if (cb.hp <= 0) {
+ cb.isDefeated = true;
+ if (cb.colorKey) {
+ hasKey[cb.colorKey] = true;
+ updateKeyInventoryUI();
+ spawnPopup(cbX, cbY - 30, `+1 ${cb.colorKey.toUpperCase()} KEY! 🔑`, KEY_COLORS[cb.colorKey].hex);
+ } else {
+ spawnPopup(cbX, cbY - 30, 'CHEESEBURGER DEFEATED! 🍔', '#ffcc00');
+ }
+ }
+ continue;
+ }
+ }
+
+ if (currentTile.type === TILE_TYPES.PURPLE_BOSS && !purpleBoss.isDefeated) {
+ const bossXPos = w / 2 + Math.sin(purpleBoss.moveTimer) * (w * 0.22);
+ const bossYPos = h * 0.38 + Math.sin(purpleBoss.floatOffset) * 10;
+ const dist = Math.hypot(kp.x - bossXPos, kp.y - bossYPos);
+
+ const allKeysCollected = Object.values(hasKey).every(v => v);
+
+ if (dist < 50) {
+ // Boss Invulnerability Fix (Bugs 1 & 3)
+ if (!allKeysCollected) {
+ spawnPopup(bossXPos, bossYPos - 40, 'LOCKED! Need all 4 Keys! 🔑', '#ff3366');
+ ketchupProjectiles.splice(i, 1);
+ continue;
+ }
+
+ purpleBoss.hp--;
+ spawnSplatParticles(kp.x, kp.y, '#ff0033', 12);
+ spawnPopup(bossXPos, bossYPos - 40, 'BOSS SPLAT! -1 HP', '#ff3366');
+ ketchupProjectiles.splice(i, 1);
+
+ if (purpleBoss.hp <= 0) {
+ purpleBoss.isDefeated = true;
+ hasWon = true;
+ document.getElementById('modal-title').innerText = "BOSS DEFEATED!";
+ document.getElementById('modal-desc').innerText = "Stickman defeated the King Cheeseburger Boss and saved the city!";
+ document.getElementById('victory-modal').style.display = 'block';
+ }
+ continue;
+ }
+ }
+ }
+
+ // Pickle Projectiles
+ for (let i = pickleProjectiles.length - 1; i >= 0; i--) {
+ const pk = pickleProjectiles[i];
+
+ if (pk.isTeleporting) {
+ pk.teleportTimer = (pk.teleportTimer || 0) + 1;
+ if (pk.teleportTimer % 35 === 0) {
+ const angle = Math.atan2(player.y - pk.y, player.x - pk.x);
+ pk.x += Math.cos(angle) * 75;
+ pk.y += Math.sin(angle) * 75;
+ spawnSplatParticles(pk.x, pk.y, '#00ffcc', 6);
+ }
+ }
+
+ pk.x += pk.vx;
+ pk.y += pk.vy;
+ pk.life--;
+
+ const hitDist = Math.hypot(pk.x - player.x, pk.y - (player.y - 12));
+ if (hitDist < 18) {
+ player.hp -= 8;
+ updateHpUI();
+ spawnSplatParticles(player.x, player.y - 12, '#27ae60', 10);
+ spawnPopup(player.x, player.y - 30, 'OUCH! -8 HP', '#ff3333');
+ pickleProjectiles.splice(i, 1);
+
+ // Respawn at Stadium on Death (Bug 3 Fix)
+ if (player.hp <= 0) {
+ respawnAtStadium();
+ }
+ continue;
+ }
+
+ if (pk.life <= 0) {
+ pickleProjectiles.splice(i, 1);
+ }
+ }
+
+ // Mini Cheeseburger AI
+ if (currentTile.cheeseburger && !currentTile.cheeseburger.isDefeated) {
+ const cb = currentTile.cheeseburger;
+ cb.floatOffset += 0.05;
+ const cbX = cb.xRatio * w;
+ const cbY = cb.yRatio * h;
+
+ cb.shootTimer++;
+ if (cb.shootTimer >= 65) {
+ cb.shootTimer = 0;
+ const angle = Math.atan2(player.y - cbY, player.x - cbX);
+ const isTeleport = Math.random() < 0.45;
+
+ pickleProjectiles.push({
+ x: cbX,
+ y: cbY,
+ vx: Math.cos(angle) * 4.8,
+ vy: Math.sin(angle) * 4.8,
+ isTeleporting: isTeleport,
+ life: 180
+ });
+ }
+
+ cb.liftCooldown--;
+ if (cb.liftCooldown <= 0 && !player.isLifted) {
+ cb.liftCooldown = 400 + Math.random() * 200;
+ player.isLifted = true;
+ player.liftTimer = 360;
+ player.liftSource = { x: cbX, y: cbY };
+ spawnPopup(player.x, player.y - 40, '🛸 TRACTOR BEAM!', '#f1c40f');
+ }
+ }
+
+ // Dynamic Purple Boss AI & Powers (Bug 10 Fix)
+ if (currentTile.type === TILE_TYPES.PURPLE_BOSS && !purpleBoss.isDefeated) {
+ purpleBoss.floatOffset += 0.04;
+ purpleBoss.moveTimer += 0.02;
+ const bX = w / 2 + Math.sin(purpleBoss.moveTimer) * (w * 0.22);
+ const bY = h * 0.38 + Math.sin(purpleBoss.floatOffset) * 10;
+
+ purpleBoss.shootTimer++;
+ if (purpleBoss.shootTimer >= 45) {
+ purpleBoss.shootTimer = 0;
+ const baseAngle = Math.atan2(player.y - bY, player.x - bX);
+
+ // 3-Pickle Fan Spread Attack
+ for (let spread = -0.3; spread <= 0.3; spread += 0.3) {
+ pickleProjectiles.push({
+ x: bX,
+ y: bY,
+ vx: Math.cos(baseAngle + spread) * 5.2,
+ vy: Math.sin(baseAngle + spread) * 5.2,
+ isTeleporting: Math.random() < 0.5,
+ life: 200
+ });
+ }
+ }
+
+ purpleBoss.liftCooldown--;
+ if (purpleBoss.liftCooldown <= 0 && !player.isLifted) {
+ purpleBoss.liftCooldown = 320;
+ player.isLifted = true;
+ player.liftTimer = 420;
+ player.liftSource = { x: bX, y: bY };
+ spawnPopup(player.x, player.y - 40, '🛸 BOSS TRACTOR BEAM!', '#a855f7');
+ }
+ }
+
+ // RYFFR Wall Unlocking & Victory
+ if (currentTile.type === TILE_TYPES.RYFFR) {
+ const b = getRoadBounds();
+ const cx = w / 2;
+ const cy = h / 2;
+ const distFromCenter = Math.hypot(player.x - cx, player.y - cy);
+
+ const bw = b.roadW * 0.85;
+ const bh = b.roadH * 0.85;
+ const baseBuildingRadius = Math.max(bw, bh) / 2;
+
+ for (let i = 0; i < 4; i++) {
+ const colorKey = wallOrder[i];
+ const pad = (4 - i) * 16;
+ const wallRadius = baseBuildingRadius + pad;
+
+ if (hasKey[colorKey] && !unlockedWalls[colorKey]) {
+ if (Math.abs(distFromCenter - wallRadius) < 18) {
+ unlockedWalls[colorKey] = true;
+ updateKeyInventoryUI();
+ spawnPopup(player.x, player.y - 30, `${colorKey.toUpperCase()} WALL UNLOCKED! 🔓`, KEY_COLORS[colorKey].hex);
+ }
+ }
+ }
+
+ const distToRYFFR = Math.hypot(player.x - cx, player.y - cy);
+ if (distToRYFFR < 35) {
+ hasWon = true;
+ document.getElementById('modal-title').innerText = "GOAL REACHED!";
+ document.getElementById('modal-desc').innerText = "Stickman unlocked all 4 color walls and reached RYFFR!";
+ document.getElementById('victory-modal').style.display = 'block';
+ }
+ }
+
+ // Sector Transitions & Pickle Cleanup (Bugs 2 & 6 Fix)
+ const margin = 10;
+ let changedSector = false;
+
+ if (player.x < margin) {
+ if (currentGridX > 0) { currentGridX--; player.x = w - margin - 5; changedSector = true; } else player.x = margin;
+ } else if (player.x > w - margin) {
+ if (currentGridX < GRID_SIZE - 1) { currentGridX++; player.x = margin + 5; changedSector = true; } else player.x = w - margin;
+ }
+
+ if (player.y < margin) {
+ if (currentGridY > 0) { currentGridY--; player.y = h - margin - 5; changedSector = true; } else player.y = margin;
+ } else if (player.y > h - margin) {
+ // FIXED Y-AXIS TELEPORT BUG (Bug 6 Fix)
+ if (currentGridY < GRID_SIZE - 1) { currentGridY++; player.y = margin + 5; changedSector = true; } else player.y = h - margin;
+ }
+
+ if (changedSector) {
+ updateLocationUI();
+ // Clear active projectiles when entering new door (Bug 2 Fix)
+ pickleProjectiles = [];
+ ketchupProjectiles = [];
+ }
+ }
+
+ function drawPlusSignRoad(w, h) {
+ const b = getRoadBounds();
+
+ ctx.fillStyle = '#2c3e50';
+ ctx.fillRect(0, b.minY, w, b.roadH);
+ ctx.fillRect(b.minX, 0, b.roadW, h);
+
+ ctx.fillStyle = '#7f8c8d';
+ ctx.fillRect(0, b.minY - 3, w, 3);
+ ctx.fillRect(0, b.maxY, w, 3);
+ ctx.fillRect(b.minX - 3, 0, 3, h);
+ ctx.fillRect(b.maxX, 0, 3, h);
+
+ ctx.strokeStyle = '#f1c40f';
+ ctx.lineWidth = 2;
+ ctx.setLineDash([8, 8]);
+ ctx.beginPath();
+ ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2);
+ ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h);
+ ctx.stroke();
+ ctx.setLineDash([]);
+
+ ctx.fillStyle = '#ffffff';
+ for (let i = 0; i < b.roadW; i += 8) {
+ ctx.fillRect(b.minX + i, b.minY - 10, 5, 8);
+ ctx.fillRect(b.minX + i, b.maxY + 2, 5, 8);
+ }
+ for (let i = 0; i < b.roadH; i += 8) {
+ ctx.fillRect(b.minX - 10, b.minY + i, 8, 5);
+ ctx.fillRect(b.maxX + 2, b.minY + i, 8, 5);
+ }
+ }
+
+ function drawCar(x, y, color, horizontal = true) {
+ ctx.fillStyle = color;
+ if (horizontal) {
+ ctx.fillRect(x, y, 22, 10);
+ ctx.fillStyle = '#87ceeb';
+ ctx.fillRect(x + 12, y + 2, 5, 6);
+ ctx.fillStyle = '#000000';
+ ctx.fillRect(x + 2, y - 2, 4, 2);
+ ctx.fillRect(x + 16, y - 2, 4, 2);
+ ctx.fillRect(x + 2, y + 10, 4, 2);
+ ctx.fillRect(x + 16, y + 10, 4, 2);
+ } else {
+ ctx.fillRect(x, y, 10, 22);
+ ctx.fillStyle = '#87ceeb';
+ ctx.fillRect(x + 2, y + 12, 6, 5);
+ ctx.fillStyle = '#000000';
+ ctx.fillRect(x - 2, y + 2, 2, 4);
+ ctx.fillRect(x - 2, y + 16, 2, 4);
+ ctx.fillRect(x + 10, y + 2, 2, 4);
+ ctx.fillRect(x + 10, y + 16, 2, 4);
+ }
+ }
+
+ function drawCheeseburger(x, y, cb) {
+ ctx.save();
+ ctx.translate(x, y + Math.sin(cb.floatOffset) * 8);
+
+ ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+ ctx.beginPath();
+ ctx.ellipse(0, 22, 20, 6, 0, 0, Math.PI * 2);
+ ctx.fill();
+
+ ctx.fillStyle = '#d35400';
+ ctx.fillRect(-18, 8, 36, 7);
+
+ ctx.fillStyle = '#4a235a';
+ ctx.fillRect(-20, 3, 40, 7);
+
+ ctx.fillStyle = '#f1c40f';
+ ctx.beginPath();
+ ctx.moveTo(-20, 3);
+ ctx.lineTo(20, 3);
+ ctx.lineTo(16, 9);
+ ctx.lineTo(8, 4);
+ ctx.lineTo(-2, 10);
+ ctx.lineTo(-12, 4);
+ ctx.closePath();
+ ctx.fill();
+
+ ctx.fillStyle = '#2ecc71';
+ ctx.fillRect(-18, 0, 36, 4);
+
+ ctx.fillStyle = '#e67e22';
+ ctx.beginPath();
+ ctx.arc(0, 0, 20, Math.PI, 0);
+ ctx.fill();
+
+ ctx.fillStyle = '#ffffff';
+ ctx.fillRect(-9, -11, 3, 2);
+ ctx.fillRect(-2, -15, 3, 2);
+ ctx.fillRect(7, -9, 3, 2);
+
+ ctx.fillStyle = '#000000';
+ ctx.fillRect(-8, -5, 4, 5);
+ ctx.fillRect(4, -5, 4, 5);
+
+ if (cb.colorKey) {
+ const keyHex = KEY_COLORS[cb.colorKey].hex;
+ ctx.fillStyle = keyHex;
+ ctx.strokeStyle = keyHex;
+ ctx.shadowColor = keyHex;
+ ctx.shadowBlur = 10;
+ ctx.beginPath();
+ ctx.arc(0, -28, 6, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.fillRect(-1.5, -28, 3, 12);
+ ctx.shadowBlur = 0;
+ }
+
+ ctx.fillStyle = '#333333';
+ ctx.fillRect(-18, -36, 36, 5);
+ ctx.fillStyle = '#2ecc71';
+ ctx.fillRect(-18, -36, (cb.hp / cb.maxHp) * 36, 5);
+
+ ctx.restore();
+ }
+
+ function drawPurpleBossScreen(w, h) {
+ ctx.fillStyle = '#120024';
+ ctx.fillRect(0, 0, w, h);
+
+ drawPlusSignRoad(w, h);
+
+ const bX = w / 2 + Math.sin(purpleBoss.moveTimer) * (w * 0.22);
+ const bY = h * 0.38 + Math.sin(purpleBoss.floatOffset) * 10;
+
+ ctx.fillStyle = '#4a154b';
+ ctx.fillRect(w / 2 - 85, 20, 170, h * 0.45);
+ ctx.strokeStyle = '#a855f7';
+ ctx.lineWidth = 4;
+ ctx.strokeRect(w / 2 - 85, 20, 170, h * 0.45);
+
+ ctx.fillStyle = '#ffcc00';
+ ctx.font = '900 13px sans-serif';
+ ctx.textAlign = 'center';
+ ctx.fillText('PURPLE BOSS TOWER 🏰', w / 2, 42);
+
+ const allKeysCollected = Object.values(hasKey).every(v => v);
+
+ if (!purpleBoss.isDefeated) {
+ ctx.save();
+ ctx.translate(bX, bY);
+
+ // Invulnerability Shield Dome if missing keys
+ if (!allKeysCollected) {
+ ctx.strokeStyle = 'rgba(0, 240, 255, 0.7)';
+ ctx.fillStyle = 'rgba(0, 240, 255, 0.15)';
+ ctx.lineWidth = 3;
+ ctx.beginPath();
+ ctx.arc(0, -10, 68, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.stroke();
+ }
+
+ ctx.fillStyle = '#d35400';
+ ctx.fillRect(-48, 20, 96, 18);
+
+ ctx.fillStyle = '#3b170b';
+ ctx.fillRect(-54, 2, 108, 18);
+
+ ctx.fillStyle = '#f1c40f';
+ ctx.fillRect(-52, -4, 104, 10);
+
+ ctx.fillStyle = '#e67e22';
+ ctx.beginPath();
+ ctx.arc(0, -4, 52, Math.PI, 0);
+ ctx.fill();
+
+ ctx.fillStyle = '#f1c40f';
+ ctx.beginPath();
+ ctx.moveTo(-22, -56);
+ ctx.lineTo(-11, -42);
+ ctx.lineTo(0, -62);
+ ctx.lineTo(11, -42);
+ ctx.lineTo(22, -56);
+ ctx.lineTo(28, -38);
+ ctx.lineTo(-28, -38);
+ ctx.closePath();
+ ctx.fill();
+
+ ctx.fillStyle = '#ff0055';
+ ctx.fillRect(-20, -20, 12, 10);
+ ctx.fillRect(8, -20, 12, 10);
+
+ ctx.restore();
+
+ ctx.fillStyle = '#000000';
+ ctx.fillRect(w / 2 - 130, 8, 260, 20);
+ ctx.strokeStyle = '#a855f7';
+ ctx.lineWidth = 2;
+ ctx.strokeRect(w / 2 - 130, 8, 260, 20);
+
+ ctx.fillStyle = allKeysCollected ? '#a855f7' : '#555555';
+ ctx.fillRect(w / 2 - 128, 10, (purpleBoss.hp / purpleBoss.maxHp) * 256, 16);
+
+ ctx.fillStyle = '#ffffff';
+ ctx.font = 'bold 11px monospace';
+ ctx.fillText(allKeysCollected ? 'KING CHEESEBURGER BOSS 👑' : 'LOCKED - COLLECT ALL 4 KEYS 🔑', w / 2, 23);
+ }
+ }
+
+ function drawRYFFRScreen(w, h) {
+ ctx.fillStyle = '#111111';
+ ctx.fillRect(0, 0, w, h);
+
+ const b = getRoadBounds();
+ const quads = getQuadrants();
+
+ quads.forEach((q, qIdx) => {
+ ctx.strokeStyle = '#f1c40f';
+ ctx.lineWidth = 1;
+ const carCols = ['#e74c3c', '#2980b9', '#ecf0f1', '#34495e', '#f1c40f', '#9b59b6'];
+
+ for (let i = 0; i < 4; i++) {
+ const slotX = q.x + 10 + i * 26;
+ const slotY = q.id.includes('T') ? q.y + 10 : q.y + q.h - 40;
+ ctx.strokeRect(slotX, slotY, 20, 30);
+
+ if (seededRandom(qIdx * 10 + i) > 0.2) {
+ drawCar(slotX + 5, slotY + 4, carCols[i % carCols.length], false);
+ }
+ }
+ });
+
+ drawPlusSignRoad(w, h);
+
+ const bw = b.roadW * 0.85;
+ const bh = b.roadH * 0.85;
+ const bx = w / 2 - bw / 2;
+ const by = h / 2 - bh / 2;
+
+ for (let i = 0; i < 4; i++) {
+ const colorKey = wallOrder[i];
+ const colorHex = KEY_COLORS[colorKey].hex;
+ const isUnlocked = unlockedWalls[colorKey];
+
+ const pad = (4 - i) * 16;
+ const wx = bx - pad;
+ const wy = by - pad;
+ const ww = bw + pad * 2;
+ const wh = bh + pad * 2;
+
+ if (!isUnlocked) {
+ ctx.strokeStyle = colorHex;
+ ctx.lineWidth = 4;
+ ctx.shadowColor = colorHex;
+ ctx.shadowBlur = 12;
+ ctx.strokeRect(wx, wy, ww, wh);
+ ctx.shadowBlur = 0;
+
+ ctx.fillStyle = colorHex;
+ ctx.fillRect(wx + ww / 2 - 32, wy - 7, 64, 14);
+ ctx.fillStyle = (colorKey === 'yellow') ? '#000000' : '#ffffff';
+ ctx.font = 'bold 8px monospace';
+ ctx.textAlign = 'center';
+
+ if (hasKey[colorKey]) {
+ ctx.fillText('TOUCH TO UNLOCK', wx + ww / 2, wy + 3);
+ } else {
+ ctx.fillText('LOCKED', wx + ww / 2, wy + 3);
+ }
+ } else {
+ ctx.strokeStyle = colorHex;
+ ctx.lineWidth = 1.5;
+ ctx.setLineDash([4, 8]);
+ ctx.globalAlpha = 0.35;
+ ctx.strokeRect(wx, wy, ww, wh);
+ ctx.setLineDash([]);
+ ctx.globalAlpha = 1.0;
+ }
+ }
+
+ ctx.fillStyle = '#c0392b';
+ ctx.fillRect(bx, by, bw, bh);
+
+ ctx.strokeStyle = '#f1c40f';
+ ctx.lineWidth = 4;
+ ctx.strokeRect(bx, by, bw, bh);
+
+ ctx.fillStyle = '#f1c40f';
+ ctx.font = '900 28px sans-serif';
+ ctx.textAlign = 'center';
+ ctx.fillText('M', w / 2, by + bh / 2 - 2);
+
+ ctx.fillStyle = '#ffffff';
+ ctx.font = 'bold 10px monospace';
+ ctx.fillText('RYFFR FAST FOOD', w / 2, by + bh / 2 + 14);
+ }
+
+ function drawStadium(w, h) {
+ const b = getRoadBounds();
+ const cx = w / 2;
+ const cy = h / 2;
+
+ ctx.fillStyle = '#11161b';
+ ctx.fillRect(0, 0, w, h);
+
+ ctx.fillStyle = '#2c3e50';
+ ctx.beginPath();
+ ctx.ellipse(cx, cy, w * 0.47, h * 0.47, 0, 0, Math.PI * 2);
+ ctx.fill();
+
+ const tierColors = ['#1f2a36', '#283747', '#34495e', '#2c3e50'];
+ const crowdColors = ['#e74c3c', '#3498db', '#f1c40f', '#2ecc71', '#ecf0f1', '#e67e22', '#9b59b6'];
+
+ for (let i = 0; i < 6; i++) {
+ const rx = w * (0.46 - i * 0.015);
+ const ry = h * (0.46 - i * 0.015);
+ ctx.fillStyle = tierColors[i % tierColors.length];
+ ctx.beginPath();
+ ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+ ctx.fill();
+
+ ctx.strokeStyle = '#111';
+ ctx.lineWidth = 1;
+ for (let angle = 0; angle < Math.PI * 2; angle += 0.08) {
+ const px = cx + Math.cos(angle) * (rx - 4);
+ const py = cy + Math.sin(angle) * (ry - 4);
+ if (seededRandom(i * 100 + angle * 10) > 0.2) {
+ ctx.fillStyle = crowdColors[Math.floor(seededRandom(i * 50 + angle) * crowdColors.length)];
+ ctx.fillRect(px, py, 2.5, 2.5);
+ }
+ }
+ }
+
+ ctx.fillStyle = '#2c3e50';
+ ctx.fillRect(b.minX, 0, b.roadW, b.minY);
+ ctx.fillRect(b.minX, b.maxY, b.roadW, h - b.maxY);
+ ctx.fillRect(0, b.minY, b.minX, b.roadH);
+ ctx.fillRect(b.maxX, b.minY, w - b.maxX, b.roadH);
+
+ ctx.fillStyle = '#f1c40f';
+ ctx.fillRect(b.minX, 0, 4, b.minY); ctx.fillRect(b.maxX - 4, 0, 4, b.minY);
+ ctx.fillRect(b.minX, b.maxY, 4, h - b.maxY); ctx.fillRect(b.maxX - 4, b.maxY, 4, h - b.maxY);
+
+ ctx.fillStyle = '#a04000';
+ ctx.beginPath();
+ ctx.ellipse(cx, cy, w * 0.38, h * 0.38, 0, 0, Math.PI * 2);
+ ctx.fill();
+
+ ctx.fillStyle = '#27ae60';
+ ctx.beginPath();
+ ctx.ellipse(cx, cy, w * 0.32, h * 0.32, 0, 0, Math.PI * 2);
+ ctx.fill();
+
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 1.5;
+ for (let x = cx - w * 0.22; x <= cx + w * 0.22; x += 18) {
+ ctx.beginPath();
+ ctx.moveTo(x, cy - h * 0.2);
+ ctx.lineTo(x, cy + h * 0.2);
+ ctx.stroke();
+ }
+ }
+
+ function drawDenseCity(w, h, seed) {
+ ctx.fillStyle = '#111111';
+ ctx.fillRect(0, 0, w, h);
+
+ const quads = getQuadrants();
+ const bColors = ['#1a252f', '#2c3e50', '#34495e', '#22313f', '#1c2833'];
+ const neonColors = ['#e74c3c', '#00f0ff', '#f1c40f', '#e67e22', '#9b59b6'];
+
+ quads.forEach((q, qIdx) => {
+ const cols = 4, rows = 3;
+ const bw = (q.w - 16) / cols;
+ const bh = (q.h - 16) / rows;
+
+ for (let r = 0; r < rows; r++) {
+ for (let c = 0; c < cols; c++) {
+ const bx = q.x + 8 + c * bw;
+ const by = q.y + 8 + r * bh;
+ const cSeed = seed + qIdx * 20 + r * cols + c;
+
+ ctx.fillStyle = bColors[Math.floor(seededRandom(cSeed) * bColors.length)];
+ ctx.fillRect(bx + 1, by + 1, bw - 2, bh - 2);
+ ctx.strokeStyle = '#000000';
+ ctx.lineWidth = 1;
+ ctx.strokeRect(bx + 1, by + 1, bw - 2, bh - 2);
+
+ ctx.fillStyle = '#f1c40f';
+ for (let wx = bx + 4; wx < bx + bw - 4; wx += 5) {
+ for (let wy = by + 4; wy < by + bh - 4; wy += 5) {
+ if (seededRandom(cSeed + wx * 10 + wy) > 0.35) {
+ ctx.fillRect(wx, wy, 2.5, 2.5);
+ }
+ }
+ }
+
+ if (seededRandom(cSeed + 99) > 0.6) {
+ ctx.fillStyle = neonColors[Math.floor(seededRandom(cSeed + 88) * neonColors.length)];
+ ctx.fillRect(bx + 3, by + 2, bw - 6, 3);
+ } else {
+ ctx.fillStyle = '#555555';
+ ctx.fillRect(bx + bw / 2 - 3, by + bh / 2 - 3, 6, 6);
+ }
+ }
+ }
+
+ const carColor = neonColors[Math.floor(seededRandom(seed + qIdx) * neonColors.length)];
+ if (q.id.includes('T')) {
+ drawCar(q.x + q.w / 2 - 10, q.h - 16, carColor, true);
+ } else {
+ drawCar(q.x + q.w / 2 - 10, q.y + 6, carColor, true);
+ }
+ });
+
+ drawPlusSignRoad(w, h);
+ }
+
+ function drawPark(w, h, seed) {
+ ctx.fillStyle = '#27ae60';
+ ctx.fillRect(0, 0, w, h);
+
+ const quads = getQuadrants();
+
+ quads.forEach((q, qIdx) => {
+ ctx.strokeStyle = '#d5c4a1';
+ ctx.lineWidth = 8;
+ ctx.beginPath();
+ ctx.moveTo(q.x + 10, q.y + q.h / 2);
+ ctx.quadraticCurveTo(q.x + q.w / 2, q.y + q.h / 2, q.x + q.w - 10, q.y + 10);
+ ctx.stroke();
+
+ if (qIdx === 0) {
+ const bx = q.x + q.w * 0.4, by = q.y + q.h * 0.4;
+ ctx.fillStyle = '#d35400';
+ ctx.beginPath(); ctx.arc(bx, by, 22, 0, Math.PI * 2); ctx.fill();
+ ctx.fillStyle = '#2980b9';
+ ctx.beginPath(); ctx.arc(bx, by, 14, 0, Math.PI * 2); ctx.fill();
+ } else if (qIdx === 1) {
+ const px = q.x + q.w * 0.5, py = q.y + q.h * 0.5;
+ ctx.fillStyle = '#2980b9';
+ ctx.beginPath(); ctx.ellipse(px, py, 26, 18, Math.PI / 6, 0, Math.PI * 2); ctx.fill();
+ ctx.fillStyle = '#2ecc71';
+ ctx.fillRect(px - 6, py - 4, 4, 4); ctx.fillRect(px + 8, py + 2, 4, 4);
+ } else if (qIdx === 2) {
+ ctx.fillStyle = '#e74c3c';
+ ctx.fillRect(q.x + 20, q.y + 20, 24, 4);
+ ctx.fillRect(q.x + 22, q.y + 20, 2, 16); ctx.fillRect(q.x + 40, q.y + 20, 2, 16);
+ ctx.fillStyle = '#f1c40f';
+ ctx.fillRect(q.x + 55, q.y + 25, 16, 8);
+ } else {
+ ctx.fillStyle = '#795548';
+ ctx.fillRect(q.x + 25, q.y + 25, 18, 10); ctx.fillRect(q.x + 55, q.y + 40, 18, 10);
+ }
+
+ for (let i = 0; i < 24; i++) {
+ const tx = q.x + 10 + seededRandom(seed + qIdx * 30 + i) * (q.w - 20);
+ const ty = q.y + 10 + seededRandom(seed + qIdx * 30 + i + 50) * (q.h - 20);
+
+ ctx.fillStyle = '#5d4037';
+ ctx.fillRect(tx - 1.5, ty, 3, 6);
+ ctx.fillStyle = (i % 2 === 0) ? '#1e8449' : '#145a32';
+ ctx.beginPath(); ctx.arc(tx, ty - 3, 8, 0, Math.PI * 2); ctx.fill();
+ ctx.fillStyle = '#2ecc71';
+ ctx.beginPath(); ctx.arc(tx - 2, ty - 5, 4, 0, Math.PI * 2); ctx.fill();
+ }
+ });
+
+ drawPlusSignRoad(w, h);
+ }
+
+ function drawResidential(w, h, seed) {
+ ctx.fillStyle = '#2ecc71';
+ ctx.fillRect(0, 0, w, h);
+
+ const quads = getQuadrants();
+ const houseColors = ['#c0392b', '#2980b9', '#d35400', '#8e44ad', '#16a085', '#2c3e50'];
+ const roofColors = ['#4a235a', '#6e2c00', '#1b2631', '#78281f'];
+
+ quads.forEach((q, qIdx) => {
+ const isTop = q.id.includes('T');
+ const cols = 3, rows = 2;
+ const hW = (q.w - 24) / cols;
+ const hH = (q.h - 30) / rows;
+
+ for (let r = 0; r < rows; r++) {
+ for (let c = 0; c < cols; c++) {
+ const hx = q.x + 8 + c * (hW + 4);
+ const hy = q.y + 8 + r * (hH + 8);
+ const hSeed = seed + qIdx * 15 + r * cols + c;
+
+ const bCol = houseColors[Math.floor(seededRandom(hSeed) * houseColors.length)];
+ const rCol = roofColors[Math.floor(seededRandom(hSeed + 7) * roofColors.length)];
+
+ ctx.fillStyle = '#7f8c8d';
+ ctx.fillRect(hx + hW - 10, hy + hH, 8, 12);
+
+ ctx.fillStyle = '#795548';
+ ctx.fillRect(hx + 4, hy - 6, 5, 8);
+
+ ctx.fillStyle = bCol;
+ ctx.fillRect(hx, hy, hW, hH);
+ ctx.strokeStyle = '#111111';
+ ctx.lineWidth = 1;
+ ctx.strokeRect(hx, hy, hW, hH);
+
+ ctx.fillStyle = rCol;
+ ctx.beginPath();
+ ctx.moveTo(hx - 3, hy);
+ ctx.lineTo(hx + hW / 2, hy - 12);
+ ctx.lineTo(hx + hW + 3, hy);
+ ctx.closePath();
+ ctx.fill();
+ ctx.stroke();
+
+ ctx.fillStyle = '#f1c40f';
+ ctx.fillRect(hx + 4, hy + 5, 7, 6);
+ ctx.fillStyle = '#5d4037';
+ ctx.fillRect(hx + hW - 12, hy + hH - 10, 6, 10);
+
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 1;
+ ctx.strokeRect(hx - 2, hy + hH + 2, hW + 4, 3);
+ }
+ }
+
+ for (let m = q.x + 15; m < q.x + q.w - 15; m += 25) {
+ ctx.fillStyle = '#333333';
+ const my = isTop ? q.h - 8 : q.y + 4;
+ ctx.fillRect(m, my, 2, 6);
+ ctx.fillStyle = '#c0392b';
+ ctx.fillRect(m - 2, my - 3, 6, 4);
+ }
+ });
+
+ drawPlusSignRoad(w, h);
+ }
+
+ function drawIndustrial(w, h, seed) {
+ ctx.fillStyle = '#212a31';
+ ctx.fillRect(0, 0, w, h);
+
+ const quads = getQuadrants();
+ const containerColors = ['#c0392b', '#2980b9', '#16a085', '#d35400', '#f39c12', '#7f8c8d'];
+
+ quads.forEach((q, qIdx) => {
+ ctx.strokeStyle = '#95a5a6';
+ ctx.lineWidth = 1.5;
+ ctx.setLineDash([3, 3]);
+ ctx.strokeRect(q.x + 3, q.y + 3, q.w - 6, q.h - 6);
+ ctx.setLineDash([]);
+
+ const fw = q.w * 0.55;
+ const fh = q.h * 0.35;
+ const fx = q.x + 12;
+ const fy = q.y + 12;
+
+ ctx.fillStyle = '#1c2833';
+ ctx.fillRect(fx, fy, fw, fh);
+ ctx.strokeStyle = '#000000';
+ ctx.lineWidth = 1.5;
+ ctx.strokeRect(fx, fy, fw, fh);
+
+ ctx.fillStyle = '#566573';
+ for (let rx = fx; rx < fx + fw - 8; rx += 10) {
+ ctx.beginPath();
+ ctx.moveTo(rx, fy);
+ ctx.lineTo(rx + 5, fy - 6);
+ ctx.lineTo(rx + 10, fy);
+ ctx.fill();
+ }
+
+ ctx.fillStyle = '#2c3e50';
+ ctx.fillRect(fx + 6, fy + fh - 10, 12, 10);
+ ctx.fillRect(fx + 22, fy + fh - 10, 12, 10);
+
+ const smX = fx + fw - 10;
+ const smY = fy + 8;
+ ctx.fillStyle = '#a04000';
+ ctx.fillRect(smX, smY - 12, 6, 12);
+ ctx.fillStyle = 'rgba(200, 200, 200, 0.4)';
+ ctx.beginPath(); ctx.arc(smX + 3, smY - 16, 4, 0, Math.PI * 2); ctx.fill();
+
+ const truckY = q.y + fh + 18;
+ const truckX = q.x + 12;
+ ctx.fillStyle = '#e74c3c';
+ ctx.fillRect(truckX, truckY, 12, 16);
+ ctx.fillStyle = '#ecf0f1';
+ ctx.fillRect(truckX + 12, truckY - 2, 40, 20);
+ ctx.strokeStyle = '#000';
+ ctx.strokeRect(truckX + 12, truckY - 2, 40, 20);
+
+ let cSeed = seed + qIdx * 12;
+ for (let r = 0; r < 2; r++) {
+ for (let c = 0; c < 4; c++) {
+ const cx = q.x + 12 + c * 22;
+ const cy = q.y + q.h - 26 + r * 10;
+ if (cx + 20 < q.x + q.w - 10) {
+ ctx.fillStyle = containerColors[Math.floor(seededRandom(cSeed++) * containerColors.length)];
+ ctx.fillRect(cx, cy, 20, 8);
+ ctx.strokeStyle = '#000';
+ ctx.lineWidth = 0.8;
+ ctx.strokeRect(cx, cy, 20, 8);
+ }
+ }
+ }
+ });
+
+ drawPlusSignRoad(w, h);
+ }
+
+ function drawStickman(x, y, facing, walkFrame) {
+ ctx.save();
+
+ const renderY = player.isLifted ? y - 38 : y;
+
+ ctx.strokeStyle = '#ffffff';
+ ctx.fillStyle = '#ffffff';
+ ctx.lineWidth = 2.2;
+ ctx.lineCap = 'round';
+
+ const headRadius = 5.5;
+ const bodyLength = 15;
+ const legLength = 11;
+ const neckY = renderY - bodyLength;
+ const headY = neckY - headRadius;
+ const shoulderY = neckY + 4;
+
+ ctx.beginPath();
+ ctx.arc(x, headY, headRadius, 0, Math.PI * 2);
+ ctx.stroke();
+
+ ctx.beginPath();
+ ctx.arc(x + facing * 2, headY - 0.5, 1, 0, Math.PI * 2);
+ ctx.fill();
+
+ ctx.beginPath();
+ ctx.moveTo(x, neckY);
+ ctx.lineTo(x, renderY);
+ ctx.stroke();
+
+ const legSwing = Math.sin(walkFrame) * 6;
+ ctx.beginPath();
+ ctx.moveTo(x, renderY);
+ ctx.lineTo(x - legSwing, renderY + legLength);
+ ctx.stroke();
+
+ ctx.beginPath();
+ ctx.moveTo(x, renderY);
+ ctx.lineTo(x + legSwing, renderY + legLength);
+ ctx.stroke();
+
+ const armSwing = Math.sin(walkFrame + Math.PI) * 4;
+ ctx.beginPath();
+ ctx.moveTo(x, shoulderY);
+ ctx.lineTo(x - facing * 4 - armSwing, shoulderY + 6);
+ ctx.stroke();
+
+ ctx.fillStyle = '#ff0033';
+ ctx.fillRect(x + facing * 6, shoulderY + 2, facing * 8, 4);
+
+ ctx.restore();
+ }
+
+ function drawCombatElements() {
+ ketchupProjectiles.forEach(kp => {
+ ctx.fillStyle = '#ff0033';
+ ctx.shadowColor = '#ff0033';
+ ctx.shadowBlur = 8;
+ ctx.beginPath();
+ ctx.arc(kp.x, kp.y, kp.radius, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.shadowBlur = 0;
+ });
+
+ pickleProjectiles.forEach(pk => {
+ ctx.save();
+ ctx.translate(pk.x, pk.y);
+
+ if (pk.isTeleporting) {
+ ctx.shadowColor = '#00ffcc';
+ ctx.shadowBlur = 12;
+ ctx.fillStyle = '#00ffaa';
+ } else {
+ ctx.fillStyle = '#27ae60';
+ }
+
+ ctx.beginPath();
+ ctx.ellipse(0, 0, 8, 4.5, Math.PI / 4, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.restore();
+ });
+
+ particles.forEach(pt => {
+ ctx.save();
+ ctx.globalAlpha = pt.opacity;
+ ctx.fillStyle = pt.color;
+ ctx.beginPath();
+ ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
+ ctx.fill();
+ ctx.restore();
+ });
+
+ popups.forEach(p => {
+ ctx.save();
+ ctx.globalAlpha = p.opacity;
+ ctx.fillStyle = p.color;
+ ctx.font = '900 12px sans-serif';
+ ctx.textAlign = 'center';
+ ctx.strokeStyle = '#000000';
+ ctx.lineWidth = 3;
+ ctx.strokeText(p.text, p.x, p.y);
+ ctx.fillText(p.text, p.x, p.y);
+ ctx.restore();
+ });
+
+ // Redesigned UFO Air-Lift Tractor Beam Visual (Bugs 7 & 8 Fix)
+ if (player.isLifted && player.liftSource) {
+ ctx.save();
+ 
+ // Gradient Energy Beam Cone
+ const grad = ctx.createLinearGradient(player.liftSource.x, player.liftSource.y, player.x, player.y);
+ grad.addColorStop(0, 'rgba(0, 240, 255, 0.7)');
+ grad.addColorStop(1, 'rgba(255, 204, 0, 0.25)');
+ 
+ ctx.fillStyle = grad;
+ ctx.beginPath();
+ ctx.moveTo(player.liftSource.x - 22, player.liftSource.y);
+ ctx.lineTo(player.x - 24, player.y);
+ ctx.lineTo(player.x + 24, player.y);
+ ctx.lineTo(player.liftSource.x + 22, player.liftSource.y);
+ ctx.closePath();
+ ctx.fill();
+
+ // Pulsing UFO Energy Rings
+ ctx.strokeStyle = '#00f0ff';
+ ctx.lineWidth = 2;
+ ctx.beginPath();
+ ctx.ellipse(player.x, player.y - 15, 22, 6, 0, 0, Math.PI * 2);
+ ctx.stroke();
+
+ ctx.strokeStyle = '#ffcc00';
+ ctx.beginPath();
+ ctx.ellipse(player.x, player.y - 30, 16, 4, 0, 0, Math.PI * 2);
+ ctx.stroke();
+
+ ctx.fillStyle = '#ffcc00';
+ ctx.font = '900 11px sans-serif';
+ ctx.textAlign = 'center';
+ ctx.strokeStyle = '#000000';
+ ctx.lineWidth = 3;
+ ctx.strokeText('🛸 TRACTOR BEAM!', player.x, player.y - 52);
+ ctx.fillText('🛸 TRACTOR BEAM!', player.x, player.y - 52);
+ ctx.restore();
+ }
+ }
+
+ function drawMiniRadar(w, h) {
+ const size = 60;
+ const padding = 12;
+ const rx = w - size - padding;
+ const ry = padding;
+
+ ctx.save();
+ ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+ ctx.strokeStyle = '#ffcc00';
+ ctx.lineWidth = 2;
+ ctx.fillRect(rx, ry, size, size);
+ ctx.strokeRect(rx, ry, size, size);
+
+ const cellW = size / GRID_SIZE;
+ const cellH = size / GRID_SIZE;
+
+ for (let gx = 0; gx < GRID_SIZE; gx++) {
+ for (let gy = 0; gy < GRID_SIZE; gy++) {
+ const tile = cityGrid[gx][gy];
+ const cx = rx + gx * cellW;
+ const cy = ry + gy * cellH;
+
+ if (gx === currentGridX && gy === currentGridY) {
+ ctx.fillStyle = '#ffffff';
+ ctx.fillRect(cx + 1, cy + 1, cellW - 2, cellH - 2);
+ } else if (tile.type === TILE_TYPES.RYFFR) {
+ ctx.fillStyle = '#ff0055';
+ ctx.fillRect(cx + 1, cy + 1, cellW - 2, cellH - 2);
+ } else if (tile.type === TILE_TYPES.PURPLE_BOSS) {
+ ctx.fillStyle = '#a855f7';
+ ctx.fillRect(cx + 1, cy + 1, cellW - 2, cellH - 2);
+ } else if (tile.cheeseburger && !tile.cheeseburger.isDefeated && tile.cheeseburger.colorKey) {
+ ctx.fillStyle = KEY_COLORS[tile.cheeseburger.colorKey].hex;
+ ctx.fillRect(cx + 1, cy + 1, cellW - 2, cellH - 2);
+ }
+ }
+ }
+ ctx.restore();
+ }
+
+ function drawEnvironment() {
+ const currentTile = cityGrid[currentGridX][currentGridY];
+ const w = canvas.width;
+ const h = canvas.height;
+
+ switch (currentTile.type) {
+ case TILE_TYPES.STADIUM: drawStadium(w, h); break;
+ case TILE_TYPES.DENSE_CITY: drawDenseCity(w, h, currentTile.seed); break;
+ case TILE_TYPES.PARK: drawPark(w, h, currentTile.seed); break;
+ case TILE_TYPES.RESIDENTIAL: drawResidential(w, h, currentTile.seed); break;
+ case TILE_TYPES.INDUSTRIAL: drawIndustrial(w, h, currentTile.seed); break;
+ case TILE_TYPES.RYFFR: drawRYFFRScreen(w, h); break;
+ case TILE_TYPES.PURPLE_BOSS: drawPurpleBossScreen(w, h); break;
+ }
+
+ if (currentTile.cheeseburger && !currentTile.cheeseburger.isDefeated) {
+ const cb = currentTile.cheeseburger;
+ drawCheeseburger(cb.xRatio * w, cb.yRatio * h, cb);
+ }
+
+ drawMiniRadar(w, h);
+ }
+
+ function draw() {
+ ctx.clearRect(0, 0, canvas.width, canvas.height);
+ drawEnvironment();
+ drawCombatElements();
+ drawStickman(player.x, player.y, player.facing, player.walkFrame);
+ }
+
+ function animate() {
+ updatePhysics();
+ draw();
+ requestAnimationFrame(animate);
+ }
+
+ window.onload = function() {
+ generateCityMap();
+ resizeCanvas();
+ updateLocationUI();
+ animate();
+ };
+ </script>
+</body>
+</html>

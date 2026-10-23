@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Stickman Engine - Bisignaro Team 2: Detention Escape</title>
+ <style>
+ * {
+ box-sizing: border-box;
+ user-select: none;
+ margin: 0;
+ padding: 0;
+ font-family: 'Courier New', Courier, monospace, sans-serif;
+ }
+
+ body {
+ background-color: #0b0c10;
+ color: #ffffff;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ justify-content: flex-start;
+ height: 100vh;
+ overflow: hidden;
+ padding: 12px;
+ }
+
+ /* Header Bar */
+ #header {
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ width: 100%;
+ max-width: 1200px;
+ margin-bottom: 8px;
+ padding-bottom: 6px;
+ border-bottom: 3px solid #ff0055;
+ }
+
+ h1 {
+ font-size: 18px;
+ letter-spacing: 1px;
+ text-transform: uppercase;
+ font-weight: bold;
+ color: #00e5ff;
+ text-shadow: 0 0 8px rgba(0,229,255,0.4);
+ }
+
+ .hud-panel {
+ display: flex;
+ align-items: center;
+ gap: 12px;
+ }
+
+ .status-box {
+ background: #1a1c23;
+ border: 1.5px solid #00e5ff;
+ padding: 4px 10px;
+ border-radius: 4px;
+ font-size: 12px;
+ font-weight: bold;
+ color: #ffea00;
+ display: flex;
+ align-items: center;
+ gap: 6px;
+ }
+
+ .hearts-container {
+ font-size: 18px;
+ letter-spacing: 2px;
+ color: #ff1744;
+ }
+
+ .level-badge {
+ background: #ffea00;
+ color: #000000;
+ padding: 4px 10px;
+ font-weight: bold;
+ font-size: 12px;
+ border-radius: 4px;
+ border: 2px solid #000;
+ }
+
+ .btn-reset {
+ background: #ff1744;
+ color: #ffffff;
+ border: 2px solid #ffffff;
+ padding: 6px 14px;
+ font-size: 12px;
+ font-weight: bold;
+ cursor: pointer;
+ text-transform: uppercase;
+ letter-spacing: 1px;
+ transition: all 0.15s ease-in-out;
+ border-radius: 4px;
+ }
+
+ .btn-reset:hover {
+ background: #ffffff;
+ color: #ff1744;
+ }
+
+ /* Canvas Container */
+ #canvas-wrapper {
+ position: relative;
+ width: 100%;
+ max-width: 1200px;
+ flex-grow: 1;
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ }
+
+ canvas {
+ background-color: #1e3a1e;
+ border: 3px solid #ffffff;
+ display: block;
+ width: 100%;
+ height: 100%;
+ border-radius: 6px;
+ }
+
+ .instructions {
+ margin-top: 6px;
+ font-size: 12px;
+ color: #00e5ff;
+ text-align: center;
+ font-weight: bold;
+ letter-spacing: 1px;
+ }
+ </style>
+</head>
+<body>
+
+ <!-- Header Section -->
+ <div id="header">
+ <h1>Stickman vs Evil Supplies</h1>
+ <div class="hud-panel">
+ <div class="level-badge" id="levelDisplay">LEVEL 1</div>
+ <div class="status-box" id="pencilDisplay">✏️ PENCILS: 0/5</div>
+ <div class="status-box" id="bossDisplay">😈 BOSS: ALIVE</div>
+ <div class="status-box" id="exitDisplay" style="color: #ff1744; border-color: #ff1744;">🚪 EXIT: LOCKED</div>
+ <div class="hearts-container" id="heartsDisplay">❤️❤️❤️❤️❤️❤️</div>
+ <button class="btn-reset" onclick="resetSimulation()">New School</button>
+ </div>
+ </div>
+
+ <!-- Canvas Container -->
+ <div id="canvas-wrapper">
+ <canvas id="simCanvas"></canvas>
+ </div>
+
+ <div class="instructions">
+ [WASD] Move | [SPACE] Swing Ruler | Collect 5 Golden Pencils & Defeat Evil Pen Boss to Unlock Exits!
+ </div>
+
+ <script>
+ const canvas = document.getElementById('simCanvas');
+ const ctx = canvas.getContext('2d');
+
+ // WEB AUDIO SYNTHESIZER
+ const AudioCtx = window.AudioContext || window.webkitAudioContext;
+ let audioCtx = null;
+
+ function playSound(type) {
+ if (!audioCtx) audioCtx = new AudioCtx();
+ if (audioCtx.state === 'suspended') audioCtx.resume();
+
+ const osc = audioCtx.createOscillator();
+ const gain = audioCtx.createGain();
+ osc.connect(gain);
+ gain.connect(audioCtx.destination);
+
+ const now = audioCtx.currentTime;
+
+ if (type === 'swing') {
+ osc.type = 'triangle';
+ osc.frequency.setValueAtTime(180, now);
+ osc.frequency.exponentialRampToValueAtTime(40, now + 0.12);
+ gain.gain.setValueAtTime(0.3, now);
+ gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+ osc.start(now); osc.stop(now + 0.12);
+ } else if (type === 'hit') {
+ osc.type = 'sawtooth';
+ osc.frequency.setValueAtTime(120, now);
+ osc.frequency.linearRampToValueAtTime(30, now + 0.15);
+ gain.gain.setValueAtTime(0.4, now);
+ gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+ osc.start(now); osc.stop(now + 0.15);
+ } else if (type === 'pencil') {
+ osc.type = 'sine';
+ osc.frequency.setValueAtTime(523.25, now);
+ osc.frequency.setValueAtTime(659.25, now + 0.08);
+ osc.frequency.setValueAtTime(783.99, now + 0.16);
+ gain.gain.setValueAtTime(0.3, now);
+ gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+ osc.start(now); osc.stop(now + 0.3);
+ } else if (type === 'hurt') {
+ osc.type = 'square';
+ osc.frequency.setValueAtTime(150, now);
+ osc.frequency.linearRampToValueAtTime(60, now + 0.2);
+ gain.gain.setValueAtTime(0.4, now);
+ gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+ osc.start(now); osc.stop(now + 0.2);
+ } else if (type === 'unlock') {
+ osc.type = 'sine';
+ osc.frequency.setValueAtTime(440, now);
+ osc.frequency.setValueAtTime(554.37, now + 0.1);
+ osc.frequency.setValueAtTime(659.25, now + 0.2);
+ osc.frequency.setValueAtTime(880, now + 0.3);
+ gain.gain.setValueAtTime(0.4, now);
+ gain.gain.linearRampToValueAtTime(0.01, now + 0.5);
+ osc.start(now); osc.stop(now + 0.5);
+ } else if (type === 'denied') {
+ osc.type = 'sawtooth';
+ osc.frequency.setValueAtTime(110, now);
+ osc.frequency.setValueAtTime(85, now + 0.1);
+ gain.gain.setValueAtTime(0.3, now);
+ gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+ osc.start(now); osc.stop(now + 0.25);
+ }
+ }
+
+ // KEYBOARD INPUT STATE (Strictly WASD)
+ const keys = {};
+
+ function clearInputKeys() {
+ Object.keys(keys).forEach(k => keys[k] = false);
+ }
+
+ window.addEventListener('blur', clearInputKeys);
+ window.addEventListener('mouseleave', clearInputKeys);
+
+ // STICKMAN PLAYER STATE
+ const player = {
+ x: 0,
+ y: 0,
+ radius: 14,
+ speed: 4.8,
+ angle: 0,
+ walkFrame: 0,
+ isMoving: false,
+ health: 6,
+ maxHealth: 6,
+ iframeTimer: 0,
+ spawnShieldTimer: 0,
+ isAttacking: false,
+ attackTimer: 0,
+ attackAngle: 0
+ };
+
+ // GAME STATE
+ let currentLevel = 1;
+ let pencilsCollected = 0;
+ const totalPencilsNeeded = 5;
+ let bossDefeated = false;
+ let exitsUnlocked = false;
+ let doorLockedMessageTimer = 0;
+
+ let enemies = [];
+ let projectiles = [];
+ let puddles = [];
+ let goldenPencils = [];
+ let particleEffects = [];
+
+ // CAMERA STATE
+ const camera = { x: 0, y: 0 };
+
+ // MAP DEFINITIONS
+ const ROOM_DEFINITIONS = [
+ { id: 'ela', name: "ELA Room", floor: "#2b3e50", wall: "#15222e", type: "ela", w: 950, h: 650 },
+ { id: 'math', name: "Math Room", floor: "#1b4d3e", wall: "#0d2b22", type: "math", w: 950, h: 650 },
+ { id: 'science', name: "Science Room", floor: "#3d2b56", wall: "#211531", type: "science", w: 1000, h: 700 },
+ { id: 'history', name: "History Room", floor: "#523a28", wall: "#2d1f15", type: "history", w: 950, h: 650 },
+ { id: 'gym', name: "Gymnasium", floor: "#c68b59", wall: "#6b421d", type: "gym", w: 1300, h: 800 },
+ { id: 'bathrooms', name: "Bathrooms", floor: "#005f73", wall: "#002b36", type: "bathrooms", w: 850, h: 600 },
+ { id: 'cafeteria', name: "Cafeteria", floor: "#8d5b4c", wall: "#4a2e26", type: "cafeteria", w: 1250, h: 750 },
+ { id: 'auditorium', name: "Auditorium", floor: "#4a121a", wall: "#24080c", type: "auditorium", w: 1300, h: 800 },
+ { id: 'secretary', name: "Secretary's Office", floor: "#435d68", wall: "#213036", type: "secretary", w: 850, h: 600 },
+ { id: 'principal', name: "Principal's Office", floor: "#3a2e2b", wall: "#1f1816", type: "principal", w: 900, h: 650 },
+ { id: 'supply', name: "Supply Closet", floor: "#333333", wall: "#1a1a1a", type: "supply", w: 700, h: 550 },
+ { id: 'detention', name: "Detention Dungeon", floor: "#15171e", wall: "#0a0b0e", type: "detention", w: 1050, h: 700 }
+ ];
+
+ let rooms = [];
+ let colliders = [];
+ let exitColliders = [];
+ let hallway = { x: 0, y: -160, w: 0, h: 320 };
+ let totalSchoolWidth = 0;
+
+ function shuffleArray(array) {
+ const arr = [...array];
+ for (let i = arr.length - 1; i > 0; i--) {
+ const j = Math.floor(Math.random() * (i + 1));
+ [arr[i], arr[j]] = [arr[j], arr[i]];
+ }
+ return arr;
+ }
+
+ function updateHUD() {
+ let heartsHtml = "";
+ for (let i = 0; i < player.maxHealth; i++) {
+ heartsHtml += i < player.health ? "❤️" : "🖤";
+ }
+ document.getElementById('heartsDisplay').innerHTML = heartsHtml;
+ document.getElementById('levelDisplay').innerText = `LEVEL ${currentLevel}`;
+ document.getElementById('pencilDisplay').innerText = `✏️ PENCILS: ${pencilsCollected}/${totalPencilsNeeded}`;
+ document.getElementById('bossDisplay').innerText = bossDefeated ? `😈 BOSS: DEFEATED` : `😈 BOSS: ALIVE`;
+ document.getElementById('bossDisplay').style.color = bossDefeated ? '#00e676' : '#ff1744';
+
+ const exitDisp = document.getElementById('exitDisplay');
+ if (exitsUnlocked) {
+ exitDisp.innerText = `🚪 EXIT: OPEN!`;
+ exitDisp.style.color = '#00e676';
+ exitDisp.style.borderColor = '#00e676';
+ } else {
+ exitDisp.innerText = `🚪 EXIT: LOCKED`;
+ exitDisp.style.color = '#ff1744';
+ exitDisp.style.borderColor = '#ff1744';
+ }
+ }
+
+ function generateSchool() {
+ clearInputKeys();
+ const shuffled = shuffleArray(ROOM_DEFINITIONS);
+ const topPool = shuffled.slice(0, 6);
+ const bottomPool = shuffled.slice(6, 12);
+
+ rooms = [];
+ colliders = [];
+ exitColliders = [];
+ enemies = [];
+ projectiles = [];
+ puddles = [];
+ goldenPencils = [];
+ particleEffects = [];
+
+ pencilsCollected = 0;
+ bossDefeated = false;
+ exitsUnlocked = false;
+ doorLockedMessageTimer = 0;
+
+ const hallYTop = -160;
+ const hallYBottom = 160;
+ const doorWidth = 140;
+ const startPadding = 250;
+ const roomGap = 50;
+
+ let xTop = startPadding;
+ topPool.forEach(r => {
+ const rm = { ...r, x: xTop, y: hallYTop - r.h, side: 'top', doorX: xTop + r.w / 2, doorW: doorWidth };
+ rooms.push(rm);
+ xTop += r.w + roomGap;
+ });
+
+ let xBottom = startPadding;
+ bottomPool.forEach(r => {
+ const rm = { ...r, x: xBottom, y: hallYBottom, side: 'bottom', doorX: xBottom + r.w / 2, doorW: doorWidth };
+ rooms.push(rm);
+ xBottom += r.w + roomGap;
+ });
+
+ totalSchoolWidth = Math.max(xTop, xBottom) + startPadding;
+ hallway.x = 0;
+ hallway.w = totalSchoolWidth;
+
+ const wallThickness = 16;
+ rooms.forEach(r => {
+ if (r.side === 'top') {
+ colliders.push({ x1: r.x - wallThickness, y1: r.y - wallThickness, x2: r.x + r.w + wallThickness, y2: r.y });
+ } else {
+ colliders.push({ x1: r.x - wallThickness, y1: r.y + r.h, x2: r.x + r.w + wallThickness, y2: r.y + r.h + wallThickness });
+ }
+ colliders.push({ x1: r.x - wallThickness, y1: r.y, x2: r.x, y2: r.y + r.h });
+ colliders.push({ x1: r.x + r.w, y1: r.y, x2: r.x + r.w + wallThickness, y2: r.y + r.h });
+
+ const doorWallY = r.side === 'top' ? r.y + r.h : r.y - wallThickness;
+ colliders.push({ x1: r.x - wallThickness, y1: doorWallY, x2: r.doorX - r.doorW / 2, y2: doorWallY + wallThickness });
+ colliders.push({ x1: r.doorX + r.doorW / 2, y1: doorWallY, x2: r.x + r.w + wallThickness, y2: doorWallY + wallThickness });
+
+ addRoomFurnitureColliders(r);
+ });
+
+ buildHallwayWallsAndLockers(topPool, bottomPool, wallThickness);
+
+ const detentionRoom = rooms.find(r => r.id === 'detention');
+ player.x = detentionRoom.x + detentionRoom.w / 2;
+ player.y = detentionRoom.y + detentionRoom.h / 2 + 80;
+ player.angle = 0;
+ player.health = player.maxHealth;
+ player.iframeTimer = 0;
+ player.spawnShieldTimer = 210;
+
+ spawnSchoolEnemies();
+ spawnValidGoldenPencils();
+ updateHUD();
+ }
+
+ function isPositionValidForSpawn(x, y, radius) {
+ const safetyMargin = radius + 12;
+ for (const c of colliders) {
+ if (circleAABBIntersect(x, y, safetyMargin, c)) {
+ return false;
+ }
+ }
+ return true;
+ }
+
+ function getValidFloorPositionForRoom(room, itemRadius = 18) {
+ const padding = 80;
+ const minX = room.x + padding;
+ const maxX = room.x + room.w - padding;
+ const minY = room.y + padding;
+ const maxY = room.y + room.h - padding;
+
+ for (let attempt = 0; attempt < 250; attempt++) {
+ const candidateX = minX + Math.random() * (maxX - minX);
+ const candidateY = minY + Math.random() * (maxY - minY);
+ if (isPositionValidForSpawn(candidateX, candidateY, itemRadius)) {
+ return { x: candidateX, y: candidateY };
+ }
+ }
+ return { x: room.x + room.w / 2, y: room.y + room.h / 2 };
+ }
+
+ function spawnValidGoldenPencils() {
+ const nonDetentionRooms = rooms.filter(r => r.id !== 'detention');
+ const selectedRooms = shuffleArray(nonDetentionRooms).slice(0, 4);
+
+ selectedRooms.forEach(r => {
+ const pos = getValidFloorPositionForRoom(r, 18);
+ goldenPencils.push({
+ id: Math.random(),
+ x: pos.x,
+ y: pos.y,
+ radius: 16,
+ pulse: 0
+ });
+ });
+ }
+
+ function spawnSchoolEnemies() {
+ const detentionRoom = rooms.find(r => r.id === 'detention');
+ 
+ if (detentionRoom) {
+ const dx = detentionRoom.x + detentionRoom.w / 2;
+ const dy = detentionRoom.y + detentionRoom.h / 2 - 40;
+
+ enemies.push(createEnemy('pen', dx, dy));
+
+ const detentionTypes = ['sharpener', 'eraser', 'mouse', 'mop', 'eraser', 'sharpener', 'mouse', 'mop', 'eraser'];
+ detentionTypes.forEach((t, idx) => {
+ const offsetAngle = (idx / 9) * Math.PI * 2;
+ const dist = 170;
+ enemies.push(createEnemy(t, dx + Math.cos(offsetAngle) * dist, dy + Math.sin(offsetAngle) * dist));
+ });
+ }
+
+ const numErasers = 2 * currentLevel;
+ for (let i = 0; i < numErasers; i++) {
+ const room = rooms[i % rooms.length];
+ if (room.id !== 'detention') {
+ const pos = getValidFloorPositionForRoom(room, 20);
+ enemies.push(createEnemy('eraser', pos.x, pos.y));
+ }
+ }
+
+ rooms.forEach(r => {
+ if (r.id !== 'detention') {
+ const pos = getValidFloorPositionForRoom(r, 20);
+ if (r.type === 'gym' || r.type === 'math') enemies.push(createEnemy('sharpener', pos.x, pos.y));
+ if (r.type === 'science' || r.type === 'secretary') enemies.push(createEnemy('mouse', pos.x, pos.y));
+ if (r.type === 'bathrooms' || r.type === 'cafeteria') enemies.push(createEnemy('mop', pos.x, pos.y));
+ }
+ });
+ }
+
+ function createEnemy(type, x, y) {
+ const base = {
+ id: Math.random(),
+ type: type,
+ x: x,
+ y: y,
+ angle: 0,
+ timer: 0,
+ isHit: 0
+ };
+
+ if (type === 'pen') {
+ return { ...base, radius: 22, hp: 12, maxHp: 12, speed: 2.2, shootCooldown: 0, dashTimer: 0 };
+ } else if (type === 'sharpener') {
+ return { ...base, radius: 18, hp: 5, maxHp: 5, speed: 1.8, revTimer: 0 };
+ } else if (type === 'eraser') {
+ return { ...base, radius: 16, hp: 4, maxHp: 4, speed: 1.3, shootTimer: 0 };
+ } else if (type === 'mouse') {
+ return { ...base, radius: 15, hp: 3, maxHp: 3, speed: 2.6 };
+ } else if (type === 'mop') {
+ return { ...base, radius: 20, hp: 6, maxHp: 6, speed: 1.5, puddleTimer: 0 };
+ }
+ return base;
+ }
+
+ function addRoomFurnitureColliders(r) {
+ const rx = r.x;
+ const ry = r.y;
+
+ switch (r.type) {
+ case 'ela':
+ colliders.push({ x1: rx + r.w - 220, y1: ry + 60, x2: rx + r.w - 60, y2: ry + 110 });
+ colliders.push({ x1: rx + 80, y1: ry + 80, x2: rx + 240, y2: ry + 150 });
+ break;
+ case 'math':
+ case 'history':
+ colliders.push({ x1: rx + 80, y1: ry + 80, x2: rx + 240, y2: ry + 150 });
+ break;
+ case 'science':
+ colliders.push({ x1: rx + 120, y1: ry + 200, x2: rx + r.w - 120, y2: ry + 260 });
+ colliders.push({ x1: rx + 120, y1: ry + 420, x2: rx + r.w - 120, y2: ry + 480 });
+ break;
+ case 'gym':
+ colliders.push({ x1: rx + 100, y1: ry + 30, x2: rx + r.w - 100, y2: ry + 120 });
+ colliders.push({ x1: rx + 50, y1: ry + 250, x2: rx + 110, y2: ry + 450 });
+ colliders.push({ x1: rx + r.w - 110, y1: ry + 250, x2: rx + r.w - 50, y2: ry + 450 });
+ break;
+ case 'bathrooms':
+ colliders.push({ x1: rx + 80, y1: ry + 60, x2: rx + r.w - 80, y2: ry + 120 });
+ colliders.push({ x1: rx + 100, y1: ry + 250, x2: rx + r.w - 100, y2: ry + 320 });
+ break;
+ case 'cafeteria':
+ colliders.push({ x1: rx + 100, y1: ry + 80, x2: rx + r.w - 100, y2: ry + 150 });
+ break;
+ case 'auditorium':
+ colliders.push({ x1: rx + 120, y1: ry + 50, x2: rx + r.w - 120, y2: ry + 240 });
+ break;
+ case 'secretary':
+ case 'principal':
+ colliders.push({ x1: rx + r.w / 2 - 140, y1: ry + 150, x2: rx + r.w / 2 + 140, y2: ry + 230 });
+ break;
+ case 'supply':
+ colliders.push({ x1: rx + 50, y1: ry + 50, x2: rx + r.w - 50, y2: ry + 120 });
+ break;
+ case 'detention':
+ colliders.push({ x1: rx + 80, y1: ry + 80, x2: rx + r.w - 80, y2: ry + 140 });
+ colliders.push({ x1: rx + r.w / 2 - 100, y1: ry + r.h / 2 - 30, x2: rx + r.w / 2 + 100, y2: ry + r.h / 2 + 30 });
+ break;
+ }
+ }
+
+ function buildHallwayWallsAndLockers(topPool, bottomPool, wallThickness) {
+ const hallYTop = -160;
+ const hallYBottom = 160;
+ const exitDoorHeight = 160;
+
+ colliders.push({ x1: -wallThickness, y1: hallYTop, x2: 0, y2: -exitDoorHeight / 2 });
+ colliders.push({ x1: -wallThickness, y1: exitDoorHeight / 2, x2: 0, y2: hallYBottom });
+ colliders.push({ x1: totalSchoolWidth, y1: hallYTop, x2: totalSchoolWidth + wallThickness, y2: -exitDoorHeight / 2 });
+ colliders.push({ x1: totalSchoolWidth, y1: exitDoorHeight / 2, x2: totalSchoolWidth + wallThickness, y2: hallYBottom });
+
+ exitColliders = [
+ { x1: -wallThickness, y1: -exitDoorHeight / 2, x2: 0, y2: exitDoorHeight / 2, isExitDoor: true },
+ { x1: totalSchoolWidth, y1: -exitDoorHeight / 2, x2: totalSchoolWidth + wallThickness, y2: exitDoorHeight / 2, isExitDoor: true }
+ ];
+ }
+
+ function resizeCanvas() {
+ const wrapper = document.getElementById('canvas-wrapper');
+ canvas.width = wrapper.clientWidth;
+ canvas.height = wrapper.clientHeight;
+ }
+
+ window.addEventListener('resize', resizeCanvas);
+
+ // STRICT WASD CONTROLS
+ window.addEventListener('keydown', (e) => {
+ if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+ e.preventDefault();
+ return;
+ }
+
+ if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+ e.preventDefault();
+ keys[e.code] = true;
+ }
+
+ if (e.code === 'Space') {
+ e.preventDefault();
+ performRulerAttack();
+ }
+ });
+
+ window.addEventListener('keyup', (e) => {
+ if (['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+ keys[e.code] = false;
+ }
+ });
+
+ function resetSimulation() {
+ generateSchool();
+ }
+
+ function triggerLockedDoorAlert() {
+ if (doorLockedMessageTimer <= 0) playSound('denied');
+ doorLockedMessageTimer = 90;
+ }
+
+ function performRulerAttack() {
+ if (!player.isAttacking) {
+ player.isAttacking = true;
+ player.attackTimer = 12;
+ player.attackAngle = player.angle;
+ playSound('swing');
+
+ const attackReach = 55;
+ const hitArc = Math.PI / 1.5;
+
+ enemies.forEach(e => {
+ const dist = Math.hypot(e.x - player.x, e.y - player.y);
+ if (dist < attackReach + e.radius) {
+ const angleToEnemy = Math.atan2(e.y - player.y, e.x - player.x);
+ let diff = Math.abs(angleToEnemy - player.attackAngle);
+ if (diff > Math.PI) diff = Math.PI * 2 - diff;
+
+ if (diff < hitArc) {
+ e.hp -= 2;
+ e.isHit = 10;
+ playSound('hit');
+
+ const kbX = Math.cos(angleToEnemy) * 22;
+ const kbY = Math.sin(angleToEnemy) * 22;
+ e.x += kbX; e.y += kbY;
+ createSparks(e.x, e.y, '#ffea00');
+
+ if (e.type === 'pen' && e.hp <= 0) {
+ bossDefeated = true;
+ goldenPencils.push({ id: Math.random(), x: e.x, y: e.y, radius: 16, pulse: 0 });
+ createSparks(e.x, e.y, '#00e5ff');
+ checkExitUnlockState();
+ }
+ }
+ }
+ });
+ }
+ }
+
+ function checkExitUnlockState() {
+ updateHUD();
+ if (pencilsCollected >= totalPencilsNeeded && bossDefeated && !exitsUnlocked) {
+ exitsUnlocked = true;
+ playSound('unlock');
+ createSparks(player.x, player.y, '#00e676');
+ updateHUD();
+ }
+ }
+
+ function createSparks(x, y, color) {
+ for (let i = 0; i < 10; i++) {
+ particleEffects.push({
+ x: x, y: y,
+ vx: (Math.random() - 0.5) * 8,
+ vy: (Math.random() - 0.5) * 8,
+ color: color,
+ life: 16
+ });
+ }
+ }
+
+ function circleAABBIntersect(px, py, r, box) {
+ const closestX = Math.max(box.x1, Math.min(px, box.x2));
+ const closestY = Math.max(box.y1, Math.min(py, box.y2));
+ const distX = px - closestX;
+ const distY = py - closestY;
+ return (distX * distX + distY * distY) < (r * r);
+ }
+
+ function damagePlayer(amount) {
+ if (player.iframeTimer > 0 || player.spawnShieldTimer > 0) return;
+ player.health = Math.max(0, player.health - amount);
+ player.iframeTimer = 45;
+ playSound('hurt');
+ updateHUD();
+ createSparks(player.x, player.y, '#ff1744');
+
+ if (player.health <= 0) {
+ alert("Game Over! The Evil School Supplies Won! Respawning in Detention...");
+ generateSchool();
+ }
+ }
+
+ function updatePhysics() {
+ if (player.spawnShieldTimer > 0) player.spawnShieldTimer--;
+ if (player.iframeTimer > 0) player.iframeTimer--;
+ if (doorLockedMessageTimer > 0) doorLockedMessageTimer--;
+
+ if (player.isAttacking) {
+ player.attackTimer--;
+ if (player.attackTimer <= 0) player.isAttacking = false;
+ }
+
+ // PUDDLE EVAPORATION & LIFESPAN DECAY
+ puddles.forEach(p => p.life--);
+ puddles = puddles.filter(p => p.life > 0);
+
+ // Slippery Mop Puddle Traction
+ let currentSpeed = player.speed;
+ const onPuddle = puddles.some(p => Math.hypot(player.x - p.x, player.y - p.y) < p.radius);
+ if (onPuddle) currentSpeed *= 0.55;
+
+ let dx = 0;
+ let dy = 0;
+ if (keys['KeyW']) dy -= 1;
+ if (keys['KeyS']) dy += 1;
+ if (keys['KeyA']) dx -= 1;
+ if (keys['KeyD']) dx += 1;
+
+ const activeColliders = exitsUnlocked ? colliders : [...colliders, ...exitColliders];
+
+ if (dx !== 0 || dy !== 0) {
+ player.isMoving = true;
+ const len = Math.hypot(dx, dy);
+ dx /= len; dy /= len;
+
+ player.angle = Math.atan2(dy, dx);
+ player.walkFrame += 0.25;
+
+ const stepX = dx * currentSpeed;
+ const stepY = dy * currentSpeed;
+
+ player.x += stepX;
+ for (const c of activeColliders) {
+ if (circleAABBIntersect(player.x, player.y, player.radius, c)) {
+ if (stepX > 0) player.x = c.x1 - player.radius;
+ else if (stepX < 0) player.x = c.x2 + player.radius;
+ if (c.isExitDoor) triggerLockedDoorAlert();
+ }
+ }
+
+ player.y += stepY;
+ for (const c of activeColliders) {
+ if (circleAABBIntersect(player.x, player.y, player.radius, c)) {
+ if (stepY > 0) player.y = c.y1 - player.radius;
+ else if (stepY < 0) player.y = c.y2 + player.radius;
+ if (c.isExitDoor) triggerLockedDoorAlert();
+ }
+ }
+ } else {
+ player.isMoving = false;
+ player.walkFrame = 0;
+ }
+
+ // GOLDEN PENCILS COLLECTION
+ goldenPencils.forEach(p => {
+ p.pulse += 0.05;
+ const dist = Math.hypot(player.x - p.x, player.y - p.y);
+ if (dist < player.radius + p.radius) {
+ p.collected = true;
+ pencilsCollected++;
+ playSound('pencil');
+ createSparks(p.x, p.y, '#ffea00');
+ checkExitUnlockState();
+ }
+ });
+ goldenPencils = goldenPencils.filter(p => !p.collected);
+
+ // CHECK ESCAPE WIN CONDITION
+ if (exitsUnlocked) {
+ if (player.x <= -10 || player.x >= totalSchoolWidth + 10) {
+ alert(`🎉 YOU ESCAPED THE SCHOOL! Level ${currentLevel} Complete!\nMoving to Level ${currentLevel + 1}...`);
+ currentLevel++;
+ generateSchool();
+ return;
+ }
+ }
+
+ // UPDATE ENEMIES WITH SMOOTH WALL SLIDING
+ enemies.forEach(e => {
+ if (e.isHit > 0) e.isHit--;
+ e.timer++;
+
+ const distToPlayer = Math.hypot(player.x - e.x, player.y - e.y);
+ const angleToPlayer = Math.atan2(player.y - e.y, player.x - e.x);
+
+ if (player.spawnShieldTimer > 0 && distToPlayer < player.radius + e.radius + 30) {
+ e.x += Math.cos(angleToPlayer - Math.PI) * 12;
+ e.y += Math.sin(angleToPlayer - Math.PI) * 12;
+ return;
+ }
+
+ let moveSpeed = e.speed;
+ let moveAngle = e.angle;
+ let shouldMove = true;
+
+ switch (e.type) {
+ case 'pen':
+ e.angle = angleToPlayer;
+ e.dashTimer = (e.dashTimer + 1) % 45;
+ if (e.dashTimer < 15) {
+ moveSpeed = e.speed * 1.6;
+ moveAngle = angleToPlayer;
+ } else {
+ shouldMove = false;
+ }
+
+ if (distToPlayer < e.radius + player.radius + 10) damagePlayer(2);
+
+ e.shootCooldown++;
+ if (e.shootCooldown > 200) {
+ e.shootCooldown = 0;
+ createSparks(e.x, e.y, '#000000');
+ if (enemies.length < 25) {
+ enemies.push(createEnemy('mouse', e.x + Math.cos(e.angle + 1) * 30, e.y + Math.sin(e.angle + 1) * 30));
+ }
+ }
+ break;
+
+ case 'sharpener':
+ e.angle = angleToPlayer;
+ e.revTimer = (e.revTimer + 1) % 60;
+ moveSpeed = e.speed * (e.revTimer > 40 ? 1.6 : 0.7);
+ moveAngle = angleToPlayer;
+ if (distToPlayer < e.radius + player.radius) damagePlayer(1);
+ break;
+
+ case 'eraser':
+ e.angle = angleToPlayer;
+ shouldMove = distToPlayer > 180;
+ moveAngle = angleToPlayer;
+
+ e.shootTimer++;
+ if (e.shootTimer >= 130) {
+ e.shootTimer = 0;
+ projectiles.push({
+ x: e.x, y: e.y,
+ vx: Math.cos(angleToPlayer) * 5,
+ vy: Math.sin(angleToPlayer) * 5,
+ radius: 6
+ });
+ }
+ if (distToPlayer < e.radius + player.radius) damagePlayer(1);
+ break;
+
+ case 'mouse':
+ if (e.timer % 30 === 0) e.angle = angleToPlayer + (Math.random() - 0.5);
+ moveAngle = e.angle;
+ moveSpeed = e.speed;
+ if (distToPlayer < e.radius + player.radius) damagePlayer(1);
+ break;
+
+ case 'mop':
+ e.angle = angleToPlayer;
+ moveAngle = angleToPlayer;
+ moveSpeed = e.speed;
+
+ e.puddleTimer++;
+ if (e.puddleTimer > 180) {
+ e.puddleTimer = 0;
+ // Spawn soapy puddle with 5-second lifespan (300 frames)
+ puddles.push({ x: e.x, y: e.y, radius: 40, life: 300, maxLife: 300 });
+ }
+ if (distToPlayer < e.radius + player.radius + 10) damagePlayer(1);
+ break;
+ }
+
+ // ENFORCE SOLID WALL COLLISION FOR ENEMIES
+ if (shouldMove) {
+ const stepX = Math.cos(moveAngle) * moveSpeed;
+ const stepY = Math.sin(moveAngle) * moveSpeed;
+
+ e.x += stepX;
+ for (const c of activeColliders) {
+ if (circleAABBIntersect(e.x, e.y, e.radius, c)) {
+ if (stepX > 0) e.x = c.x1 - e.radius;
+ else if (stepX < 0) e.x = c.x2 + e.radius;
+ }
+ }
+
+ e.y += stepY;
+ for (const c of activeColliders) {
+ if (circleAABBIntersect(e.x, e.y, e.radius, c)) {
+ if (stepY > 0) e.y = c.y1 - e.radius;
+ else if (stepY < 0) e.y = c.y2 + e.radius;
+ }
+ }
+ }
+ });
+
+ // UPDATE PROJECTILES
+ projectiles.forEach(p => {
+ p.x += p.vx;
+ p.y += p.vy;
+
+ for (const c of activeColliders) {
+ if (circleAABBIntersect(p.x, p.y, p.radius, c)) {
+ p.hit = true;
+ createSparks(p.x, p.y, '#ff4081');
+ break;
+ }
+ }
+
+ if (!p.hit) {
+ const distToPlayer = Math.hypot(player.x - p.x, player.y - p.y);
+ if (distToPlayer < p.radius + player.radius) {
+ damagePlayer(1);
+ p.hit = true;
+ }
+ }
+ });
+
+ enemies = enemies.filter(e => e.hp > 0);
+ particleEffects.forEach(p => { p.x += p.vx; p.y += p.vy; p.life--; });
+ particleEffects = particleEffects.filter(p => p.life > 0);
+ projectiles = projectiles.filter(p => !p.hit);
+
+ // Camera Follow
+ const targetCamX = player.x - canvas.width / 2;
+ const targetCamY = player.y - canvas.height / 2;
+ camera.x += (targetCamX - camera.x) * 0.12;
+ camera.y += (targetCamY - camera.y) * 0.12;
+ }
+
+ // RENDERING FUNCTIONS
+ function drawInfiniteField(camX, camY) {
+ ctx.fillStyle = '#1b381e';
+ ctx.fillRect(camX, camY, canvas.width, canvas.height);
+ }
+
+ function drawHallway() {
+ ctx.fillStyle = '#cfd8dc';
+ ctx.fillRect(hallway.x, hallway.y, hallway.w, hallway.h);
+ ctx.strokeStyle = '#b0bec5';
+ ctx.lineWidth = 1.5;
+ for (let x = hallway.x; x < hallway.x + hallway.w; x += 50) {
+ ctx.beginPath(); ctx.moveTo(x, hallway.y); ctx.lineTo(x, hallway.y + hallway.h); ctx.stroke();
+ }
+ }
+
+ function drawLockersAndExits() {
+ const hallYTop = -160;
+ const hallYBottom = 160;
+
+ colliders.forEach(c => {
+ if (c.y1 === hallYTop && c.y2 === hallYTop + 24) {
+ ctx.fillStyle = '#37474f'; ctx.fillRect(c.x1, c.y1, c.x2 - c.x1, 24);
+ } else if (c.y1 === hallYBottom - 24 && c.y2 === hallYBottom) {
+ ctx.fillStyle = '#37474f'; ctx.fillRect(c.x1, c.y1, c.x2 - c.x1, 24);
+ }
+ });
+
+ const exitColor = exitsUnlocked ? '#00e676' : '#ff1744';
+ const exitLabel = exitsUnlocked ? 'OPEN' : 'LOCKED';
+
+ // West Exit
+ ctx.fillStyle = exitColor; ctx.fillRect(0, -80, 20, 160);
+ ctx.fillStyle = '#ffffff'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+ ctx.fillText(exitLabel, 35, 5);
+
+ // East Exit
+ ctx.fillStyle = exitColor; ctx.fillRect(totalSchoolWidth - 20, -80, 20, 160);
+ ctx.fillStyle = '#ffffff'; ctx.fillText(exitLabel, totalSchoolWidth - 35, 5);
+ }
+
+ function drawRoom(r) {
+ ctx.fillStyle = r.floor;
+ ctx.fillRect(r.x, r.y, r.w, r.h);
+ ctx.strokeStyle = r.wall;
+ ctx.lineWidth = 12;
+ ctx.strokeRect(r.x, r.y, r.w, r.h);
+
+ const doorY = r.side === 'top' ? r.y + r.h : r.y;
+ ctx.fillStyle = r.floor;
+ ctx.fillRect(r.doorX - r.doorW / 2, doorY - 8, r.doorW, 16);
+
+ ctx.save();
+ ctx.translate(r.x, r.y);
+ drawRoomFurnitureGraphic(r);
+ ctx.restore();
+
+ ctx.fillStyle = r.type === 'detention' ? '#ff1744' : '#ffffff';
+ ctx.font = 'bold 16px monospace';
+ ctx.textAlign = 'center';
+ const textY = r.side === 'top' ? r.y + 40 : r.y + r.h - 30;
+ ctx.fillText(r.name.toUpperCase(), r.x + r.w / 2, textY);
+ }
+
+ function drawRoomFurnitureGraphic(r) {
+ const w = r.w;
+ const h = r.h;
+
+ switch (r.type) {
+ case 'ela':
+ case 'math':
+ case 'history':
+ ctx.fillStyle = '#4e3629'; ctx.fillRect(80, 80, 160, 70);
+ for (let x = 120; x < w - 120; x += 180) {
+ for (let y = 240; y < h - 140; y += 140) {
+ ctx.fillStyle = '#6d4c41'; ctx.fillRect(x, y, 90, 60);
+ }
+ }
+ break;
+ case 'science':
+ ctx.fillStyle = '#37474f'; ctx.fillRect(80, 60, 220, 60);
+ ctx.fillStyle = '#263238'; ctx.fillRect(120, 200, w - 240, 60); ctx.fillRect(120, 420, w - 240, 60);
+ break;
+ case 'gym':
+ ctx.fillStyle = '#5d4037'; ctx.fillRect(100, 30, w - 200, 90);
+ ctx.fillStyle = '#37474f'; ctx.fillRect(50, 250, 60, 200); ctx.fillRect(w - 110, 250, 60, 200);
+ break;
+ case 'bathrooms':
+ ctx.fillStyle = '#e0e0e0'; ctx.fillRect(80, 60, w - 160, 60);
+ ctx.fillStyle = '#004d40'; ctx.fillRect(100, 250, w - 200, 70);
+ break;
+ case 'cafeteria':
+ ctx.fillStyle = '#d84315'; ctx.fillRect(100, 80, w - 200, 70);
+ break;
+ case 'auditorium':
+ ctx.fillStyle = '#b71c1c'; ctx.fillRect(120, 50, w - 240, 190);
+ break;
+ case 'secretary':
+ case 'principal':
+ ctx.fillStyle = '#37474f'; ctx.fillRect(w / 2 - 140, 150, 280, 80);
+ break;
+ case 'supply':
+ ctx.fillStyle = '#424242'; ctx.fillRect(50, 50, w - 100, 70);
+ break;
+ case 'detention':
+ ctx.strokeStyle = '#78909c'; ctx.lineWidth = 6; ctx.strokeRect(80, 80, w - 160, 60);
+ ctx.fillStyle = '#3e2723'; ctx.fillRect(w / 2 - 100, h / 2 - 30, 200, 60);
+ break;
+ }
+ }
+
+ function drawGoldenPencilsAndItems() {
+ // Draw Evaporating Soapy Mop Puddles
+ puddles.forEach(p => {
+ const ratio = p.life / p.maxLife;
+ const currentRadius = p.radius * (0.4 + 0.6 * ratio);
+ const alpha = 0.45 * ratio;
+
+ ctx.fillStyle = `rgba(0, 229, 255, ${alpha})`;
+ ctx.beginPath(); ctx.arc(p.x, p.y, currentRadius, 0, Math.PI * 2); ctx.fill();
+ ctx.strokeStyle = `rgba(255, 255, 255, ${ratio})`; ctx.lineWidth = 1.5; ctx.stroke();
+ });
+
+ goldenPencils.forEach(p => {
+ ctx.save();
+ ctx.translate(p.x, p.y);
+ const scale = 1 + Math.sin(p.pulse) * 0.15;
+ ctx.scale(scale, scale);
+
+ ctx.fillStyle = 'rgba(255, 234, 0, 0.35)';
+ ctx.beginPath(); ctx.arc(0, 0, 22, 0, Math.PI * 2); ctx.fill();
+
+ ctx.fillStyle = '#ffea00'; ctx.fillRect(-12, -4, 20, 8);
+ ctx.fillStyle = '#ffb300'; ctx.beginPath(); ctx.moveTo(8, -4); ctx.lineTo(16, 0); ctx.lineTo(8, 4); ctx.fill();
+ ctx.fillStyle = '#ff4081'; ctx.fillRect(-16, -4, 4, 8);
+
+ ctx.restore();
+ });
+
+ projectiles.forEach(p => {
+ ctx.fillStyle = '#ff4081';
+ ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill();
+ ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.stroke();
+ });
+ }
+
+ function drawEnemy(e) {
+ ctx.save();
+ ctx.translate(e.x, e.y);
+ ctx.rotate(e.angle);
+
+ if (e.isHit > 0) ctx.fillStyle = '#ffffff';
+
+ switch (e.type) {
+ case 'pen':
+ ctx.fillStyle = '#1565c0'; ctx.fillRect(-25, -8, 40, 16);
+ ctx.fillStyle = '#c0c0c0'; ctx.beginPath(); ctx.moveTo(15, -8); ctx.lineTo(32, 0); ctx.lineTo(15, 8); ctx.fill();
+ ctx.fillStyle = '#ffea00'; ctx.font = 'bold 10px sans-serif'; ctx.fillText(">:)", -10, 4);
+ break;
+ case 'sharpener':
+ ctx.fillStyle = '#78909c'; ctx.fillRect(-15, -12, 30, 24);
+ ctx.fillStyle = '#000000'; ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill();
+ break;
+ case 'eraser':
+ ctx.fillStyle = '#ff80ab'; ctx.fillRect(-16, -10, 32, 20);
+ break;
+ case 'mouse':
+ ctx.fillStyle = '#e0e0e0'; ctx.beginPath(); ctx.ellipse(0, 0, 16, 11, 0, 0, Math.PI * 2); ctx.fill();
+ ctx.fillStyle = '#ff1744'; ctx.fillRect(2, -2, 5, 4);
+ break;
+ case 'mop':
+ ctx.strokeStyle = '#8d6e63'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-25, 0); ctx.lineTo(5, 0); ctx.stroke();
+ ctx.fillStyle = '#eceff1'; ctx.beginPath(); ctx.arc(10, 0, 14, 0, Math.PI * 2); ctx.fill();
+ break;
+ }
+
+ ctx.restore();
+ }
+
+ function drawStickmanTopDown(x, y, angle, walkFrame) {
+ ctx.save();
+ ctx.translate(x, y);
+
+ if (player.spawnShieldTimer > 0) {
+ const shieldRadius = player.radius + 16 + Math.sin(Date.now() * 0.01) * 3;
+ ctx.fillStyle = 'rgba(0, 229, 255, 0.25)';
+ ctx.beginPath(); ctx.arc(0, 0, shieldRadius, 0, Math.PI * 2); ctx.fill();
+ ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 3; ctx.stroke();
+
+ ctx.fillStyle = '#00e5ff';
+ ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
+ const secondsLeft = (player.spawnShieldTimer / 60).toFixed(1);
+ ctx.fillText(`SHIELD: ${secondsLeft}s`, 0, -32);
+ }
+
+ ctx.rotate(angle);
+
+ if (player.iframeTimer % 4 > 2) {
+ ctx.restore();
+ return;
+ }
+
+ ctx.strokeStyle = '#ffffff';
+ ctx.fillStyle = '#ffffff';
+ ctx.lineWidth = 3;
+ ctx.lineCap = 'round';
+
+ const legSwing = Math.sin(walkFrame) * 10;
+
+ ctx.beginPath(); ctx.arc(-6 + legSwing, -12, 4, 0, Math.PI * 2); ctx.arc(-6 - legSwing, 12, 4, 0, Math.PI * 2); ctx.fill();
+ ctx.beginPath(); ctx.moveTo(-3, -16); ctx.lineTo(-3, 16); ctx.stroke();
+ ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.fillStyle = '#111111'; ctx.fill(); ctx.stroke();
+
+ if (player.isAttacking) {
+ ctx.save();
+ ctx.rotate(Math.sin((12 - player.attackTimer) * 0.3) * 1.5);
+ ctx.fillStyle = '#ffb300'; ctx.fillRect(5, -4, 45, 8);
+ ctx.strokeStyle = '#ff6f00'; ctx.lineWidth = 1; ctx.strokeRect(5, -4, 45, 8);
+ ctx.restore();
+ }
+
+ ctx.restore();
+ }
+
+ function drawDoorLockedWarningOverlay() {
+ if (doorLockedMessageTimer > 0) {
+ const screenCenterX = camera.x + canvas.width / 2;
+ const screenTopY = camera.y + 70;
+
+ ctx.save();
+ ctx.fillStyle = 'rgba(255, 23, 68, 0.95)';
+ ctx.fillRect(screenCenterX - 280, screenTopY - 20, 560, 42);
+ ctx.strokeStyle = '#ffffff';
+ ctx.lineWidth = 2;
+ ctx.strokeRect(screenCenterX - 280, screenTopY - 20, 560, 42);
+
+ ctx.fillStyle = '#ffffff';
+ ctx.font = 'bold 13px monospace';
+ ctx.textAlign = 'center';
+ ctx.fillText("🔒 EXITS LOCKED! Collect 5 Pencils & Defeat Boss to Escape!", screenCenterX, screenTopY + 5);
+ ctx.restore();
+ }
+ }
+
+ function draw() {
+ ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+ ctx.save();
+ ctx.translate(-camera.x, -camera.y);
+
+ drawInfiniteField(camera.x, camera.y);
+ drawHallway();
+ rooms.forEach(drawRoom);
+ drawLockersAndExits();
+ drawGoldenPencilsAndItems();
+
+ enemies.forEach(drawEnemy);
+
+ particleEffects.forEach(p => {
+ ctx.fillStyle = p.color;
+ ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
+ });
+
+ drawStickmanTopDown(player.x, player.y, player.angle, player.walkFrame);
+ drawDoorLockedWarningOverlay();
+
+ ctx.restore();
+ }
+
+ function animate() {
+ updatePhysics();
+ draw();
+ requestAnimationFrame(animate);
+ }
+
+ window.onload = function() {
+ resizeCanvas();
+ generateSchool();
+ animate();
+ };
+ </script>
+</body>
+</html>
