@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snap Divers: Ocean Bestiary & Creature Viewer</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Fredoka & Outfit -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      font-family: 'Outfit', sans-serif;
+    }
+    .font-display {
+      font-family: 'Fredoka', cursive;
+    }
+    
+    /* Neon Glow Utilities */
+    .glow-cyan {
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+    }
+    .glow-yellow {
+      box-shadow: 0 0 20px rgba(234, 179, 8, 0.4);
+    }
+    .glow-emerald {
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+    }
+    .glow-purple {
+      box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+    }
+    
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.8);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.4);
+      border-radius: 6px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(56, 189, 248, 0.7);
+    }
+
+    .card-hover-effect {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .card-hover-effect:hover {
+      transform: translateY(-4px) scale(1.02);
+    }
+  </style>
+</head>
+<body class="h-screen w-screen flex flex-col items-center justify-between overflow-hidden bg-slate-950 text-slate-100 p-3 relative">
+
+  <!-- HEADER & FILTER TOOLBAR -->
+  <header class="w-full max-w-7xl bg-slate-900/90 backdrop-blur-md border-2 border-sky-400/80 rounded-2xl px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-3 shadow-2xl z-20 glow-cyan">
+    
+    <!-- Title & Brand -->
+    <div class="flex items-center gap-3">
+      <div class="bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-display font-bold px-3.5 py-1.5 rounded-xl text-lg sm:text-xl flex items-center gap-2 shadow-lg">
+        <span>📖</span>
+        <span>OCEAN BESTIARY</span>
+      </div>
+      <div>
+        <h1 class="text-sm sm:text-base font-bold text-cyan-300 tracking-wide font-display">Snap Divers Field Guide</h1>
+        <p class="text-[11px] text-slate-400">Interactive Creature Inspector • All 20 Safari Targets</p>
+      </div>
+    </div>
+
+    <!-- Depth Zone Filter Tabs -->
+    <div class="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1 md:pb-0 font-medium text-xs">
+      <button onclick="setFilter('all')" id="filter-all" class="filter-btn px-3 py-1.5 rounded-xl bg-cyan-500 text-slate-950 font-bold shadow-md transition cursor-pointer whitespace-nowrap">
+        🌊 All (20)
+      </button>
+      <button onclick="setFilter('sunlit')" id="filter-sunlit" class="filter-btn px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer whitespace-nowrap">
+        ☀️ Sunlit (1-4)
+      </button>
+      <button onclick="setFilter('twilight')" id="filter-twilight" class="filter-btn px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer whitespace-nowrap">
+        🌅 Twilight (5-8)
+      </button>
+      <button onclick="setFilter('midnight')" id="filter-midnight" class="filter-btn px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer whitespace-nowrap">
+        🌌 Midnight (9-12)
+      </button>
+      <button onclick="setFilter('abyssal')" id="filter-abyssal" class="filter-btn px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer whitespace-nowrap">
+        🌑 Abyssal (13-16)
+      </button>
+      <button onclick="setFilter('hadal')" id="filter-hadal" class="filter-btn px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer whitespace-nowrap">
+        🌋 Hadal (17-20)
+      </button>
+    </div>
+
+    <!-- View Mode Switcher -->
+    <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+      <button id="viewGridBtn" onclick="switchView('grid')" class="px-3 py-1 rounded-lg text-xs font-bold bg-sky-500 text-slate-950 transition cursor-pointer">
+        🖼️ Grid
+      </button>
+      <button id="viewSpotlightBtn" onclick="switchView('spotlight')" class="px-3 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-slate-200 transition cursor-pointer">
+        🔍 Spotlight
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN VIEWPORT CONTAINER -->
+  <main class="w-full max-w-7xl flex-1 relative overflow-hidden my-2.5">
+    
+    <!-- GRID GALLERY VIEW -->
+    <div id="gridView" class="w-full h-full overflow-y-auto pr-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 pb-6">
+      <!-- Dynamically populated creature cards -->
+    </div>
+
+    <!-- SPOTLIGHT SHOWCASE VIEW -->
+    <div id="spotlightView" class="w-full h-full hidden flex flex-col lg:flex-row gap-4 items-stretch justify-center">
+      
+      <!-- SPOTLIGHT CANVAS CONTAINER -->
+      <div class="relative flex-1 bg-slate-900/90 border-2 border-sky-400/80 rounded-2xl overflow-hidden flex flex-col items-center justify-center p-4 shadow-2xl glow-cyan min-h-[320px]">
+        
+        <!-- Top Spotlight Badge HUD -->
+        <div class="absolute top-4 left-4 right-4 flex items-center justify-between z-10 pointer-events-none">
+          <div class="flex items-center gap-2 bg-slate-950/80 backdrop-blur border border-slate-800 px-3 py-1.5 rounded-xl">
+            <span id="spotlightEmoji" class="text-2xl">🐠</span>
+            <div>
+              <div id="spotlightName" class="font-display font-bold text-cyan-300 text-base sm:text-lg">Clownfish</div>
+              <div id="spotlightScientific" class="text-[11px] text-slate-400 italic">Amphiprioninae</div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span id="spotlightZoneBadge" class="bg-amber-500/20 text-amber-300 border border-amber-500/50 text-xs font-bold px-2.5 py-1 rounded-lg">
+              Sunlit Zone
+            </span>
+            <span id="spotlightLevelBadge" class="bg-cyan-950 text-cyan-300 border border-cyan-800 text-xs font-bold px-2.5 py-1 rounded-lg">
+              Level 1
+            </span>
+          </div>
+        </div>
+
+        <!-- Spotlight Interactive Canvas -->
+        <canvas id="spotlightCanvas" class="w-full h-full block rounded-xl cursor-grab active:cursor-grabbing"></canvas>
+
+        <!-- Spotlight Bottom Navigation Bar -->
+        <div class="absolute bottom-4 left-4 right-4 flex items-center justify-between z-10">
+          <button onclick="prevSpotlight()" class="bg-slate-950/80 hover:bg-slate-800 border border-slate-700 text-cyan-300 font-display font-bold px-4 py-2 rounded-xl text-sm transition shadow-lg flex items-center gap-1.5 cursor-pointer">
+            ◀ PREV <kbd class="hidden sm:inline bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-400">A / ←</kbd>
+          </button>
+
+          <div id="spotlightCounter" class="bg-slate-950/80 border border-slate-800 text-slate-300 text-xs font-bold px-3 py-1.5 rounded-xl">
+            1 of 20
+          </div>
+
+          <button onclick="nextSpotlight()" class="bg-slate-950/80 hover:bg-slate-800 border border-slate-700 text-cyan-300 font-display font-bold px-4 py-2 rounded-xl text-sm transition shadow-lg flex items-center gap-1.5 cursor-pointer">
+            NEXT ▶ <kbd class="hidden sm:inline bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-400">D / →</kbd>
+          </button>
+        </div>
+      </div>
+
+      <!-- SPOTLIGHT INSPECTOR DETAILS PANE -->
+      <aside class="w-full lg:w-96 bg-slate-900/90 backdrop-blur border-2 border-slate-800 rounded-2xl p-5 flex flex-col justify-between shadow-2xl overflow-y-auto">
+        <div>
+          <!-- Header -->
+          <div class="pb-3 border-b border-slate-800 mb-4 flex items-center justify-between">
+            <h2 class="font-display font-bold text-yellow-400 text-lg flex items-center gap-2">
+              <span>🔬</span> FIELD SPECIMEN DATA
+            </h2>
+            <div id="spotlightPoints" class="bg-yellow-950/80 text-yellow-300 font-bold border border-yellow-700 text-xs px-2.5 py-1 rounded-lg">
+              ⭐ +150 PTS
+            </div>
+          </div>
+
+          <!-- Stats Grid -->
+          <div class="grid grid-cols-2 gap-2.5 mb-4 text-xs">
+            <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+              <span class="text-slate-400 block text-[10px] font-bold uppercase">DEPTH RANGE</span>
+              <span id="spotlightDepth" class="font-bold text-cyan-300 text-sm">5 - 15 meters</span>
+            </div>
+            <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+              <span class="text-slate-400 block text-[10px] font-bold uppercase">PRIMARY DIET</span>
+              <span id="spotlightDiet" class="font-bold text-emerald-300 text-sm">Zooplankton</span>
+            </div>
+          </div>
+
+          <!-- Description Blocks -->
+          <div class="space-y-3 text-xs">
+            <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+              <span class="text-slate-300 font-bold block mb-1 flex items-center gap-1">
+                <span>✨</span> SPECIAL TRAIT
+              </span>
+              <p id="spotlightTrait" class="text-slate-400 leading-relaxed">
+                Symbiotic relationship with sea anemones. Immune to anemone stings.
+              </p>
+            </div>
+
+            <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+              <span class="text-amber-300 font-bold block mb-1 flex items-center gap-1">
+                <span>📸</span> SAFARI CAMERA TIP
+              </span>
+              <p id="spotlightCameraTip" class="text-slate-400 leading-relaxed">
+                Quick target! Wait for it to turn sideways in the camera flash arc for maximum score bonus.
+              </p>
+            </div>
+
+            <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+              <span class="text-sky-300 font-bold block mb-1 flex items-center gap-1">
+                <span>💡</span> OCEANOGRAPHY FACT
+              </span>
+              <p id="spotlightFunFact" class="text-slate-400 leading-relaxed">
+                All clownfish are born male and can change sex to female to become the dominant breeding female.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Back to Grid Button -->
+        <button onclick="switchView('grid')" class="mt-4 w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-display font-bold text-xs py-2.5 rounded-xl border border-slate-700 transition shadow cursor-pointer">
+          🔙 BACK TO BESTIARY GRID
+        </button>
+      </aside>
+
+    </div>
+
+  </main>
+
+  <!-- FOOTER STATUS BAR -->
+  <footer class="w-full max-w-7xl bg-slate-900/90 backdrop-blur px-4 py-2 rounded-xl border border-slate-800 text-xs flex justify-between items-center text-slate-400 font-medium shadow-md">
+    <div class="flex items-center gap-3">
+      <span class="flex items-center gap-1"><kbd class="bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded text-cyan-300 font-bold text-[10px]">WASD / ← →</kbd> Navigate</span>
+      <span class="flex items-center gap-1"><kbd class="bg-slate-800 border border-slate-700 px-1.5 py-0.5 rounded text-yellow-300 font-bold text-[10px]">ESC</kbd> Return to Grid</span>
+    </div>
+    <div class="text-slate-500 text-[11px] font-mono">
+      Snap Divers Wildlife Engine v3.0 • Pure Canvas Render
+    </div>
+  </footer>
+
+  <script>
+    /* ========================================================================
+       1. WEB AUDIO SOUND SYNTHESIZER
+       ======================================================================== */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+      }
+
+      playHover() {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.02, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.05);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.05);
+      }
+
+      playSelect() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(587.33, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.12);
+      }
+    }
+
+    const sound = new SoundEngine();
+    window.addEventListener('click', () => sound.init(), { once: true });
+
+    /* ========================================================================
+       2. CREATURE DATABASE (ALL 20 WILDLIFE TARGETS)
+       ======================================================================== */
+    const CREATURES_DB = [
+      {
+        id: 'clownfish',
+        name: 'Clownfish',
+        scientificName: 'Amphiprioninae',
+        level: 1,
+        depth: '5 - 15 m',
+        zoneCategory: 'sunlit',
+        zoneName: 'Sunlit Reef Zone',
+        zoneColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50',
+        points: 150,
+        emoji: '🐠',
+        diet: 'Zooplankton & Algae',
+        trait: 'Immune to anemone tentacles due to a protective mucus coat.',
+        cameraTip: 'Quick and nimble! Wait for it to turn sideways in the camera arc.',
+        funFact: 'All clownfish are born male; the largest in a group becomes the female.'
+      },
+      {
+        id: 'turtle',
+        name: 'Green Sea Turtle',
+        scientificName: 'Chelonia mydas',
+        level: 1,
+        depth: '10 - 30 m',
+        zoneCategory: 'sunlit',
+        zoneName: 'Sunlit Reef Zone',
+        zoneColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50',
+        points: 200,
+        emoji: '🐢',
+        diet: 'Seagrass & Algae',
+        trait: 'Can hold breath underwater for up to 5 hours while resting.',
+        cameraTip: 'Paddles slowly. Aim for a full shell view as it swims past.',
+        funFact: 'Named for the green color of its subdermal fat, not its shell.'
+      },
+      {
+        id: 'parrotfish',
+        name: 'Parrotfish',
+        scientificName: 'Scaridae',
+        level: 1,
+        depth: '15 - 40 m',
+        zoneCategory: 'sunlit',
+        zoneName: 'Sunlit Reef Zone',
+        zoneColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50',
+        points: 180,
+        emoji: '🐟',
+        diet: 'Coral Algae',
+        trait: 'Beak-like fused teeth used to scrape algae off coral skeletons.',
+        cameraTip: 'Bright cyan and magenta colors make it easy to spot in sunlight.',
+        funFact: 'Grains of digested coral excreted by parrotfish form white sand beaches!'
+      },
+      {
+        id: 'moon_jellyfish',
+        name: 'Moon Jellyfish',
+        scientificName: 'Aurelia aurita',
+        level: 2,
+        depth: '20 - 50 m',
+        zoneCategory: 'sunlit',
+        zoneName: 'Sunlit Reef Zone',
+        zoneColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50',
+        points: 160,
+        emoji: '🪼',
+        diet: 'Plankton & Larvae',
+        trait: 'Translucent bell with 4 horseshoe-shaped purple gonads.',
+        cameraTip: 'Pulses slowly in rhythmic cycles. Snap when the bell expands.',
+        funFact: 'Moon jellyfish are 95% water and have no brain, heart, or blood.'
+      },
+      {
+        id: 'lionfish',
+        name: 'Lionfish',
+        scientificName: 'Pterois volitans',
+        level: 3,
+        depth: '50 - 90 m',
+        zoneCategory: 'twilight',
+        zoneName: 'Twilight Reef Zone',
+        zoneColor: 'bg-amber-500/20 text-amber-300 border-amber-500/50',
+        points: 220,
+        emoji: '🦁',
+        diet: 'Small Fish & Shrimp',
+        trait: 'Venomous needle dorsal spines and fan-like pectoral fins.',
+        cameraTip: 'Hovers in place near coral edges. Easiest target for clean shots.',
+        funFact: 'Expands its stomach up to 30 times its normal volume when feeding.'
+      },
+      {
+        id: 'manta_ray',
+        name: 'Oceanic Manta Ray',
+        scientificName: 'Mobula birostris',
+        level: 3,
+        depth: '70 - 120 m',
+        zoneCategory: 'twilight',
+        zoneName: 'Twilight Reef Zone',
+        zoneColor: 'bg-amber-500/20 text-amber-300 border-amber-500/50',
+        points: 300,
+        emoji: '🪸',
+        diet: 'Filter-fed Plankton',
+        trait: 'Cephalic fins channel water into its mouth; wing-like pectoral fins.',
+        cameraTip: 'Has a huge wingspan! Keep distance to fit entire ray in frame.',
+        funFact: 'Manta rays have the largest brain-to-body ratio of any fish.'
+      },
+      {
+        id: 'shark',
+        name: 'Great White Shark',
+        scientificName: 'Carcharodon carcharias',
+        level: 5,
+        depth: '90 - 160 m',
+        zoneCategory: 'twilight',
+        zoneName: 'Twilight Reef Zone',
+        zoneColor: 'bg-amber-500/20 text-amber-300 border-amber-500/50',
+        points: 350,
+        emoji: '🦈',
+        diet: 'Fish & Seals',
+        trait: 'Ampullae of Lorenzini organs detect electromagnetic fields.',
+        cameraTip: 'Fast swimmer! Antcipate its trajectory and flash early.',
+        funFact: 'Can detect a single drop of blood in 25 gallons of seawater.'
+      },
+      {
+        id: 'blue_ribbon_eel',
+        name: 'Blue Ribbon Eel',
+        scientificName: 'Rhinomuraena quaesita',
+        level: 4,
+        depth: '120 - 200 m',
+        zoneCategory: 'twilight',
+        zoneName: 'Twilight Reef Zone',
+        zoneColor: 'bg-amber-500/20 text-amber-300 border-amber-500/50',
+        points: 280,
+        emoji: '🐉',
+        diet: 'Small Fish',
+        trait: 'Ribbon-thin body undulating in sinuous S-curves with yellow crest.',
+        cameraTip: 'Moves in continuous wave motions. Flash when body stretches out.',
+        funFact: 'Changes color and sex throughout life: black -> blue -> electric yellow.'
+      },
+      {
+        id: 'nautilus',
+        name: 'Chambered Nautilus',
+        scientificName: 'Nautilus pompilius',
+        level: 6,
+        depth: '200 - 400 m',
+        zoneCategory: 'twilight',
+        zoneName: 'Twilight Zone',
+        zoneColor: 'bg-amber-500/20 text-amber-300 border-amber-500/50',
+        points: 320,
+        emoji: '🐚',
+        diet: 'Crabs & Carrion',
+        trait: 'Siphon-controlled gas chambers inside shell regulate buoyancy.',
+        cameraTip: 'Drifts steadily. Focus flash on the zebra-patterned shell.',
+        funFact: 'Considered a "living fossil" unchanged for over 500 million years.'
+      },
+      {
+        id: 'oarfish',
+        name: 'Giant Oarfish',
+        scientificName: 'Regalecus glesne',
+        level: 8,
+        depth: '350 - 600 m',
+        zoneCategory: 'twilight',
+        zoneName: 'Twilight Zone',
+        zoneColor: 'bg-amber-500/20 text-amber-300 border-amber-500/50',
+        points: 400,
+        emoji: '🐍',
+        diet: 'Krill & Crustaceans',
+        trait: 'Ultra-long ribbon body with crimson dorsal crest extending full length.',
+        cameraTip: 'Very long creature! Center camera on its red head crest.',
+        funFact: 'Longest bony fish in the world, growing up to 36 feet (11 meters).'
+      },
+      {
+        id: 'barreleye',
+        name: 'Barreleye Fish',
+        scientificName: 'Macropinna microstoma',
+        level: 8,
+        depth: '500 - 800 m',
+        zoneCategory: 'midnight',
+        zoneName: 'Midnight Zone',
+        zoneColor: 'bg-sky-500/20 text-sky-300 border-sky-500/50',
+        points: 420,
+        emoji: '👁️',
+        diet: 'Siphonophores & Jellyfish',
+        trait: 'Transparent fluid-filled dome head with glowing green tubular eyes.',
+        cameraTip: 'The green glowing barrels inside head shine clearly in light.',
+        funFact: 'Can rotate its eyes inside its head to look straight up through its skull.'
+      },
+      {
+        id: 'vampire_squid',
+        name: 'Vampire Squid',
+        scientificName: 'Vampyroteuthis infernalis',
+        level: 10,
+        depth: '700 - 1000 m',
+        zoneCategory: 'midnight',
+        zoneName: 'Midnight Zone',
+        zoneColor: 'bg-sky-500/20 text-sky-300 border-sky-500/50',
+        points: 450,
+        emoji: '🦑',
+        diet: 'Marine Snow & Detritus',
+        trait: 'Webbed umbrella mantle lined with soft cirri spines and photophores.',
+        cameraTip: 'Emits glowing blue light pulses. Flash when photophores ignite.',
+        funFact: 'Does not drink blood! Eats organic marine snow floating down from above.'
+      },
+      {
+        id: 'anglerfish',
+        name: 'Deep-Sea Anglerfish',
+        scientificName: 'Melanocetus johnsonii',
+        level: 9,
+        depth: '1000 - 2000 m',
+        zoneCategory: 'midnight',
+        zoneName: 'Midnight Zone',
+        zoneColor: 'bg-sky-500/20 text-sky-300 border-sky-500/50',
+        points: 500,
+        emoji: '💡',
+        diet: 'Deep-sea Fish',
+        trait: 'Modified dorsal fin illicium with glowing bioluminescent esca lure.',
+        cameraTip: 'Fearsome translucent teeth! Capture lure bulb when fully lit.',
+        funFact: 'Bioluminescent light is produced by millions of symbiotic bacteria.'
+      },
+      {
+        id: 'gulper_eel',
+        name: 'Gulper Eel',
+        scientificName: 'Eurypharynx pelecanoides',
+        level: 10,
+        depth: '1800 - 2800 m',
+        zoneCategory: 'midnight',
+        zoneName: 'Midnight Zone',
+        zoneColor: 'bg-sky-500/20 text-sky-300 border-sky-500/50',
+        points: 480,
+        emoji: '😮',
+        diet: 'Crustaceans & Fish',
+        trait: 'Enormous pouch jaw hinged to swallow prey larger than itself.',
+        cameraTip: 'Tail tip features a glowing red light organ.',
+        funFact: 'Mouth can inflate like a Pelican pouch to scoop up prey in the pitch black.'
+      },
+      {
+        id: 'giant_squid',
+        name: 'Architeuthis Giant Squid',
+        scientificName: 'Architeuthis dux',
+        level: 12,
+        depth: '2500 - 3500 m',
+        zoneCategory: 'abyssal',
+        zoneName: 'Abyssal Zone',
+        zoneColor: 'bg-purple-500/20 text-purple-300 border-purple-500/50',
+        points: 600,
+        emoji: '🦑',
+        diet: 'Deep-Sea Fish & Squids',
+        trait: 'Dinner-plate sized eyes (10 inches) designed to detect sperm whales.',
+        cameraTip: 'Large, fast target! Aim for the head and feeding tentacles.',
+        funFact: 'Possesses the largest eyes of any creature in the animal kingdom.'
+      },
+      {
+        id: 'blobfish',
+        name: 'Blobfish',
+        scientificName: 'Psychrolutes marcidus',
+        level: 13,
+        depth: '3000 - 4000 m',
+        zoneCategory: 'abyssal',
+        zoneName: 'Abyssal Zone',
+        zoneColor: 'bg-purple-500/20 text-purple-300 border-purple-500/50',
+        points: 380,
+        emoji: '🫧',
+        diet: 'Mollusks & Sea Urchins',
+        trait: 'Gelatinous flesh with density slightly less than water.',
+        cameraTip: 'Rests directly on the seabed. Easy to photograph!',
+        funFact: 'Looks like a normal fish underwater at extreme high pressure!'
+      },
+      {
+        id: 'tripod_fish',
+        name: 'Tripod Fish',
+        scientificName: 'Bathypterois grallator',
+        level: 14,
+        depth: '4000 - 5000 m',
+        zoneCategory: 'abyssal',
+        zoneName: 'Abyssal Zone',
+        zoneColor: 'bg-purple-500/20 text-purple-300 border-purple-500/50',
+        points: 420,
+        emoji: '🦵',
+        diet: 'Planktonic Crustaceans',
+        trait: 'Elongated stiff pelvic and caudal fin rays act as stilts on mud.',
+        cameraTip: 'Stands completely still facing into abyssal ocean currents.',
+        funFact: 'Pumps fluid into its fin rays to make them rigid like walking stilts.'
+      },
+      {
+        id: 'dumbo_octopus',
+        name: 'Dumbo Octopus',
+        scientificName: 'Grimpoteuthis',
+        level: 15,
+        depth: '5000 - 6000 m',
+        zoneCategory: 'abyssal',
+        zoneName: 'Abyssal Zone',
+        zoneColor: 'bg-purple-500/20 text-purple-300 border-purple-500/50',
+        points: 460,
+        emoji: '🐙',
+        diet: 'Worms & Isopods',
+        trait: 'Ear-like fins protruding above eyes used to flap and hover gently.',
+        cameraTip: 'Flaps ears like Disney\'s Dumbo. Capture while hovering above seabed.',
+        funFact: 'Deepest-living of all known octopus species in Earth\'s oceans.'
+      },
+      {
+        id: 'snailfish',
+        name: 'Mariana Snailfish',
+        scientificName: 'Pseudoliparis swirei',
+        level: 16,
+        depth: '6500 - 8000 m',
+        zoneCategory: 'hadal',
+        zoneName: 'Hadal Trench',
+        zoneColor: 'bg-rose-500/20 text-rose-300 border-rose-500/50',
+        points: 520,
+        emoji: '👻',
+        diet: 'Amphipods & Invertebrates',
+        trait: 'Translucent scaleless skin showing visible internal organs.',
+        cameraTip: 'Ghostly pale body glows subtly under camera flash.',
+        funFact: 'Thrives at water pressure equivalent to 1,600 elephants standing on a car!'
+      },
+      {
+        id: 'amphipod',
+        name: 'Supergiant Amphipod',
+        scientificName: 'Alicella gigantea',
+        level: 17,
+        depth: '8500 - 11000 m',
+        zoneCategory: 'hadal',
+        zoneName: 'Hadal Trench',
+        zoneColor: 'bg-rose-500/20 text-rose-300 border-rose-500/50',
+        points: 550,
+        emoji: '🦐',
+        diet: 'Scavenged Organic Detritus',
+        trait: 'Segmented armored exoskeleton measuring up to 13 inches long.',
+        cameraTip: 'Scuttles along trench sediment floor.',
+        funFact: '20 times larger than normal surface amphipods due to deep-sea gigantism.'
+      }
+    ];
+
+    /* ========================================================================
+       3. BESTIARY STATE MANAGEMENT
+       ======================================================================== */
+    let activeFilter = 'all';
+    let activeMode = 'grid';
+    let spotlightIndex = 0;
+    let animTime = 0;
+
+    // Filtered list derived from activeFilter
+    function getFilteredCreatures() {
+      if (activeFilter === 'all') return CREATURES_DB;
+      return CREATURES_DB.filter(c => c.zoneCategory === activeFilter);
+    }
+
+    /* ========================================================================
+       4. UI INITIALIZATION & RENDER
+       ======================================================================== */
+    function initBestiary() {
+      renderGridCards();
+      setupSpotlightCanvas();
+      setupKeyboardControls();
+      requestAnimationFrame(globalAnimationLoop);
+    }
+
+    function setFilter(filterCategory) {
+      sound.playSelect();
+      activeFilter = filterCategory;
+
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('bg-cyan-500', 'text-slate-950', 'font-bold', 'shadow-md');
+        btn.classList.add('bg-slate-800', 'text-slate-300', 'border', 'border-slate-700');
+      });
+
+      const activeBtn = document.getElementById(`filter-${filterCategory}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-slate-800', 'text-slate-300', 'border', 'border-slate-700');
+        activeBtn.classList.add('bg-cyan-500', 'text-slate-950', 'font-bold', 'shadow-md');
+      }
+
+      renderGridCards();
+      spotlightIndex = 0;
+      updateSpotlightPane();
+    }
+
+    function switchView(mode) {
+      sound.playSelect();
+      activeMode = mode;
+
+      const gridEl = document.getElementById('gridView');
+      const spotEl = document.getElementById('spotlightView');
+      const gridBtn = document.getElementById('viewGridBtn');
+      const spotBtn = document.getElementById('viewSpotlightBtn');
+
+      if (mode === 'grid') {
+        gridEl.classList.remove('hidden');
+        spotEl.classList.add('hidden');
+        gridBtn.className = "px-3 py-1 rounded-lg text-xs font-bold bg-sky-500 text-slate-950 transition cursor-pointer";
+        spotBtn.className = "px-3 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-slate-200 transition cursor-pointer";
+      } else {
+        gridEl.classList.add('hidden');
+        spotEl.classList.remove('hidden');
+        spotBtn.className = "px-3 py-1 rounded-lg text-xs font-bold bg-sky-500 text-slate-950 transition cursor-pointer";
+        gridBtn.className = "px-3 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-slate-200 transition cursor-pointer";
+        resizeSpotlightCanvas();
+        updateSpotlightPane();
+      }
+    }
+
+    function renderGridCards() {
+      const container = document.getElementById('gridView');
+      container.innerHTML = '';
+      const filtered = getFilteredCreatures();
+
+      filtered.forEach((creature, idx) => {
+        const card = document.createElement('div');
+        card.className = "bg-slate-900/90 border-2 border-slate-800 hover:border-sky-400/80 rounded-2xl p-3 flex flex-col justify-between shadow-xl card-hover-effect cursor-pointer glow-cyan group relative overflow-hidden";
+        card.onmouseenter = () => sound.playHover();
+        card.onclick = () => openSpotlightForCreature(creature.id);
+
+        card.innerHTML = `
+          <!-- Card Header HUD -->
+          <div class="flex items-center justify-between mb-2 z-10">
+            <span class="text-xs font-bold ${creature.zoneColor} px-2 py-0.5 rounded-lg border">
+              Lvl ${creature.level}
+            </span>
+            <span class="text-xs font-bold text-yellow-400 flex items-center gap-1 bg-slate-950/80 px-2 py-0.5 rounded-lg border border-slate-800">
+              ⭐ +${creature.points}
+            </span>
+          </div>
+
+          <!-- Canvas Preview -->
+          <div class="w-full h-32 bg-slate-950/80 rounded-xl overflow-hidden border border-slate-800/80 my-1 relative flex items-center justify-center">
+            <canvas id="card-canvas-${creature.id}" class="w-full h-full block"></canvas>
+            <div class="absolute bottom-1 right-1 bg-slate-950/90 text-[10px] text-cyan-300 font-bold px-1.5 py-0.5 rounded border border-slate-800">
+              ${creature.depth}
+            </div>
+          </div>
+
+          <!-- Card Footer -->
+          <div class="mt-2 flex items-center justify-between z-10">
+            <div>
+              <div class="font-display font-bold text-sm text-slate-100 group-hover:text-cyan-300 transition flex items-center gap-1.5">
+                <span>${creature.emoji}</span>
+                <span>${creature.name}</span>
+              </div>
+              <div class="text-[10px] text-slate-400 italic">${creature.scientificName}</div>
+            </div>
+            <button class="bg-slate-800 group-hover:bg-cyan-500 group-hover:text-slate-950 text-cyan-400 font-bold text-[10px] px-2.5 py-1 rounded-lg transition border border-slate-700">
+              INSPECT 🔍
+            </button>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    /* ========================================================================
+       5. SPOTLIGHT SHOWCASE & INSPECTOR CONTROL
+       ======================================================================== */
+    function openSpotlightForCreature(id) {
+      const filtered = getFilteredCreatures();
+      const idx = filtered.findIndex(c => c.id === id);
+      if (idx !== -1) {
+        spotlightIndex = idx;
+      } else {
+        spotlightIndex = 0;
+      }
+      switchView('spotlight');
+    }
+
+    function prevSpotlight() {
+      sound.playHover();
+      const list = getFilteredCreatures();
+      spotlightIndex = (spotlightIndex - 1 + list.length) % list.length;
+      updateSpotlightPane();
+    }
+
+    function nextSpotlight() {
+      sound.playHover();
+      const list = getFilteredCreatures();
+      spotlightIndex = (spotlightIndex + 1) % list.length;
+      updateSpotlightPane();
+    }
+
+    function updateSpotlightPane() {
+      const list = getFilteredCreatures();
+      if (!list.length) return;
+      const c = list[spotlightIndex];
+
+      document.getElementById('spotlightEmoji').textContent = c.emoji;
+      document.getElementById('spotlightName').textContent = c.name;
+      document.getElementById('spotlightScientific').textContent = c.scientificName;
+      
+      const zoneBadge = document.getElementById('spotlightZoneBadge');
+      zoneBadge.textContent = c.zoneName;
+      zoneBadge.className = `border text-xs font-bold px-2.5 py-1 rounded-lg ${c.zoneColor}`;
+
+      document.getElementById('spotlightLevelBadge').textContent = `Level ${c.level}`;
+      document.getElementById('spotlightPoints').textContent = `⭐ +${c.points} PTS`;
+      document.getElementById('spotlightDepth').textContent = c.depth;
+      document.getElementById('spotlightDiet').textContent = c.diet;
+      document.getElementById('spotlightTrait').textContent = c.trait;
+      document.getElementById('spotlightCameraTip').textContent = c.cameraTip;
+      document.getElementById('spotlightFunFact').textContent = c.funFact;
+      document.getElementById('spotlightCounter').textContent = `${spotlightIndex + 1} of ${list.length}`;
+    }
+
+    function setupKeyboardControls() {
+      window.addEventListener('keydown', (e) => {
+        if (activeMode === 'spotlight') {
+          if (['ArrowLeft', 'KeyA'].includes(e.code)) prevSpotlight();
+          if (['ArrowRight', 'KeyD'].includes(e.code)) nextSpotlight();
+          if (e.code === 'Escape') switchView('grid');
+        }
+      });
+    }
+
+    /* ========================================================================
+       6. HTML5 CANVAS VECTOR RENDERING ENGINE (ALL 20 SPECIES)
+       ======================================================================== */
+    const spotlightCanvas = document.getElementById('spotlightCanvas');
+    const spotCtx = spotlightCanvas.getContext('2d');
+
+    function setupSpotlightCanvas() {
+      window.addEventListener('resize', resizeSpotlightCanvas);
+    }
+
+    function resizeSpotlightCanvas() {
+      if (spotlightCanvas.parentElement) {
+        spotlightCanvas.width = spotlightCanvas.parentElement.clientWidth;
+        spotlightCanvas.height = spotlightCanvas.parentElement.clientHeight;
+      }
+    }
+
+    function globalAnimationLoop(timestamp) {
+      animTime = timestamp / 1000;
+
+      // 1. Render Mini Card Canvases in Grid
+      if (activeMode === 'grid') {
+        const filtered = getFilteredCreatures();
+        filtered.forEach(c => {
+          const cvs = document.getElementById(`card-canvas-${c.id}`);
+          if (cvs) {
+            if (cvs.width !== cvs.clientWidth || cvs.height !== cvs.clientHeight) {
+              cvs.width = cvs.clientWidth || 220;
+              cvs.height = cvs.clientHeight || 128;
+            }
+            const ctx = cvs.getContext('2d');
+            renderSingleCreatureCanvas(ctx, cvs.width, cvs.height, c.id, 0.95);
+          }
+        });
+      } else {
+        // 2. Render Large Spotlight Canvas
+        if (spotlightCanvas.width > 0 && spotlightCanvas.height > 0) {
+          const list = getFilteredCreatures();
+          if (list[spotlightIndex]) {
+            renderSingleCreatureCanvas(
+              spotCtx, 
+              spotlightCanvas.width, 
+              spotlightCanvas.height, 
+              list[spotlightIndex].id, 
+              2.2
+            );
+          }
+        }
+      }
+
+      requestAnimationFrame(globalAnimationLoop);
+    }
+
+    function renderSingleCreatureCanvas(ctx, w, h, type, baseScale) {
+      ctx.clearRect(0, 0, w, h);
+
+      // Deep water caustic background
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+      bgGrad.addColorStop(0, '#020617');
+      bgGrad.addColorStop(1, '#0f172a');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Subtle Background Particles / Bubbles
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
+      for (let i = 0; i < 5; i++) {
+        const bx = (w * 0.2 * i + animTime * 15) % w;
+        const by = (h * 0.3 * i + Math.sin(animTime + i) * 10) % h;
+        ctx.beginPath();
+        ctx.arc(bx, by, 1.5 + (i % 2), 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.save();
+      // Center specimen
+      ctx.translate(w / 2, h / 2);
+      
+      // Floating swimming movement offset
+      const floatY = Math.sin(animTime * 2 + w) * 6;
+      ctx.translate(0, floatY);
+
+      const creatureObj = {
+        type: type,
+        animFrame: animTime * 3,
+        facing: 1,
+        photographed: false
+      };
+
+      ctx.scale(baseScale, baseScale);
+
+      // Call vector drawing routine
+      drawCreatureVector(ctx, creatureObj);
+
+      ctx.restore();
+    }
+
+    /* --- VECTOR DRAWING DISPATCHER --- */
+    function drawCreatureVector(ctx, c) {
+      switch (c.type) {
+        case 'clownfish': drawClownfish(ctx, c); break;
+        case 'parrotfish': drawParrotfish(ctx, c); break;
+        case 'turtle': drawGreenTurtle(ctx, c); break;
+        case 'moon_jellyfish': drawMoonJellyfish(ctx, c); break;
+        case 'lionfish': drawLionfish(ctx, c); break;
+        case 'manta_ray': drawMantaRay(ctx, c); break;
+        case 'blue_ribbon_eel': drawBlueRibbonEel(ctx, c); break;
+        case 'shark': drawGreatWhiteShark(ctx, c); break;
+        case 'nautilus': drawChamberedNautilus(ctx, c); break;
+        case 'oarfish': drawGiantOarfish(ctx, c); break;
+        case 'barreleye': drawBarreleyeFish(ctx, c); break;
+        case 'vampire_squid': drawVampireSquid(ctx, c); break;
+        case 'anglerfish': drawAnglerfish(ctx, c); break;
+        case 'gulper_eel': drawGulperEel(ctx, c); break;
+        case 'giant_squid': drawGiantSquid(ctx, c); break;
+        case 'blobfish': drawBlobfish(ctx, c); break;
+        case 'tripod_fish': drawTripodFish(ctx, c); break;
+        case 'dumbo_octopus': drawDumboOctopus(ctx, c); break;
+        case 'snailfish': drawMarianaSnailfish(ctx, c); break;
+        case 'amphipod': drawSupergiantAmphipod(ctx, c); break;
+      }
+    }
+
+    /* ========================================================================
+       7. INDIVIDUAL VECTOR ART DRAWING ROUTINES
+       ======================================================================== */
+    // 1. CLOWNFISH
+    function drawClownfish(ctx, c) {
+      const tailWiggle = Math.sin(c.animFrame * 5) * 4;
+      ctx.shadowColor = '#f97316';
+      ctx.shadowBlur = 10;
+
+      // Caudal Fin
+      ctx.beginPath();
+      ctx.moveTo(-12, 0);
+      ctx.lineTo(-24, -10 + tailWiggle);
+      ctx.lineTo(-24, 10 + tailWiggle);
+      ctx.closePath();
+      ctx.fillStyle = '#f97316';
+      ctx.fill();
+      ctx.lineWidth = 1.8;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      // Body
+      ctx.beginPath();
+      ctx.moveTo(18, 0);
+      ctx.quadraticCurveTo(6, -14, -14, 0);
+      ctx.quadraticCurveTo(6, 14, 18, 0);
+      ctx.fillStyle = '#ea580c';
+      ctx.fill();
+      ctx.stroke();
+
+      // White Stripes
+      ctx.fillStyle = '#ffffff';
+      [-4, 4, 12].forEach((sx, i) => {
+        ctx.beginPath();
+        ctx.ellipse(sx, 0, 3, 10 - i * 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      });
+
+      // Eye
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(12, -3, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#020617';
+      ctx.beginPath();
+      ctx.arc(13, -3, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 2. PARROTFISH
+    function drawParrotfish(ctx, c) {
+      ctx.shadowColor = '#06b6d4';
+      ctx.shadowBlur = 10;
+
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 22, 14, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#06b6d4';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.ellipse(2, 4, 14, 7, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#ec4899';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(20, 2, 4, -Math.PI / 2, Math.PI / 2);
+      ctx.fillStyle = '#facc15';
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(14, -4, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(15, -4, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 3. GREEN SEA TURTLE
+    function drawGreenTurtle(ctx, c) {
+      ctx.shadowColor = '#22c55e';
+      ctx.shadowBlur = 12;
+
+      const paddle = Math.sin(c.animFrame * 3) * 8;
+
+      ctx.fillStyle = '#15803d';
+      ctx.beginPath();
+      ctx.moveTo(8, -4);
+      ctx.quadraticCurveTo(18, -26 + paddle, 4, -28 + paddle);
+      ctx.quadraticCurveTo(-2, -18, 0, -4);
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.ellipse(-2, 0, 22, 16, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#166534';
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.strokeStyle = '#86efac';
+      ctx.lineWidth = 1.5;
+      for (let x = -14; x <= 10; x += 8) {
+        ctx.strokeRect(x, -6, 6, 12);
+      }
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(24, -2, 8, 6, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#22c55e';
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#020617';
+      ctx.beginPath();
+      ctx.arc(26, -4, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 4. MOON JELLYFISH
+    function drawMoonJellyfish(ctx, c) {
+      const pulse = Math.sin(c.animFrame * 2.5) * 3;
+      ctx.shadowColor = '#c084fc';
+      ctx.shadowBlur = 14;
+
+      ctx.beginPath();
+      ctx.arc(0, 0, 20 + pulse, Math.PI, 0);
+      ctx.fillStyle = 'rgba(192, 132, 252, 0.75)';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      for (let g = -10; g <= 10; g += 6) {
+        ctx.beginPath();
+        ctx.arc(g, -6, 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#a855f7';
+        ctx.fill();
+      }
+
+      for (let i = -12; i <= 12; i += 4) {
+        ctx.beginPath();
+        ctx.moveTo(i, 2);
+        const wav = Math.sin(c.animFrame * 3 + i) * 6;
+        ctx.quadraticCurveTo(i + wav, 14, i - wav, 26);
+        ctx.lineWidth = 1.8;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.stroke();
+      }
+    }
+
+    // 5. LIONFISH
+    function drawLionfish(ctx, c) {
+      ctx.shadowColor = '#ef4444';
+      ctx.shadowBlur = 12;
+
+      ctx.strokeStyle = '#f87171';
+      ctx.lineWidth = 2;
+      for (let s = -12; s <= 12; s += 4) {
+        ctx.beginPath();
+        ctx.moveTo(s, -8);
+        ctx.lineTo(s * 1.3, -28);
+        ctx.stroke();
+      }
+
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 18, 12, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#b91c1c';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      for (let st = -10; st <= 10; st += 6) {
+        ctx.fillRect(st, -10, 2, 20);
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(18, 18);
+      ctx.lineTo(-8, 22);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(248, 113, 113, 0.7)';
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // 6. MANTA RAY
+    function drawMantaRay(ctx, c) {
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 14;
+
+      const wingFlap = Math.sin(c.animFrame * 2) * 8;
+
+      ctx.beginPath();
+      ctx.moveTo(24, 0);
+      ctx.quadraticCurveTo(0, -32 + wingFlap, -22, 0);
+      ctx.quadraticCurveTo(0, 32 - wingFlap, 24, 0);
+      ctx.fillStyle = '#0f172a';
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#38bdf8';
+      ctx.stroke();
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(22, -6, 6, 4);
+      ctx.fillRect(22, 2, 6, 4);
+
+      ctx.beginPath();
+      ctx.moveTo(-22, 0);
+      ctx.lineTo(-48, Math.sin(c.animFrame * 3) * 6);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+    }
+
+    // 7. GREAT WHITE SHARK
+    function drawGreatWhiteShark(ctx, c) {
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 14;
+
+      const tailSway = Math.sin(c.animFrame * 3.5) * 8;
+
+      ctx.beginPath();
+      ctx.moveTo(34, 0);
+      ctx.quadraticCurveTo(6, -22, -32 + tailSway, 0);
+      ctx.quadraticCurveTo(6, 20, 34, 0);
+      ctx.fillStyle = '#334155';
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(4, -14);
+      ctx.lineTo(-8, -32);
+      ctx.lineTo(-14, -10);
+      ctx.fillStyle = '#1e293b';
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(34, 0);
+      ctx.quadraticCurveTo(10, 14, -32 + tailSway, 0);
+      ctx.fillStyle = '#f8fafc';
+      ctx.fill();
+
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(24, -4, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 8. BLUE RIBBON EEL
+    function drawBlueRibbonEel(ctx, c) {
+      ctx.shadowColor = '#3b82f6';
+      ctx.shadowBlur = 12;
+
+      ctx.beginPath();
+      ctx.moveTo(24, 0);
+      for (let x = 24; x >= -36; x -= 6) {
+        const wy = Math.sin(c.animFrame * 3 + x * 0.1) * 10;
+        ctx.lineTo(x, wy);
+      }
+      ctx.lineWidth = 7;
+      ctx.strokeStyle = '#2563eb';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(24, -3);
+      for (let x = 24; x >= -36; x -= 6) {
+        const wy = Math.sin(c.animFrame * 3 + x * 0.1) * 10 - 4;
+        ctx.lineTo(x, wy);
+      }
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#facc15';
+      ctx.stroke();
+
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.arc(24, 0, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 9. CHAMBERED NAUTILUS
+    function drawChamberedNautilus(ctx, c) {
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 12;
+
+      ctx.beginPath();
+      ctx.arc(-4, 0, 20, 0, Math.PI * 2);
+      ctx.fillStyle = '#fef3c7';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      ctx.strokeStyle = '#b45309';
+      ctx.lineWidth = 2.5;
+      for (let a = 0; a < Math.PI * 2; a += 0.6) {
+        ctx.beginPath();
+        ctx.moveTo(-4, 0);
+        ctx.lineTo(-4 + Math.cos(a) * 19, Math.sin(a) * 19);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(10, -8, 12, 16);
+    }
+
+    // 10. GIANT OARFISH
+    function drawGiantOarfish(ctx, c) {
+      ctx.shadowColor = '#ef4444';
+      ctx.shadowBlur = 12;
+
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 42, 9, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2;
+      for (let rx = -38; rx <= 38; rx += 4) {
+        ctx.beginPath();
+        ctx.moveTo(rx, -8);
+        ctx.lineTo(rx, -18);
+        ctx.stroke();
+      }
+    }
+
+    // 11. BARRELEYE FISH
+    function drawBarreleyeFish(ctx, c) {
+      ctx.shadowColor = '#22c55e';
+      ctx.shadowBlur = 14;
+
+      ctx.beginPath();
+      ctx.ellipse(-6, 0, 18, 14, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#27272a';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(10, -2, 11, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.4)';
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#22c55e';
+      ctx.shadowColor = '#22c55e';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(8, -4, 3.5, 0, Math.PI * 2);
+      ctx.arc(14, -4, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 12. VAMPIRE SQUID
+    function drawVampireSquid(ctx, c) {
+      ctx.shadowColor = '#881337';
+      ctx.shadowBlur = 12;
+
+      ctx.beginPath();
+      ctx.moveTo(18, 0);
+      ctx.lineTo(-14, -18);
+      ctx.quadraticCurveTo(-26, 0, -14, 18);
+      ctx.closePath();
+      ctx.fillStyle = '#881337';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(-18, 0, 2.5, 0, Math.PI * 2);
+      ctx.arc(12, -8, 2, 0, Math.PI * 2);
+      ctx.arc(12, 8, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 13. ANGLERFISH
+    function drawAnglerfish(ctx, c) {
+      ctx.shadowColor = '#facc15';
+      ctx.shadowBlur = 14;
+
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 22, 17, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#1e1b4b';
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      for (let t = -8; t <= 8; t += 4) {
+        ctx.fillRect(18, t, 6, 1.5);
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(-2, -16);
+      ctx.quadraticCurveTo(8, -34, 22, -20);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(22, -20, 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#facc15';
+      ctx.shadowColor = '#facc15';
+      ctx.shadowBlur = 18;
+      ctx.fill();
+    }
+
+    // 14. GULPER EEL
+    function drawGulperEel(ctx, c) {
+      ctx.shadowColor = '#a855f7';
+      ctx.shadowBlur = 12;
+
+      ctx.beginPath();
+      ctx.ellipse(10, 0, 20, 16, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#3b0764';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(-10, 0);
+      ctx.quadraticCurveTo(-30, 12, -50, Math.sin(c.animFrame * 3) * 8);
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#a855f7';
+      ctx.stroke();
+    }
+
+    // 15. GIANT SQUID
+    function drawGiantSquid(ctx, c) {
+      ctx.shadowColor = '#ef4444';
+      ctx.shadowBlur = 14;
+
+      ctx.beginPath();
+      ctx.ellipse(-14, 0, 26, 14, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#9f1239';
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(4, -3, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#eab308';
+      ctx.fill();
+      ctx.stroke();
+
+      for (let a = -12; a <= 12; a += 4) {
+        ctx.beginPath();
+        ctx.moveTo(12, a);
+        ctx.lineTo(38, a + Math.sin(c.animFrame * 3 + a) * 6);
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = '#f43f5e';
+        ctx.stroke();
+      }
+    }
+
+    // 16. BLOBFISH
+    function drawBlobfish(ctx, c) {
+      ctx.shadowColor = '#f43f5e';
+      ctx.shadowBlur = 12;
+
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 22, 16, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#fb7185';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.ellipse(6, 2, 6, 8, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#f43f5e';
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // 17. TRIPOD FISH
+    function drawTripodFish(ctx, c) {
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 10;
+
+      ctx.beginPath();
+      ctx.ellipse(0, -10, 20, 8, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#94a3b8';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 2;
+      [-10, 0, 12].forEach(fx => {
+        ctx.beginPath();
+        ctx.moveTo(fx, -10);
+        ctx.lineTo(fx - 4, 18);
+        ctx.stroke();
+      });
+    }
+
+    // 18. DUMBO OCTOPUS
+    function drawDumboOctopus(ctx, c) {
+      ctx.shadowColor = '#f97316';
+      ctx.shadowBlur = 12;
+
+      const earFlap = Math.sin(c.animFrame * 3) * 6;
+
+      ctx.fillStyle = '#fdba74';
+      ctx.beginPath();
+      ctx.ellipse(-14, -12 + earFlap, 8, 5, -0.4, 0, Math.PI * 2);
+      ctx.ellipse(14, -12 + earFlap, 8, 5, 0.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(0, -4, 16, 0, Math.PI * 2);
+      ctx.fillStyle = '#fb923c';
+      ctx.fill();
+      ctx.stroke();
+
+      for (let t = -12; t <= 12; t += 4) {
+        ctx.beginPath();
+        ctx.moveTo(t, 8);
+        ctx.lineTo(t, 20 + Math.sin(c.animFrame * 2 + t) * 4);
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = '#f97316';
+        ctx.stroke();
+      }
+    }
+
+    // 19. MARIANA SNAILFISH
+    function drawMarianaSnailfish(ctx, c) {
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 12;
+
+      ctx.beginPath();
+      ctx.moveTo(18, 0);
+      ctx.quadraticCurveTo(0, -14, -22, 0);
+      ctx.quadraticCurveTo(0, 14, 18, 0);
+      ctx.fillStyle = 'rgba(241, 245, 249, 0.82)';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(14, 0);
+      ctx.lineTo(-18, 0);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#f43f5e';
+      ctx.stroke();
+    }
+
+    // 20. SUPERGIANT AMPHIPOD
+    function drawSupergiantAmphipod(ctx, c) {
+      ctx.shadowColor = '#e2e8f0';
+      ctx.shadowBlur = 10;
+
+      for (let s = -16; s <= 16; s += 8) {
+        ctx.beginPath();
+        ctx.arc(s, 0, 8, 0, Math.PI * 2);
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fill();
+        ctx.lineWidth = 1.8;
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      for (let l = -12; l <= 12; l += 6) {
+        ctx.beginPath();
+        ctx.moveTo(l, 6);
+        ctx.lineTo(l + 4, 16);
+        ctx.stroke();
+      }
+    }
+
+    /* ========================================================================
+       8. ONLOAD ENTRYPOINT
+       ======================================================================== */
+    window.onload = () => {
+      initBestiary();
+    };
+  </script>
+</body>
+</html>
