@@ -361,7 +361,8 @@
       maxOxygen: 100,
       flashBattery: 100,
       maxFlashBattery: 100,
-      flashArcActive: 0
+      flashArcActive: 0,
+      speedBoostTimer: 0
     };
 
     let creatures = [];
@@ -404,6 +405,7 @@
       player.swimAngle = 0;
       player.oxygen = 100;
       player.flashBattery = 100;
+      player.speedBoostTimer = 0;
 
       // Target Tracking Setup
       targetGoals = { ...lvl.targets };
@@ -471,11 +473,13 @@
       const x = 150 + Math.random() * (world.width - 300);
       let y = minDepth + Math.random() * (maxDepth - minDepth);
 
-      if (['blobfish', 'tripod_fish', 'snailfish', 'amphipod'].includes(type)) {
+      if (type === 'clownfish') {
+        y = getSeabedY(x) - 20 - Math.random() * 25;
+      } else if (['blobfish', 'tripod_fish', 'snailfish', 'amphipod'].includes(type)) {
         y = world.height - 150 - Math.random() * 180;
       } else if (['anglerfish', 'gulper_eel', 'vampire_squid', 'giant_squid'].includes(type)) {
         y = Math.max(world.height * 0.5, y);
-      } else if (['turtle', 'clownfish', 'parrotfish', 'moon_jellyfish'].includes(type)) {
+      } else if (['turtle', 'parrotfish', 'moon_jellyfish'].includes(type)) {
         y = 260 + Math.random() * (world.height * 0.4);
       }
 
@@ -484,12 +488,30 @@
         type: type,
         x: x,
         y: y,
+        homeX: x,
+        homeY: y,
+        baseX: x,
+        baseY: y,
         vx: (Math.random() - 0.5) * (['shark', 'oarfish', 'manta_ray'].includes(type) ? 2.5 : 1.3),
         vy: (Math.random() - 0.5) * 0.5,
         facing: Math.random() > 0.5 ? 1 : -1,
         animFrame: Math.random() * 100,
         photographed: false,
-        size: getCreatureRadius(type)
+        size: getCreatureRadius(type),
+        alpha: 1.0,
+
+        // Custom Behavioral Parameters
+        nibbleTimer: Math.random() * 4 + 2,
+        bubbleTimer: Math.random() * 2 + 1,
+        fledTimer: 0,
+        pearlDropped: false,
+        gulpTimer: 3 + Math.random() * 3,
+        isGulping: false,
+        stealthAlpha: type === 'giant_squid' ? 0.15 : 1.0,
+        squish: 1.0,
+        lightGlow: 0,
+        burstTimer: Math.random() * 2,
+        dashTimer: 0
       });
     }
 
@@ -538,6 +560,11 @@
         dy *= 0.7071;
       }
 
+      if (player.speedBoostTimer > 0) {
+        player.speedBoostTimer -= dt;
+      }
+      const activeSpeed = player.speedBoostTimer > 0 ? player.speed * 1.6 : player.speed;
+
       const isUnderwater = player.y > world.surfaceY;
 
       if (isUnderwater) {
@@ -546,8 +573,8 @@
         if (player.oxygen <= 0) player.oxygen = 0;
 
         // Fluid drag acceleration
-        player.vx = player.vx * 0.88 + dx * player.speed * 0.12;
-        player.vy = player.vy * 0.88 + dy * player.speed * 0.12;
+        player.vx = player.vx * 0.88 + dx * activeSpeed * 0.12;
+        player.vy = player.vy * 0.88 + dy * activeSpeed * 0.12;
 
         const moveSpeed = Math.hypot(player.vx, player.vy);
 
@@ -575,8 +602,8 @@
         // --- SURFACE DECK WALKING PHYSICS ---
         player.oxygen = Math.min(player.maxOxygen, player.oxygen + dt * 35);
         player.swimAngle = 0;
-        player.vx = dx * (player.speed * 0.8);
-        player.vy = dy * (player.speed * 0.8);
+        player.vx = dx * (activeSpeed * 0.8);
+        player.vy = dy * (activeSpeed * 0.8);
 
         if (dx !== 0) {
           player.walkFrame += 0.25;
@@ -629,9 +656,276 @@
       updateUI();
     }
 
+    /* ========================================================================
+       5B. ADVANCED BEHAVIORAL AI ENGINE FOR CREATURES
+       ======================================================================== */
     function updateCreatures(dt) {
       creatures.forEach(c => {
         c.animFrame += dt * 3;
+        const distToPlayer = Math.hypot(c.x - player.x, c.y - player.y);
+
+        // --- CREATURE BEHAVIOR MAP ---
+        switch (c.type) {
+
+          // 1. CLOWNFISH: Coral Dweller & Hide-in-Coral Reaction
+          case 'clownfish': {
+            const seabedY = getSeabedY(c.x);
+            const targetY = seabedY - 15;
+
+            if (distToPlayer < 110) {
+              // Player too close! Duck into coral and fade out
+              c.alpha = Math.max(0, c.alpha - dt * 3.5);
+              c.vx *= 0.85;
+              c.vy = (seabedY - c.y) * 0.1;
+            } else {
+              // Safe distance: emerge and gently wander around home coral
+              c.alpha = Math.min(1.0, c.alpha + dt * 2.0);
+              const wanderX = c.homeX + Math.sin(time * 1.2 + c.animFrame) * 25;
+              const wanderY = targetY + Math.cos(time * 1.8 + c.animFrame) * 8;
+              c.vx = (wanderX - c.x) * 0.05;
+              c.vy = (wanderY - c.y) * 0.05;
+              if (Math.abs(c.vx) > 0.05) c.facing = c.vx >= 0 ? 1 : -1;
+            }
+            break;
+          }
+
+          // 2. PARROTFISH: Coral Grazers & Nibblers
+          case 'parrotfish': {
+            c.nibbleTimer -= dt;
+            c.dashTimer = Math.max(0, c.dashTimer - dt);
+
+            if (distToPlayer < 90) c.dashTimer = 1.8;
+
+            if (c.dashTimer > 0) {
+              c.vx = c.facing * 4.2;
+              c.vy = Math.sin(time * 10) * 2.5;
+            } else if (c.nibbleTimer <= 0) {
+              c.vx *= 0.8;
+              c.vy *= 0.8;
+              if (Math.random() < 0.15) spawnSparks(c.x, c.y + 5, 1, '#fef08a');
+              if (c.nibbleTimer <= -2.0) c.nibbleTimer = 4.0 + Math.random() * 3;
+            }
+            break;
+          }
+
+          // 3. GREEN SEA TURTLE: Gentle Gliders & Speed-Boost Bubbles
+          case 'turtle': {
+            c.vy = Math.sin(time * 0.9 + c.animFrame) * 0.8;
+            c.bubbleTimer -= dt;
+            if (c.bubbleTimer <= 0) {
+              c.bubbleTimer = 2.0;
+              spawnTurtleBubble(c.x - c.facing * 20, c.y);
+            }
+            break;
+          }
+
+          // 4. MOON JELLYFISH: Bouncy Stun Hazards
+          case 'moon_jellyfish': {
+            c.vy = Math.sin(time * 2.2 + c.animFrame) * 1.4;
+            c.vx *= 0.95;
+            if (distToPlayer < 28 && player.y > world.surfaceY) {
+              player.vx -= (c.x - player.x) * 0.14;
+              player.vy -= (c.y - player.y) * 0.14;
+              if (Math.random() < 0.25) spawnSparks(player.x, player.y, 3, '#c084fc');
+            }
+            break;
+          }
+
+          // 5. LIONFISH: Spiky Territory Defenders
+          case 'lionfish': {
+            c.vx *= 0.92;
+            c.vy = Math.sin(time * 1.5 + c.animFrame) * 0.4;
+            if (distToPlayer < 80) {
+              if (Math.random() < 0.2) spawnSparks(c.x + (Math.random()-0.5)*20, c.y + (Math.random()-0.5)*20, 1, '#ef4444');
+            }
+            if (distToPlayer < 32 && player.y > world.surfaceY) {
+              player.oxygen = Math.max(0, player.oxygen - dt * 12);
+              if (Math.random() < 0.3) spawnSparks(player.x, player.y, 2, '#ef4444');
+            }
+            break;
+          }
+
+          // 6. MANTA RAY: Drafting Currents
+          case 'manta_ray': {
+            c.vx = Math.cos(time * 0.8 + c.animFrame) * 2.6;
+            c.vy = Math.sin(time * 1.6 + c.animFrame) * 1.2;
+            c.facing = c.vx >= 0 ? 1 : -1;
+
+            if (distToPlayer < 110) {
+              player.vx += c.facing * 2.2 * dt;
+              if (Math.random() < 0.25) spawnSparks(player.x, player.y, 1, '#38bdf8');
+            }
+            break;
+          }
+
+          // 7. BLUE RIBBON EEL: Pop-Up Peekaboo
+          case 'blue_ribbon_eel': {
+            c.baseY = c.baseY || c.y;
+            c.vx *= 0.9;
+            if (c.photographed) {
+              c.y += (c.baseY - c.y) * 0.1;
+            } else if (distToPlayer < 180) {
+              const targetY = c.baseY - Math.min(55, (180 - distToPlayer) * 0.4);
+              c.y += (targetY - c.y) * 0.1;
+            } else {
+              c.y += (c.baseY - c.y) * 0.05;
+            }
+            break;
+          }
+
+          // 8. GREAT WHITE SHARK: Curious Stalker
+          case 'shark': {
+            c.fledTimer = Math.max(0, c.fledTimer - dt);
+            if (c.fledTimer > 0) {
+              c.vx = c.facing * 5.8;
+            } else if (distToPlayer < 320) {
+              const isTurnedAway = (player.facing === 1 && c.x < player.x) || (player.facing === -1 && c.x > player.x);
+              if (isTurnedAway) {
+                const angle = Math.atan2(player.y - c.y, player.x - c.x);
+                c.vx = c.vx * 0.92 + Math.cos(angle) * 3.2 * 0.08;
+                c.vy = c.vy * 0.92 + Math.sin(angle) * 3.2 * 0.08;
+                c.facing = c.vx >= 0 ? 1 : -1;
+              }
+            }
+            break;
+          }
+
+          // 9. CHAMBERED NAUTILUS: Buoyancy Bobbers
+          case 'nautilus': {
+            c.bobTimer = (c.bobTimer || 0) + dt;
+            c.vy = Math.sin(c.bobTimer * 1.2) * 1.6;
+            c.vx *= 0.95;
+            break;
+          }
+
+          // 10. GIANT OARFISH: Vertical Ribbon Obstacle
+          case 'oarfish': {
+            if (!c.photographed) {
+              c.vy = Math.sin(time * 1.4 + c.animFrame) * 1.8;
+              c.vx *= 0.85;
+            } else {
+              c.vx = c.facing * 3.5;
+              c.vy = 0;
+            }
+            break;
+          }
+
+          // 11. BARRELEYE FISH: Light Hunters
+          case 'barreleye': {
+            c.lightGlow = Math.max(0, c.lightGlow - dt);
+            if (distToPlayer < 160) {
+              c.facing = player.x >= c.x ? 1 : -1;
+            }
+            break;
+          }
+
+          // 12. VAMPIRE SQUID: Glowing Ink Cloud
+          case 'vampire_squid': {
+            if (distToPlayer < 80 && Math.random() < 0.05) {
+              spawnInkCloud(c.x, c.y);
+            }
+            break;
+          }
+
+          // 13. DEEP SEA ANGLERFISH: Lure Attractor
+          case 'anglerfish': {
+            if (!c.photographed && distToPlayer < 170) {
+              player.vx += ((c.x - player.x) / distToPlayer) * 1.2 * dt;
+              player.vy += ((c.y - player.y) / distToPlayer) * 1.2 * dt;
+            }
+            break;
+          }
+
+          // 14. GULPER EEL: Big Gulp Vacuum
+          case 'gulper_eel': {
+            c.gulpTimer -= dt;
+            if (c.gulpTimer <= 0) {
+              c.isGulping = true;
+              if (c.gulpTimer <= -1.8) {
+                c.gulpTimer = 4.0 + Math.random() * 2;
+                c.isGulping = false;
+              }
+            }
+            if (c.isGulping && distToPlayer < 200) {
+              player.vx += ((c.x - player.x) / distToPlayer) * 2.2 * dt;
+              player.vy += ((c.y - player.y) / distToPlayer) * 2.2 * dt;
+              if (Math.random() < 0.3) spawnBubble(c.x + (Math.random()-0.5)*30, c.y + (Math.random()-0.5)*30);
+            }
+            break;
+          }
+
+          // 15. GIANT SQUID: Stealth Camouflage
+          case 'giant_squid': {
+            if (distToPlayer < 130 || c.photographed) {
+              c.stealthAlpha = Math.min(1.0, c.stealthAlpha + dt * 3);
+            } else {
+              c.stealthAlpha = Math.max(0.15, c.stealthAlpha - dt * 0.5);
+            }
+            break;
+          }
+
+          // 16. BLOBFISH: Jelly Bouncers
+          case 'blobfish': {
+            const seabed = getSeabedY(c.x);
+            c.y = seabed - 15;
+            c.vx *= 0.9;
+            c.squish = c.squish < 1.0 ? Math.min(1.0, c.squish + dt * 2) : 1.0;
+
+            if (Math.abs(player.x - c.x) < 28 && Math.abs(player.y - (c.y - 12)) < 16 && player.vy > 0) {
+              player.vy = -8.5;
+              c.squish = 0.35;
+              sound.playRefill();
+              spawnSparks(c.x, c.y, 12, '#fb7185');
+            }
+            break;
+          }
+
+          // 17. TRIPOD FISH: Seabed Stilt Sentinels
+          case 'tripod_fish': {
+            const seabed = getSeabedY(c.x);
+            c.y = seabed - 15;
+            if (distToPlayer < 45) {
+              c.x += c.facing * 1.2 * 60 * dt;
+            } else {
+              c.vx = 0;
+              c.vy = 0;
+            }
+            break;
+          }
+
+          // 18. DUMBO OCTOPUS: Playful Flappers
+          case 'dumbo_octopus': {
+            if (distToPlayer > 75 && distToPlayer < 320) {
+              const angle = Math.atan2(player.y - c.y, player.x - c.x);
+              c.vx = Math.cos(angle) * 1.9;
+              c.vy = Math.sin(angle) * 1.9;
+              c.facing = c.vx >= 0 ? 1 : -1;
+            }
+            break;
+          }
+
+          // 19. MARIANA SNAILFISH: Translucent Phantoms
+          case 'snailfish': {
+            c.burstTimer -= dt;
+            if (c.burstTimer <= 0) {
+              c.burstTimer = 1.5 + Math.random() * 2;
+              c.vx = (Math.random() - 0.5) * 4.5;
+              c.vy = (Math.random() - 0.5) * 2.5;
+              c.facing = c.vx >= 0 ? 1 : -1;
+            }
+            break;
+          }
+
+          // 20. SUPERGIANT AMPHIPOD: Scavenger Swarms
+          case 'amphipod': {
+            const seabed = getSeabedY(c.x);
+            c.y = seabed - 12;
+            c.vx = c.facing * 1.6;
+            break;
+          }
+        }
+
+        // Standard Physics Integration
         c.x += c.vx * 60 * dt;
         c.y += c.vy * 60 * dt;
 
@@ -680,17 +974,40 @@
           let diff = Math.abs(angleTo - aim);
           if (diff > Math.PI) diff = Math.PI * 2 - diff;
 
-          if (diff <= flashAngleCone / 2 && !c.photographed) {
-            c.photographed = true;
-            score += 150;
-            spawnSparks(c.x, c.y, 18, '#38bdf8');
+          if (diff <= flashAngleCone / 2) {
+            // Check if clownfish is completely hidden inside coral
+            if (c.type === 'clownfish' && c.alpha < 0.15) {
+              return; // Protected inside coral!
+            }
 
-            if (targetGoals[c.type] !== undefined) {
-              if (currentTargetsCaptured[c.type] < targetGoals[c.type]) {
-                currentTargetsCaptured[c.type]++;
-                sound.playPhotoCapture();
-                updateChecklistUI();
-                checkLevelCompletion();
+            // --- REACTION TO FLASH ON ALL CREATURE TYPES ---
+            if (c.type === 'shark') c.fledTimer = 3.5;
+            if (c.type === 'barreleye') c.lightGlow = 4.5;
+            if (c.type === 'vampire_squid') spawnInkCloud(c.x, c.y);
+            if (c.type === 'giant_squid') c.stealthAlpha = 1.0;
+            if (c.type === 'amphipod') { c.vx = c.facing * -5.5; spawnSparks(c.x, c.y, 6, '#cbd5e1'); }
+            if (c.type === 'snailfish') {
+              spawnSparks(c.x, c.y, 15, '#38bdf8');
+              c.x += (Math.random() > 0.5 ? 140 : -140);
+            }
+
+            if (!c.photographed) {
+              c.photographed = true;
+              score += 150;
+              spawnSparks(c.x, c.y, 18, '#38bdf8');
+
+              if (c.type === 'nautilus' && !c.pearlDropped) {
+                c.pearlDropped = true;
+                spawnPearl(c.x, c.y);
+              }
+
+              if (targetGoals[c.type] !== undefined) {
+                if (currentTargetsCaptured[c.type] < targetGoals[c.type]) {
+                  currentTargetsCaptured[c.type]++;
+                  sound.playPhotoCapture();
+                  updateChecklistUI();
+                  checkLevelCompletion();
+                }
               }
             }
           }
@@ -941,8 +1258,31 @@
       ctx.save();
       ctx.translate(c.x, c.y);
 
+      // Render Barreleye Lantern Light Glow Aura
+      if (c.type === 'barreleye' && c.lightGlow > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(0, 0, 75, 0, Math.PI * 2);
+        const glowGrad = ctx.createRadialGradient(0, 0, 5, 0, 0, 75);
+        glowGrad.addColorStop(0, 'rgba(34, 197, 94, 0.45)');
+        glowGrad.addColorStop(1, 'rgba(34, 197, 94, 0.0)');
+        ctx.fillStyle = glowGrad;
+        ctx.fill();
+        ctx.restore();
+      }
+
       // Isolate creature sprite flip context so the Captured tag doesn't flip
       ctx.save();
+      if (c.alpha !== undefined) {
+        ctx.globalAlpha = c.alpha;
+      }
+      if (c.type === 'giant_squid') {
+        ctx.globalAlpha = c.stealthAlpha || 0.15;
+      }
+      if (c.type === 'blobfish' && c.squish < 1.0) {
+        ctx.scale(1.2, c.squish);
+      }
+
       switch (c.type) {
         case 'clownfish': drawClownfish(c); break;
         case 'parrotfish': drawParrotfish(c); break;
@@ -969,6 +1309,7 @@
 
       if (c.photographed) {
         ctx.save();
+        if (c.alpha !== undefined) ctx.globalAlpha = c.alpha;
         ctx.translate(0, -c.size - 18);
         ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
         ctx.roundRect(-42, -10, 84, 20, 6);
@@ -2130,6 +2471,44 @@
       });
     }
 
+    function spawnTurtleBubble(x, y) {
+      particles.push({
+        type: 'turtle_bubble',
+        x: x,
+        y: y,
+        vy: -1.2,
+        radius: 6,
+        life: 1.0
+      });
+    }
+
+    function spawnPearl(x, y) {
+      particles.push({
+        type: 'pearl',
+        x: x,
+        y: y,
+        vy: 0.5,
+        radius: 5,
+        life: 1.0
+      });
+    }
+
+    function spawnInkCloud(x, y) {
+      for (let i = 0; i < 8; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const spd = 0.5 + Math.random() * 1.5;
+        particles.push({
+          type: 'ink',
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * spd,
+          vy: Math.sin(angle) * spd,
+          radius: 8 + Math.random() * 8,
+          life: 1.0
+        });
+      }
+    }
+
     function spawnSparks(x, y, count, color) {
       for (let i = 0; i < count; i++) {
         const angle = Math.random() * Math.PI * 2;
@@ -2154,6 +2533,34 @@
           p.y += p.vy * 60 * dt;
           p.x += Math.sin(time * 4 + p.y * 0.05) * 0.4;
           p.life -= dt * 0.35;
+        } else if (p.type === 'turtle_bubble') {
+          p.y += p.vy * 60 * dt;
+          p.life -= dt * 0.15;
+          // Check collision with player for speed boost!
+          const dist = Math.hypot(p.x - player.x, p.y - player.y);
+          if (dist < 22) {
+            player.speedBoostTimer = 2.5;
+            sound.playRefill();
+            spawnSparks(player.x, player.y, 10, '#22d3ee');
+            particles.splice(i, 1);
+            continue;
+          }
+        } else if (p.type === 'pearl') {
+          p.y += p.vy * 60 * dt;
+          p.life -= dt * 0.1;
+          const dist = Math.hypot(p.x - player.x, p.y - player.y);
+          if (dist < 22) {
+            score += 200;
+            sound.playPhotoCapture();
+            spawnSparks(player.x, player.y, 12, '#facc15');
+            particles.splice(i, 1);
+            continue;
+          }
+        } else if (p.type === 'ink') {
+          p.x += p.vx * 60 * dt;
+          p.y += p.vy * 60 * dt;
+          p.radius += dt * 4;
+          p.life -= dt * 0.4;
         } else if (p.type === 'spark') {
           p.x += p.vx * 60 * dt;
           p.y += p.vy * 60 * dt;
@@ -2179,6 +2586,33 @@
           ctx.lineWidth = 1;
           ctx.strokeStyle = '#ffffff';
           ctx.stroke();
+        } else if (p.type === 'turtle_bubble') {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(34, 211, 238, 0.7)';
+          ctx.shadowColor = '#22d3ee';
+          ctx.shadowBlur = 10;
+          ctx.fill();
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = '#a5f3fc';
+          ctx.stroke();
+        } else if (p.type === 'pearl') {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fillStyle = '#fef08a';
+          ctx.shadowColor = '#facc15';
+          ctx.shadowBlur = 12;
+          ctx.fill();
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = '#ffffff';
+          ctx.stroke();
+        } else if (p.type === 'ink') {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(147, 51, 234, ${p.life * 0.4})`;
+          ctx.shadowColor = '#a855f7';
+          ctx.shadowBlur = 8;
+          ctx.fill();
         } else if (p.type === 'spark') {
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
