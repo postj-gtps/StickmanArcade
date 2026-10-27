@@ -710,6 +710,7 @@
 
           // 3. GREEN SEA TURTLE: Gentle Gliders & Mouth Oxygen Bubbles
           case 'turtle': {
+	    c.facing = c.vx >= 0 ? 1 : -1; // Sync facing direction to horizontal movement
             c.vy = Math.sin(time * 0.9 + c.animFrame) * 0.8;
             c.bubbleTimer -= dt;
             if (c.bubbleTimer <= 0) {
