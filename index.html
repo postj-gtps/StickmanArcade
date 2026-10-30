@@ -243,7 +243,7 @@
 
   <header>
     <h1>🕹️ Student Arcade Showcase 🕹️</h1>
-    <p>Click a classroom section below to reveal the arcade games!</p>
+    <p>Click any classroom header to collapse or expand its games!</p>
   </header>
 
   <main id="arcade-container"></main>
@@ -292,14 +292,30 @@
       }
     ];
 
+    // Helper function to shuffle an array in place
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
     function renderArcade() {
       const container = document.getElementById("arcade-container");
 
-      arcadeData.forEach((section, index) => {
+      // 1. Randomize teacher sections
+      shuffle(arcadeData);
+
+      // 2. Randomize games within each teacher section
+      arcadeData.forEach(section => {
+        shuffle(section.games);
+      });
+
+      arcadeData.forEach((section) => {
         const sectionDiv = document.createElement("div");
-        sectionDiv.className = "teacher-section";
-        
-        if (index === 0) sectionDiv.classList.add("open");
+        // Start all sections with the 'open' class so games are visible immediately
+        sectionDiv.className = "teacher-section open";
 
         const headerBtn = document.createElement("button");
         headerBtn.className = "teacher-header";
